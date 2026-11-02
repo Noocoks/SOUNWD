@@ -1,65 +1,49 @@
 # ♫ Sonora — Music Downloader
 
-Sonora es una aplicación de escritorio en Python con una interfaz gráfica sencilla para gestionar descargas de audio mediante [yt-dlp](https://github.com/yt-dlp/yt-dlp).
+Sonora es una aplicación de escritorio en Python con una interfaz gráfica oscura y sencilla para gestionar descargas de audio mediante yt-dlp.
 
 > Utiliza Sonora únicamente con contenido que tengas derecho a descargar y respeta las condiciones de la plataforma y las licencias aplicables. Sonora no descarga música desde Spotify.
 
-## Características actuales
+## Abrir Sonora
 
-- Interfaz gráfica oscura con [CustomTkinter](https://customtkinter.tomschimansky.com/).
-- Descarga de audio desde enlaces de YouTube y YouTube Music.
+### Windows — doble clic
+
+1. Instala Python 3.10 o superior desde [python.org](https://www.python.org/downloads/). Durante la instalación, deja activado el Python Launcher.
+2. Abre la carpeta del proyecto.
+3. Haz doble clic en **Windows/Abrir Sonora.vbs**.
+
+La primera vez aparecerá una pequeña ventana de preparación. Sonora creará su propio entorno e instalará las dependencias automáticamente. En los siguientes inicios abrirá mucho más rápido.
+
+### Linux — acceso directo
+
+Necesitas Python 3.10 o superior y los componentes de Tkinter/venv de tu distribución (en Ubuntu y derivadas: `python3-tk` y `python3-venv`).
+
+1. Abre la carpeta del proyecto.
+2. Haz doble clic en **Linux/Sonora.desktop**. Si el escritorio pregunta, elige «Permitir ejecutar» o «Confiar y ejecutar».
+3. Para tener un acceso directo en el Escritorio, ejecuta una vez **Linux/Instalar acceso directo.sh** desde el gestor de archivos (elige «Ejecutar» si te lo pregunta). Después podrás abrir Sonora desde ese acceso directo.
+
+La primera vez aparecerá la ventana de preparación y se instalarán automáticamente las dependencias Python en un entorno aislado del proyecto.
+
+## Requisitos adicionales: FFmpeg
+
+La conversión a MP3, M4A, FLAC, OPUS o WAV necesita FFmpeg y ffprobe. Deben estar instalados y disponibles en el sistema. Si faltan, Sonora mostrará un aviso. Consulta la página oficial de [FFmpeg](https://ffmpeg.org/download.html).
+
+## Funciones
+
+- Interfaz gráfica con CustomTkinter.
+- Enlaces de YouTube y YouTube Music.
 - Formatos MP3, M4A/AAC, FLAC, OPUS y WAV.
 - Selector de carpeta de destino.
-- Descarga de vídeos individuales o listas de reproducción.
-- Barra de progreso y avisos de errores.
-- Compatible con Windows y Linux (pendiente de pruebas en ambos sistemas).
+- Descarga individual o listas de reproducción.
+- Barra de progreso y avisos visuales.
 
-## Requisitos
+## Desarrollo
 
-- Python 3.10 o superior.
-- FFmpeg y ffprobe instalados y disponibles en el PATH.
-- Conexión a Internet.
-
-## Instalación y ejecución
-
-Clona el repositorio:
-
-```bash
-git clone https://github.com/Noocoks/music-downloader.git
-cd music-downloader
-```
-
-### Windows
-
-Ejecuta `Windows/iniciar.bat`. El lanzador instala las dependencias de Python y abre la interfaz gráfica.
-
-### Linux
-
-Ejecuta:
-
-```bash
-bash Linux/iniciar.sh
-```
-
-El lanzador instala las dependencias de Python y abre la interfaz gráfica.
-
-### Inicio manual
-
-También puedes crear un entorno virtual, instalar las dependencias y ejecutar:
-
-```bash
-python -m pip install -r requirements.txt
-python -m src.gui
-```
-
-Instala FFmpeg según tu sistema operativo y comprueba que `ffmpeg` y `ffprobe` funcionan desde la terminal.
-
-## Estructura
-
-- `src/gui.py`: aplicación gráfica Sonora.
+- `bootstrap.py`: prepara el entorno e inicia la aplicación.
+- `src/gui.py`: interfaz gráfica.
 - `src/cli.py`: versión de terminal.
 - `requirements.txt`: dependencias Python.
-- `Windows/` y `Linux/`: lanzadores por sistema operativo.
+- `Windows/` y `Linux/`: lanzadores.
 
 ## Aviso
 

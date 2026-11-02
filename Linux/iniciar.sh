@@ -1,0 +1,1 @@
+#!/usr/bin/env bash\nset -e\ncd "$(dirname "$0")/.."\npython3 -m src.main\n

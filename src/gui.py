@@ -131,6 +131,7 @@ class SoundwApp(ctk.CTk):
                      ).pack(anchor="w", padx=14, pady=(13, 6))
         ctk.CTkOptionMenu(
             format_card, variable=self.audio_format, values=list(FORMATS),
+            command=self._preference_changed,
             height=38, corner_radius=10, fg_color="#40364F",
             button_color="#8872AE", button_hover_color="#9B86BB",
             dropdown_fg_color="#211E2B",
@@ -374,12 +375,12 @@ class SoundwApp(ctk.CTk):
         self.status_label.configure(text="Conectando… no cierres esta ventana.")
         thread = threading.Thread(
             target=self._download_worker,
-            args=(url, FORMATS[self.audio_format.get()], destination, self.playlist.get()),
+            args=(url, FORMATS[self.audio_format.get()], destination, self.playlist.get(), self.quality.get(), self.filename_style.get()),
             daemon=True,
         )
         thread.start()
 
-    def _download_worker(self, url: str, audio_format: str, destination: Path, playlist: bool) -> None:
+    def _download_worker(self, url: str, audio_format: str, destination: Path, playlist: bool, quality_choice: str, filename_choice: str) -> None:
         def hook(data: dict) -> None:
             if data.get("status") == "downloading":
                 downloaded = data.get("downloaded_bytes", 0)
@@ -389,8 +390,8 @@ class SoundwApp(ctk.CTk):
             elif data.get("status") == "finished":
                 self.events.put(("progress", (0.98, "Preparando el archivo…")))
 
-        quality = {"Máxima": "0", "Alta": "192", "Normal": "128"}.get(self.quality.get(), "0")
-        filename = "%(title)s" if self.filename_style.get() == "Solo título" else "%(title)s - %(uploader)s"
+        quality = {"Máxima": "0", "Alta": "192", "Normal": "128"}.get(quality_choice, "0")
+        filename = "%(title)s" if filename_choice == "Solo título" else "%(title)s - %(uploader)s"
         options = {
             "format": "bestaudio/best",
             "ffmpeg_location": imageio_ffmpeg.get_ffmpeg_exe(),

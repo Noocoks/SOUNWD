@@ -6,6 +6,7 @@ Sonora es una aplicación de escritorio en Python con una interfaz gráfica oscu
 
 ## Abrir Sonora
 
+Estamos preparando también versiones independientes para no tener que instalar Python. Cada actualización de la rama principal genera los paquetes de Windows y Linux en la pestaña [Actions](https://github.com/Noocoks/music-downloader/actions), dentro de los artefactos de la ejecución más reciente. La primera compilación debe terminar correctamente antes de poder descargarlos.\n
 ### Windows — doble clic
 
 1. Instala Python 3.10 o superior desde [python.org](https://www.python.org/downloads/). Durante la instalación, deja activado el Python Launcher.

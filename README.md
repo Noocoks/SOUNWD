@@ -1,17 +1,18 @@
-# ♫ Music Downloader
+# ♫ Sonora — Music Downloader
 
-Aplicación de terminal sencilla y guiada para descargar audio de vídeos y listas de reproducción de YouTube y YouTube Music mediante [yt-dlp](https://github.com/yt-dlp/yt-dlp).
+Sonora es una aplicación de escritorio en Python con una interfaz gráfica sencilla para gestionar descargas de audio mediante [yt-dlp](https://github.com/yt-dlp/yt-dlp).
 
-> Utiliza la herramienta únicamente con contenido que tengas derecho a descargar y respeta las condiciones de la plataforma y las licencias aplicables. No descarga música desde Spotify.
+> Utiliza Sonora únicamente con contenido que tengas derecho a descargar y respeta las condiciones de la plataforma y las licencias aplicables. Sonora no descarga música desde Spotify.
 
-## Características
+## Características actuales
 
-- Interfaz de terminal con colores y paneles gracias a Rich.
-- Descarga de audio individual o listas de reproducción.
-- Formatos: MP3, M4A, FLAC, OPUS y WAV.
-- Selección de carpeta de destino.
-- Indicador de progreso.
-- Compatible con Windows y Linux.
+- Interfaz gráfica oscura con [CustomTkinter](https://customtkinter.tomschimansky.com/).
+- Descarga de audio desde enlaces de YouTube y YouTube Music.
+- Formatos MP3, M4A/AAC, FLAC, OPUS y WAV.
+- Selector de carpeta de destino.
+- Descarga de vídeos individuales o listas de reproducción.
+- Barra de progreso y avisos de errores.
+- Compatible con Windows y Linux (pendiente de pruebas en ambos sistemas).
 
 ## Requisitos
 
@@ -19,52 +20,47 @@ Aplicación de terminal sencilla y guiada para descargar audio de vídeos y list
 - FFmpeg y ffprobe instalados y disponibles en el PATH.
 - Conexión a Internet.
 
-## Instalación
+## Instalación y ejecución
 
-Clona el repositorio y entra en la carpeta:
+Clona el repositorio:
 
 ```bash
 git clone https://github.com/Noocoks/music-downloader.git
 cd music-downloader
 ```
 
-Crea un entorno virtual (recomendado):
+### Windows
 
-**Windows (PowerShell):**
-```powershell
-py -m venv .venv
-.venv\Scripts\Activate.ps1
-```
+Ejecuta `Windows/iniciar.bat`. El lanzador instala las dependencias de Python y abre la interfaz gráfica.
 
-**Linux:**
+### Linux
+
+Ejecuta:
+
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+bash Linux/iniciar.sh
 ```
 
-Instala las dependencias:
+El lanzador instala las dependencias de Python y abre la interfaz gráfica.
+
+### Inicio manual
+
+También puedes crear un entorno virtual, instalar las dependencias y ejecutar:
 
 ```bash
 python -m pip install -r requirements.txt
+python -m src.gui
 ```
 
-Instala FFmpeg según tu sistema operativo y asegúrate de que los comandos `ffmpeg` y `ffprobe` funcionan desde la terminal.
+Instala FFmpeg según tu sistema operativo y comprueba que `ffmpeg` y `ffprobe` funcionan desde la terminal.
 
-## Iniciar
+## Estructura
 
-- **Windows:** ejecuta `Windows/iniciar.bat`.
-- **Linux:** ejecuta `bash Linux/iniciar.sh`.
-
-También puedes iniciar directamente con:
-
-```bash
-python -m src.main
-```
-
-## Desarrollo
-
-Las dependencias de Python están en `requirements.txt`. Las contribuciones y sugerencias son bienvenidas.
+- `src/gui.py`: aplicación gráfica Sonora.
+- `src/cli.py`: versión de terminal.
+- `requirements.txt`: dependencias Python.
+- `Windows/` y `Linux/`: lanzadores por sistema operativo.
 
 ## Aviso
 
-Este proyecto es una interfaz de usuario para yt-dlp. El usuario es responsable de comprobar que tiene los derechos y permisos necesarios para descargar y utilizar cada contenido.
+Sonora es una interfaz para yt-dlp. El usuario es responsable de comprobar que tiene los derechos y permisos necesarios para descargar y utilizar cada contenido.

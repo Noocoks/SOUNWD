@@ -258,14 +258,6 @@ class SonoraApp(ctk.CTk):
             messagebox.showerror("Carpeta no disponible", str(error))
             return
 
-        if not self._ffmpeg_available():
-            messagebox.showerror(
-                "Falta FFmpeg",
-                "Para convertir el audio necesitas instalar FFmpeg y ffprobe "
-                "y añadirlos al PATH del sistema.",
-            )
-            return
-
         self.downloading = True
         self.download_button.configure(state="disabled", text="Descargando…")
         self.progress.set(0)
@@ -276,11 +268,6 @@ class SonoraApp(ctk.CTk):
             daemon=True,
         )
         thread.start()
-
-    @staticmethod
-    def _ffmpeg_available() -> bool:
-        import shutil
-        return shutil.which("ffmpeg") is not None and shutil.which("ffprobe") is not None
 
     def _download_worker(self, url: str, audio_format: str, destination: Path, playlist: bool) -> None:
         def hook(data: dict) -> None:
@@ -295,6 +282,7 @@ class SonoraApp(ctk.CTk):
 
         options = {
             "format": "bestaudio/best",
+            "ffmpeg_location": __import__("imageio_ffmpeg").get_ffmpeg_exe(),
             "outtmpl": str(destination / "%(title)s.%(ext)s"),
             "noplaylist": not playlist,
             "windowsfilenames": True,
@@ -335,7 +323,7 @@ class SonoraApp(ctk.CTk):
                     self.download_button.configure(state="normal", text="↓   Intentar de nuevo")
                     messagebox.showerror(
                         "Error en la descarga",
-                        f"{payload}\n\nComprueba el enlace, tu conexión y que FFmpeg esté instalado.",
+                        f"{payload}\n\nComprueba el enlace y tu conexión a Internet."
                     )
         except queue.Empty:
             pass

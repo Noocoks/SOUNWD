@@ -9,33 +9,33 @@ from pathlib import Path
 from tkinter import messagebox, ttk
 
 ROOT = Path(__file__).resolve().parent
-VENV = ROOT / ".sonora-env"
+VENV = ROOT / ".sounwd-env"
 REQUIREMENTS = ROOT / "requirements.txt"
 
 
 class SetupWindow:
     def __init__(self) -> None:
         self.root = tk.Tk()
-        self.root.title("Sonora · Preparando")
+        self.root.title("SOUNWD · Preparando")
         self.root.geometry("470x245")
         self.root.resizable(False, False)
-        self.root.configure(bg="#10131D")
+        self.root.configure(bg="#191824")
         self.root.eval("tk::PlaceWindow . center")
 
-        tk.Label(self.root, text="♫  SONORA", bg="#10131D", fg="#C4B5FD",
+        tk.Label(self.root, text="◖♪  SOUNWD", bg="#191824", fg="#C6B5E8",
                  font=("Segoe UI", 23, "bold")).pack(pady=(24, 5))
-        tk.Label(self.root, text="Estamos preparando tu espacio musical",
-                 bg="#10131D", fg="#F5F3FF",
+        tk.Label(self.root, text="Tu espacio musical estará listo en un momento",
+                 bg="#191824", fg="#F2EDF8",
                  font=("Segoe UI", 11)).pack()
         self.status = tk.Label(self.root, text="Comprobando los componentes…",
-                               bg="#10131D", fg="#A5A9BA",
+                               bg="#191824", fg="#AAA3B5",
                                font=("Segoe UI", 9))
         self.status.pack(pady=(20, 8))
         self.bar = ttk.Progressbar(self.root, mode="indeterminate", length=380)
         self.bar.pack()
         self.bar.start(12)
         tk.Label(self.root, text="Solo la primera vez puede tardar unos minutos.",
-                 bg="#10131D", fg="#777C91",
+                 bg="#191824", fg="#898294",
                  font=("Segoe UI", 8)).pack(pady=15)
 
     def set_status(self, value: str) -> None:
@@ -46,7 +46,7 @@ class SetupWindow:
             self.bar.stop()
             self.root.destroy()
             if error:
-                messagebox.showerror("No se pudo iniciar Sonora", error)
+                messagebox.showerror("No se pudo iniciar SOUNWD", error)
         self.root.after(0, close)
 
     def run(self) -> None:
@@ -56,7 +56,7 @@ class SetupWindow:
 def worker(window: SetupWindow) -> None:
     try:
         if sys.version_info < (3, 10):
-            raise RuntimeError("Sonora necesita Python 3.10 o superior. Instala una versión reciente de Python y vuelve a abrir Sonora.")
+            raise RuntimeError("SOUNWD necesita Python 3.10 o superior. Instala una versión reciente de Python y vuelve a abrir SOUNWD.")
 
         if os.name == "nt":
             python = VENV / "Scripts" / "python.exe"
@@ -66,7 +66,7 @@ def worker(window: SetupWindow) -> None:
             pythonw = python
 
         if not python.exists():
-            window.set_status("Creando un entorno seguro para Sonora…")
+            window.set_status("Creando un entorno seguro para SOUNWD…")
             subprocess.run([sys.executable, "-m", "venv", str(VENV)],
                            check=True, cwd=ROOT)
 
@@ -75,14 +75,14 @@ def worker(window: SetupWindow) -> None:
                         "-r", str(REQUIREMENTS)],
                        check=True, cwd=ROOT)
 
-        window.set_status("Abriendo Sonora…")
+        window.set_status("Abriendo SOUNWD…")
         subprocess.Popen([str(pythonw), str(ROOT / "src" / "gui.py")],
                          cwd=ROOT, close_fds=True)
         window.finish()
     except subprocess.CalledProcessError as error:
         window.finish(
             "No se han podido instalar los componentes necesarios.\n\n"
-            "Comprueba tu conexión a Internet y vuelve a abrir Sonora.\n\n"
+            "Comprueba tu conexión a Internet y vuelve a abrir SOUNWD.\n\n"
             f"Detalle: {error}"
         )
     except Exception as error:

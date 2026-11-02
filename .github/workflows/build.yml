@@ -1,4 +1,4 @@
-name: Build Sonora desktop apps
+name: Build SOUNWD desktop apps
 
 on:
   push:
@@ -15,11 +15,11 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            artifact: Sonora-Windows
-            output: Sonora.exe
+            artifact: SOUNWD-Windows
+            output: SOUNWD.exe
           - os: ubuntu-22.04
-            artifact: Sonora-Linux
-            output: Sonora
+            artifact: SOUNWD-Linux
+            output: SOUNWD
 
     runs-on: ${{ matrix.os }}
 
@@ -39,7 +39,7 @@ jobs:
           pip install pyinstaller
 
       - name: Build standalone app
-        run: pyinstaller --noconfirm --clean --onefile --windowed --name Sonora --collect-all customtkinter --collect-all imageio_ffmpeg src/gui.py
+        run: pyinstaller --noconfirm --clean --onefile --windowed --name SOUNWD --collect-all customtkinter --collect-all imageio_ffmpeg --collect-all yt_dlp src/gui.py
 
       - name: Upload app
         uses: actions/upload-artifact@v4

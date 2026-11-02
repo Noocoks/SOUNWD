@@ -45,6 +45,7 @@ Si quieres cambiar el formato, la carpeta o descargar una lista completa, abre *
 - Descargas individuales o listas de reproducción.
 - Indicador de progreso y mensajes fáciles de entender.
 - Aplicaciones independientes compiladas para Windows y Linux.
+- Versión Android en desarrollo, con interfaz Kivy inspirada en el escritorio y compilación APK automática mediante GitHub Actions.
 
 ## Desarrollo
 
@@ -52,6 +53,8 @@ Si quieres cambiar el formato, la carpeta o descargar una lista completa, abre *
 - `src/cli.py`: versión de terminal.
 - `bootstrap.py`: instalador de dependencias para desarrollo.
 - `requirements.txt`: dependencias Python.
-- `.github/workflows/build.yml`: compilación automática de las aplicaciones.
+- `.github/workflows/build.yml`: compilación automática de las aplicaciones de escritorio.
+- `android/main.py` y `android/buildozer.spec`: aplicación móvil y configuración de Android.
+- `.github/workflows/android.yml`: compilación automática de la APK.
 
-SOUNWD utiliza yt-dlp y FFmpeg para procesar audio.
+SOUNWD utiliza yt-dlp para obtener audio. En Android, esta primera versión conserva el formato disponible en origen: la conversión a MP3/FLAC/WAV con FFmpeg todavía no está integrada. La APK se publica como artefacto de GitHub Actions cuando la compilación termina correctamente.

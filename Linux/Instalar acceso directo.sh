@@ -3,12 +3,12 @@ set -eu
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DESKTOP_DIR="${XDG_DESKTOP_DIR:-$HOME/Desktop}"
 mkdir -p "$DESKTOP_DIR"
-SHORTCUT="$DESKTOP_DIR/Sonora.desktop"
+SHORTCUT="$DESKTOP_DIR/SOUNWD.desktop"
 cat > "$SHORTCUT" <<EOF
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=Sonora
+Name=SOUNWD
 Comment=Tu música, a tu manera
 Exec=python3 "$ROOT/bootstrap.py"
 Icon=audio-x-generic

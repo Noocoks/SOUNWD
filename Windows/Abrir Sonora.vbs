@@ -5,7 +5,7 @@ pythonw = "pyw -3"
 command = "py -3 --version"
 result = shell.Run(command, 0, True)
 If result <> 0 Then
-  MsgBox "Sonora necesita Python 3.10 o superior." & vbCrLf & vbCrLf & "Pulsa Aceptar para abrir la página oficial e instalarlo. Después vuelve a hacer doble clic aquí.",  vbExclamation, "Sonora · Primer inicio"
+  MsgBox "SOUNWD necesita Python 3.10 o superior." & vbCrLf & vbCrLf & "Pulsa Aceptar para abrir la página oficial e instalarlo. Después vuelve a hacer doble clic aquí.",  vbExclamation, "SOUNWD · Primer inicio"
   shell.Run "https://www.python.org/downloads/"
   WScript.Quit
 End If

@@ -24,9 +24,9 @@ Necesitas Python 3.10 o superior y los componentes de Tkinter/venv de tu distrib
 
 La primera vez aparecerá la ventana de preparación y se instalarán automáticamente las dependencias Python en un entorno aislado del proyecto.
 
-## Requisitos adicionales: FFmpeg
+## Componentes de audio
 
-La conversión a MP3, M4A, FLAC, OPUS o WAV necesita FFmpeg y ffprobe. Deben estar instalados y disponibles en el sistema. Si faltan, Sonora mostrará un aviso. Consulta la página oficial de [FFmpeg](https://ffmpeg.org/download.html).
+Sonora incluye FFmpeg mediante el paquete `imageio-ffmpeg`, por lo que no necesitas instalar FFmpeg por separado.
 
 ## Funciones
 

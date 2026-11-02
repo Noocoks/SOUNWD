@@ -38,7 +38,10 @@ Si quieres cambiar el formato, la carpeta o descargar una lista completa, abre *
 
 - Interfaz sencilla y tranquila, con tonos lavanda.
 - Formato MP3 predeterminado; también M4A, FLAC, OPUS y WAV.
-- Carpeta de destino personalizable.
+- Carpeta de destino personalizable, con Descargas como ubicación inicial.
+- Personalización de apariencia: oscuro, claro o sistema; acentos lavanda, azul, verde salvia o rosa.
+- Preferencia de calidad (máxima, alta o normal) y formato del nombre de archivo.
+- Preferencias guardadas automáticamente para la próxima vez.
 - Descargas individuales o listas de reproducción.
 - Indicador de progreso y mensajes fáciles de entender.
 - Aplicaciones independientes compiladas para Windows y Linux.

@@ -14,7 +14,7 @@ import yt_dlp
 
 
 APP_NAME = "SOUNWD"
-DEFAULT_FOLDER = Path.home() / "Music" / APP_NAME
+DEFAULT_FOLDER = Path.home() / "Downloads"
 FORMATS = {"MP3 (recomendado)": "mp3", "M4A": "m4a", "FLAC": "flac", "OPUS": "opus", "WAV": "wav"}
 SUPPORTED_HOSTS = {"youtube.com", "www.youtube.com", "music.youtube.com", "m.youtube.com", "youtu.be"}
 
@@ -91,45 +91,64 @@ class SoundwApp(ctk.CTk):
         self.url_entry.grid(row=1, column=0, sticky="ew", padx=20, pady=(0, 18))
         self.url_entry.bind("<Return>", lambda _event: self._start_download())
 
+        settings = ctk.CTkFrame(page, fg_color="transparent")
+        settings.grid(row=4, column=0, sticky="ew", pady=(0, 8))
+        settings.grid_columnconfigure((0, 1), weight=1, uniform="settings")
+
+        format_card = ctk.CTkFrame(settings, fg_color="#211E2B", corner_radius=14,
+                                   border_width=1, border_color="#332D40")
+        format_card.grid(row=0, column=0, sticky="nsew", padx=(0, 7))
+        ctk.CTkLabel(format_card, text="2.  FORMATO DEL ARCHIVO",
+                     text_color="#C9B8E8", font=ctk.CTkFont(size=10, weight="bold")
+                     ).pack(anchor="w", padx=14, pady=(13, 6))
+        ctk.CTkOptionMenu(
+            format_card, variable=self.audio_format, values=list(FORMATS),
+            height=38, corner_radius=10, fg_color="#40364F",
+            button_color="#8872AE", button_hover_color="#9B86BB",
+            dropdown_fg_color="#211E2B",
+        ).pack(fill="x", padx=12, pady=(0, 13))
+
+        folder_card = ctk.CTkFrame(settings, fg_color="#211E2B", corner_radius=14,
+                                   border_width=1, border_color="#332D40")
+        folder_card.grid(row=0, column=1, sticky="nsew", padx=(7, 0))
+        ctk.CTkLabel(folder_card, text="3.  CARPETA DE DESCARGA",
+                     text_color="#C9B8E8", font=ctk.CTkFont(size=10, weight="bold")
+                     ).pack(anchor="w", padx=14, pady=(13, 6))
+        folder_row = ctk.CTkFrame(folder_card, fg_color="transparent")
+        folder_row.pack(fill="x", padx=12, pady=(0, 13))
+        folder_row.grid_columnconfigure(0, weight=1)
+        self.folder_label = ctk.CTkLabel(
+            folder_row, text=self._short_path(str(DEFAULT_FOLDER)),
+            text_color="#D2CBD9", font=ctk.CTkFont(size=10), anchor="w",
+        )
+        self.folder_label.grid(row=0, column=0, sticky="ew")
+        ctk.CTkButton(
+            folder_row, text="Elegir", width=66, height=34,
+            fg_color="#40364F", hover_color="#554766",
+            command=self._choose_folder,
+        ).grid(row=0, column=1, padx=(6, 0))
+
         self.options_toggle = ctk.CTkButton(
-            page, text="＋  Más opciones", height=34, width=150,
+            page, text="＋  Más opciones", height=30, width=145,
             fg_color="transparent", hover_color="#282333",
             text_color="#C5B6D8", anchor="w",
-            font=ctk.CTkFont(size=12), command=self._toggle_advanced,
+            font=ctk.CTkFont(size=11), command=self._toggle_advanced,
         )
-        self.options_toggle.grid(row=4, column=0, sticky="w", pady=(0, 8))
+        self.options_toggle.grid(row=5, column=0, sticky="w", pady=(0, 4))
 
         self.advanced = ctk.CTkFrame(page, fg_color="#1C1A25", corner_radius=14,
                                      border_width=1, border_color="#302B3A")
         self.advanced.grid_columnconfigure(0, weight=1)
-        ctk.CTkLabel(self.advanced, text="Formato de audio",
-                     text_color="#C8BED2", font=ctk.CTkFont(size=12)
-                     ).grid(row=0, column=0, sticky="w", padx=16, pady=(14, 5))
-        ctk.CTkOptionMenu(
-            self.advanced, variable=self.audio_format, values=list(FORMATS),
-            height=38, corner_radius=10, fg_color="#40364F",
-            button_color="#8872AE", button_hover_color="#9B86BB",
-            dropdown_fg_color="#211E2B",
-        ).grid(row=1, column=0, sticky="ew", padx=16, pady=(0, 12))
-        folder_row = ctk.CTkFrame(self.advanced, fg_color="transparent")
-        folder_row.grid(row=2, column=0, sticky="ew", padx=16, pady=(0, 10))
-        folder_row.grid_columnconfigure(0, weight=1)
-        ctk.CTkLabel(folder_row, text="Guardar en: Música/SOUNWD",
-                     text_color="#C8BED2", font=ctk.CTkFont(size=12)
-                     ).grid(row=0, column=0, sticky="w")
-        ctk.CTkButton(folder_row, text="Cambiar carpeta", width=130, height=32,
-                      fg_color="#40364F", hover_color="#554766",
-                      command=self._choose_folder).grid(row=0, column=1, padx=(8, 0))
         ctk.CTkCheckBox(
             self.advanced, text="El enlace contiene una lista: descargar todos los audios",
             variable=self.playlist, text_color="#C8BED2",
             fg_color="#8872AE", hover_color="#9B86BB",
             font=ctk.CTkFont(size=11),
-        ).grid(row=3, column=0, sticky="w", padx=16, pady=(0, 14))
+        ).pack(anchor="w", padx=16, pady=13)
 
         self.action_card = ctk.CTkFrame(page, fg_color="#211E2B", corner_radius=18,
                                         border_width=1, border_color="#332D40")
-        self.action_card.grid(row=6, column=0, sticky="ew", pady=(8, 0))
+        self.action_card.grid(row=7, column=0, sticky="ew", pady=(8, 0))
         self.action_card.grid_columnconfigure(0, weight=1)
         self.status_label = ctk.CTkLabel(
             self.action_card, text="2.  Pulsa el botón y espera un momento.",
@@ -160,18 +179,18 @@ class SoundwApp(ctk.CTk):
         ctk.CTkLabel(
             page, text="Solo descarga contenido que tengas permiso para guardar.\nSOUNWD no descarga música desde Spotify.",
             text_color="#81798A", justify="center", font=ctk.CTkFont(size=10),
-        ).grid(row=7, column=0, pady=(18, 0))
+        ).grid(row=8, column=0, pady=(18, 0))
 
     def _toggle_advanced(self) -> None:
         self.advanced_visible = not self.advanced_visible
         if self.advanced_visible:
-            self.advanced.grid(row=5, column=0, sticky="ew", pady=(0, 10))
+            self.advanced.grid(row=6, column=0, sticky="ew", pady=(0, 8))
             self.options_toggle.configure(text="−  Ocultar opciones")
-            self.action_card.grid_configure(row=6)
+            self.action_card.grid_configure(row=7)
         else:
             self.advanced.grid_remove()
             self.options_toggle.configure(text="＋  Más opciones")
-            self.action_card.grid_configure(row=5)
+            self.action_card.grid_configure(row=7)
 
     def _choose_folder(self) -> None:
         selected = filedialog.askdirectory(
@@ -212,7 +231,7 @@ class SoundwApp(ctk.CTk):
         except OSError:
             messagebox.showerror(
                 "No encuentro la carpeta",
-                "No he podido preparar la carpeta para guardar tu música. Prueba a elegir otra en «Más opciones».",
+                "No he podido preparar la carpeta para guardar tu música. Pulsa «Elegir» y selecciona otra carpeta.",
             )
             return
 

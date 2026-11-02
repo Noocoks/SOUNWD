@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import queue
 import subprocess
@@ -15,8 +16,19 @@ import yt_dlp
 
 APP_NAME = "SOUNWD"
 DEFAULT_FOLDER = Path.home() / "Downloads"
+if os.name == "nt":
+    CONFIG_DIR = Path(os.environ.get("APPDATA", str(Path.home()))) / "SOUNWD"
+else:
+    CONFIG_DIR = Path.home() / ".config" / "SOUNWD"
+PREFERENCES_FILE = CONFIG_DIR / "preferences.json"
 FORMATS = {"MP3 (recomendado)": "mp3", "M4A": "m4a", "FLAC": "flac", "OPUS": "opus", "WAV": "wav"}
 SUPPORTED_HOSTS = {"youtube.com", "www.youtube.com", "music.youtube.com", "m.youtube.com", "youtu.be"}
+ACCENTS = {
+    "Lavanda": "#8872AE",
+    "Azul": "#6686B8",
+    "Verde salvia": "#739887",
+    "Rosa": "#B77F9B",
+}
 
 
 def valid_url(value: str) -> bool:
@@ -34,8 +46,8 @@ class SoundwApp(ctk.CTk):
     def __init__(self) -> None:
         super().__init__()
         self.title("SOUNWD · Tu sonido. Tus momentos.")
-        self.geometry("760x650")
-        self.minsize(620, 570)
+        self.geometry("820x760")
+        self.minsize(680, 680)
         self.configure(fg_color="#12111A")
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("dark-blue")
@@ -43,11 +55,27 @@ class SoundwApp(ctk.CTk):
         self.events: queue.Queue[tuple[str, object]] = queue.Queue()
         self.downloading = False
         self.advanced_visible = False
-        self.destination = ctk.StringVar(value=str(DEFAULT_FOLDER))
-        self.audio_format = ctk.StringVar(value="MP3 (recomendado)")
-        self.playlist = ctk.BooleanVar(value=False)
+        preferences = self._load_preferences()
+        self.destination = ctk.StringVar(value=preferences.get("destination", str(DEFAULT_FOLDER)))
+        self.audio_format = ctk.StringVar(value=preferences.get("audio_format", "MP3 (recomendado)"))
+        self.playlist = ctk.BooleanVar(value=preferences.get("playlist", False))
+        self.appearance = ctk.StringVar(value=preferences.get("appearance", "Oscuro"))
+        self.accent = ctk.StringVar(value=preferences.get("accent", "Lavanda"))
+        self.quality = ctk.StringVar(value=preferences.get("quality", "Máxima"))
+        self.filename_style = ctk.StringVar(value=preferences.get("filename_style", "Solo título"))
+        if self.audio_format.get() not in FORMATS:
+            self.audio_format.set("MP3 (recomendado)")
+        if self.appearance.get() not in {"Oscuro", "Claro", "Sistema"}:
+            self.appearance.set("Oscuro")
+        if self.accent.get() not in ACCENTS:
+            self.accent.set("Lavanda")
+        if self.quality.get() not in {"Máxima", "Alta", "Normal"}:
+            self.quality.set("Máxima")
+        if self.filename_style.get() not in {"Solo título", "Título y canal"}:
+            self.filename_style.set("Solo título")
 
         self._build_ui()
+        self._apply_personalization()
         self.after(120, self._process_events)
 
     def _build_ui(self) -> None:
@@ -67,10 +95,10 @@ class SoundwApp(ctk.CTk):
         ctk.CTkLabel(brand, text="YOUR SOUND. YOUR MOMENTS.",
                      text_color="#A69CAF", font=ctk.CTkFont(size=10, weight="bold")).pack()
 
-        ctk.CTkLabel(page, text="Tu música, en tus manos.",
+        ctk.CTkLabel(page, text="Tu música. Tu espacio. Tu estilo.",
                      text_color="#F4EFFA", font=ctk.CTkFont(size=25, weight="bold")
                      ).grid(row=1, column=0, pady=(0, 7))
-        ctk.CTkLabel(page, text="Pega el enlace de tu audio y nosotros hacemos el resto.",
+        ctk.CTkLabel(page, text="Un lugar tranquilo para guardar los sonidos que te acompañan.",
                      text_color="#B6ADBF", font=ctk.CTkFont(size=13)
                      ).grid(row=2, column=0, pady=(0, 24))
 
@@ -129,22 +157,64 @@ class SoundwApp(ctk.CTk):
         ).grid(row=0, column=1, padx=(6, 0))
 
         self.options_toggle = ctk.CTkButton(
-            page, text="＋  Más opciones", height=30, width=145,
+            page, text="＋  Personalizar experiencia", height=30, width=145,
             fg_color="transparent", hover_color="#282333",
             text_color="#C5B6D8", anchor="w",
             font=ctk.CTkFont(size=11), command=self._toggle_advanced,
         )
         self.options_toggle.grid(row=5, column=0, sticky="w", pady=(0, 4))
 
-        self.advanced = ctk.CTkFrame(page, fg_color="#1C1A25", corner_radius=14,
+        self.advanced = ctk.CTkFrame(page, fg_color="#1C1A25", corner_radius=16,
                                      border_width=1, border_color="#302B3A")
-        self.advanced.grid_columnconfigure(0, weight=1)
-        ctk.CTkCheckBox(
-            self.advanced, text="El enlace contiene una lista: descargar todos los audios",
-            variable=self.playlist, text_color="#C8BED2",
-            fg_color="#8872AE", hover_color="#9B86BB",
+        self.advanced.grid_columnconfigure((0, 1), weight=1, uniform="personal")
+        ctk.CTkLabel(self.advanced, text="APARIENCIA",
+                     text_color="#C9B8E8", font=ctk.CTkFont(size=10, weight="bold")
+                     ).grid(row=0, column=0, sticky="w", padx=14, pady=(13, 5))
+        self.appearance_menu = ctk.CTkOptionMenu(
+            self.advanced, variable=self.appearance,
+            values=["Oscuro", "Claro", "Sistema"], command=self._preference_changed,
+            height=34, fg_color="#40364F", button_color="#8872AE",
+            dropdown_fg_color="#211E2B",
+        )
+        self.appearance_menu.grid(row=1, column=0, sticky="ew", padx=12, pady=(0, 10))
+        ctk.CTkLabel(self.advanced, text="COLOR DE ACENTO",
+                     text_color="#C9B8E8", font=ctk.CTkFont(size=10, weight="bold")
+                     ).grid(row=0, column=1, sticky="w", padx=14, pady=(13, 5))
+        self.accent_menu = ctk.CTkOptionMenu(
+            self.advanced, variable=self.accent, values=list(ACCENTS),
+            command=self._preference_changed, height=34,
+            fg_color="#40364F", button_color="#8872AE",
+            dropdown_fg_color="#211E2B",
+        )
+        self.accent_menu.grid(row=1, column=1, sticky="ew", padx=12, pady=(0, 10))
+        ctk.CTkLabel(self.advanced, text="CALIDAD DEL AUDIO",
+                     text_color="#C9B8E8", font=ctk.CTkFont(size=10, weight="bold")
+                     ).grid(row=2, column=0, sticky="w", padx=14, pady=(3, 5))
+        self.quality_menu = ctk.CTkOptionMenu(
+            self.advanced, variable=self.quality,
+            values=["Máxima", "Alta", "Normal"], command=self._preference_changed,
+            height=34, fg_color="#40364F", button_color="#8872AE",
+            dropdown_fg_color="#211E2B",
+        )
+        self.quality_menu.grid(row=3, column=0, sticky="ew", padx=12, pady=(0, 10))
+        ctk.CTkLabel(self.advanced, text="NOMBRE DEL ARCHIVO",
+                     text_color="#C9B8E8", font=ctk.CTkFont(size=10, weight="bold")
+                     ).grid(row=2, column=1, sticky="w", padx=14, pady=(3, 5))
+        self.filename_menu = ctk.CTkOptionMenu(
+            self.advanced, variable=self.filename_style,
+            values=["Solo título", "Título y canal"], command=self._preference_changed,
+            height=34, fg_color="#40364F", button_color="#8872AE",
+            dropdown_fg_color="#211E2B",
+        )
+        self.filename_menu.grid(row=3, column=1, sticky="ew", padx=12, pady=(0, 10))
+        self.playlist_check = ctk.CTkCheckBox(
+            self.advanced, text="Descargar la lista completa si el enlace contiene una",
+            variable=self.playlist, command=self._save_preferences,
+            text_color="#C8BED2", fg_color="#8872AE", hover_color="#9B86BB",
             font=ctk.CTkFont(size=11),
-        ).pack(anchor="w", padx=16, pady=13)
+        )
+        self.playlist_check.grid(row=4, column=0, columnspan=2, sticky="w",
+                                 padx=14, pady=(0, 13))
 
         self.action_card = ctk.CTkFrame(page, fg_color="#211E2B", corner_radius=18,
                                         border_width=1, border_color="#332D40")
@@ -181,11 +251,61 @@ class SoundwApp(ctk.CTk):
             text_color="#81798A", justify="center", font=ctk.CTkFont(size=10),
         ).grid(row=8, column=0, pady=(18, 0))
 
+    def _load_preferences(self) -> dict:
+        try:
+            if PREFERENCES_FILE.exists():
+                with PREFERENCES_FILE.open("r", encoding="utf-8") as handle:
+                    data = json.load(handle)
+                return data if isinstance(data, dict) else {}
+        except (OSError, json.JSONDecodeError):
+            pass
+        return {}
+
+    def _save_preferences(self) -> None:
+        data = {
+            "destination": self.destination.get(),
+            "audio_format": self.audio_format.get(),
+            "playlist": self.playlist.get(),
+            "appearance": self.appearance.get(),
+            "accent": self.accent.get(),
+            "quality": self.quality.get(),
+            "filename_style": self.filename_style.get(),
+        }
+        try:
+            CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+            with PREFERENCES_FILE.open("w", encoding="utf-8") as handle:
+                json.dump(data, handle, ensure_ascii=False, indent=2)
+        except OSError:
+            pass
+
+    def _preference_changed(self, _value: str = "") -> None:
+        self._apply_personalization()
+        self._save_preferences()
+
+    def _apply_personalization(self) -> None:
+        mode = {"Oscuro": "Dark", "Claro": "Light", "Sistema": "System"}.get(
+            self.appearance.get(), "Dark"
+        )
+        ctk.set_appearance_mode(mode)
+        color = ACCENTS.get(self.accent.get(), ACCENTS["Lavanda"])
+        for widget_name in ("download_button", "appearance_menu", "accent_menu",
+                            "quality_menu", "filename_menu"):
+            widget = getattr(self, widget_name, None)
+            if widget is not None:
+                if widget_name == "download_button":
+                    widget.configure(fg_color=color, hover_color=color)
+                else:
+                    widget.configure(button_color=color, button_hover_color=color)
+        if hasattr(self, "progress"):
+            self.progress.configure(progress_color=color)
+        if hasattr(self, "playlist_check"):
+            self.playlist_check.configure(fg_color=color, hover_color=color)
+
     def _toggle_advanced(self) -> None:
         self.advanced_visible = not self.advanced_visible
         if self.advanced_visible:
             self.advanced.grid(row=6, column=0, sticky="ew", pady=(0, 8))
-            self.options_toggle.configure(text="−  Ocultar opciones")
+            self.options_toggle.configure(text="−  Ocultar personalización")
             self.action_card.grid_configure(row=7)
         else:
             self.advanced.grid_remove()
@@ -209,6 +329,7 @@ class SoundwApp(ctk.CTk):
         if selected:
             self.destination.set(selected)
             self.folder_label.configure(text=self._short_path(selected))
+            self._save_preferences()
 
     def _open_folder(self) -> None:
         folder = Path(self.destination.get()).expanduser()
@@ -245,6 +366,7 @@ class SoundwApp(ctk.CTk):
             )
             return
 
+        self._save_preferences()
         self.downloading = True
         self.download_button.configure(state="disabled", text="Un momento…")
         self.open_folder_button.configure(state="disabled")
@@ -267,17 +389,19 @@ class SoundwApp(ctk.CTk):
             elif data.get("status") == "finished":
                 self.events.put(("progress", (0.98, "Preparando el archivo…")))
 
+        quality = {"Máxima": "0", "Alta": "192", "Normal": "128"}.get(self.quality.get(), "0")
+        filename = "%(title)s" if self.filename_style.get() == "Solo título" else "%(title)s - %(uploader)s"
         options = {
             "format": "bestaudio/best",
             "ffmpeg_location": imageio_ffmpeg.get_ffmpeg_exe(),
-            "outtmpl": str(destination / "%(title)s.%(ext)s"),
+            "outtmpl": str(destination / (filename + ".%(ext)s")),
             "noplaylist": not playlist,
             "windowsfilenames": True,
             "quiet": True,
             "no_warnings": True,
             "progress_hooks": [hook],
             "postprocessors": [
-                {"key": "FFmpegExtractAudio", "preferredcodec": audio_format, "preferredquality": "0"},
+                {"key": "FFmpegExtractAudio", "preferredcodec": audio_format, "preferredquality": quality},
             ],
         }
         try:

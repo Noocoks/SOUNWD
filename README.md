@@ -1,48 +1,54 @@
 # SOUNWD. — Your sound. Your moments.
 
-**SOUNWD** es tu pequeño espacio para guardar los sonidos que forman parte de tus momentos. Una aplicación de escritorio sencilla, con una interfaz tranquila y personalizable, construida con Python, CustomTkinter y yt-dlp.
+**SOUNWD** guarda en tu ordenador el audio de enlaces compatibles de YouTube y YouTube Music. Está pensado para que usarlo sea tan sencillo como copiar, pegar y pulsar un botón.
 
-> Utiliza SOUNWD únicamente con contenido que tengas derecho a descargar y respeta las condiciones de la plataforma y las licencias aplicables. SOUNWD no descarga música desde Spotify.
+> Usa SOUNWD solo con contenido que tengas derecho a descargar. Respeta los derechos de autor, las licencias y las condiciones de cada plataforma. No descarga música desde Spotify.
 
-## Abrir SOUNWD
+## Descargar SOUNWD
 
-Estamos preparando versiones independientes para Windows y Linux. Cuando la compilación esté disponible, podrás descargarlas desde [Actions](https://github.com/Noocoks/music-downloader/actions), en los artefactos de la ejecución más reciente. La compilación debe finalizar correctamente antes de que aparezcan.
+No necesitas instalar Python ni abrir una terminal si descargas la aplicación ya compilada.
 
-### Windows — doble clic
+1. Entra en [Descargas de SOUNWD](https://github.com/Noocoks/music-downloader/actions).
+2. Abre la ejecución más reciente que tenga una marca verde de éxito.
+3. Baja hasta **Artifacts** y descarga el archivo de tu sistema:
+   - **SOUNWD-Windows** para Windows.
+   - **SOUNWD-Linux** para Linux.
+4. Extrae el ZIP en una carpeta de tu elección.
 
-1. Instala Python 3.10 o superior desde [python.org](https://www.python.org/downloads/) (activa Python Launcher durante la instalación).
-2. Abre la carpeta del proyecto.
-3. Haz doble clic en **Windows/Abrir Sonora.vbs**.
+### Windows
 
-La primera vez aparecerá una ventana de preparación. SOUNWD creará un entorno aislado e instalará sus dependencias. En los siguientes inicios abrirá directamente.
+Haz doble clic en **SOUNWD.exe**. Si Windows muestra SmartScreen, comprueba que lo has descargado de este repositorio y elige «Más información» → «Ejecutar de todas formas» si confías en el archivo.
 
-### Linux — acceso directo
+### Linux
 
-Necesitas Python 3.10 o superior y los componentes Tkinter/venv de tu distribución (en Ubuntu y derivadas: `python3-tk` y `python3-venv`).
+Haz clic derecho sobre **SOUNWD**, abre Propiedades → Permisos y activa «Permitir ejecutar el archivo como un programa». Después, haz doble clic y selecciona «Ejecutar».
 
-1. Abre la carpeta del proyecto.
-2. Ejecuta **Linux/Instalar acceso directo.sh** desde el gestor de archivos (si aparece una opción, elige «Ejecutar»).
-3. Abre **SOUNWD.desktop** desde el Escritorio.
+## Cómo usarlo
 
-La primera vez aparecerá la ventana de preparación y se instalarán automáticamente las dependencias Python en un entorno aislado.
+1. Copia el enlace del audio en YouTube.
+2. Pégalo en el recuadro de SOUNWD.
+3. Pulsa **Guardar audio**.
+4. Cuando termine, pulsa **Abrir mi carpeta de música**.
 
-## Tu música, a tu manera
+¡Eso es todo! Por defecto, los archivos se guardan en la carpeta **Música/SOUNWD** y en formato **MP3**.
 
-- Interfaz gráfica oscura y serena, con tonos lavanda.
-- Enlaces de YouTube y YouTube Music.
-- Formatos MP3, M4A/AAC, FLAC, OPUS y WAV.
-- Carpeta de destino elegible.
+Si quieres cambiar el formato, la carpeta o descargar una lista completa, abre **Más opciones**. No necesitas tocar nada de ahí para una descarga normal.
+
+## Qué incluye
+
+- Interfaz sencilla y tranquila, con tonos lavanda.
+- Formato MP3 predeterminado; también M4A, FLAC, OPUS y WAV.
+- Carpeta de destino personalizable.
 - Descargas individuales o listas de reproducción.
-- Barra de progreso y avisos claros.
+- Indicador de progreso y mensajes fáciles de entender.
+- Aplicaciones independientes compiladas para Windows y Linux.
 
 ## Desarrollo
 
-- `bootstrap.py`: prepara el entorno e inicia la aplicación.
-- `src/gui.py`: interfaz gráfica SOUNWD.
+- `src/gui.py`: interfaz gráfica.
 - `src/cli.py`: versión de terminal.
+- `bootstrap.py`: instalador de dependencias para desarrollo.
 - `requirements.txt`: dependencias Python.
-- `Windows/` y `Linux/`: lanzadores.
+- `.github/workflows/build.yml`: compilación automática de las aplicaciones.
 
-## Aviso
-
-SOUNWD utiliza yt-dlp como herramienta de descarga. El usuario es responsable de comprobar que tiene los derechos y permisos necesarios para descargar y utilizar cada contenido.
+SOUNWD utiliza yt-dlp y FFmpeg para procesar audio.

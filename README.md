@@ -30,7 +30,7 @@ Haz clic derecho sobre **SOUNWD**, abre Propiedades → Permisos y activa «Perm
 3. Pulsa **Guardar audio**.
 4. Cuando termine, pulsa **Abrir mi carpeta de música**.
 
-¡Eso es todo! Por defecto, los archivos se guardan en la carpeta **Música/SOUNWD** y en formato **MP3**.
+¡Eso es todo! Por defecto, los archivos se guardan en la carpeta **Descargas** (Downloads) y en formato **MP3**. Puedes cambiar ambas cosas directamente desde la pantalla principal.
 
 Si quieres cambiar el formato, la carpeta o descargar una lista completa, abre **Más opciones**. No necesitas tocar nada de ahí para una descarga normal.
 

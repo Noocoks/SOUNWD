@@ -10,8 +10,8 @@ import yt_dlp
 from tkinter import filedialog, messagebox
 
 
-APP_TITLE = "SONORA"
-DEFAULT_FOLDER = Path.home() / "Music" / "Sonora"
+APP_TITLE = "SOUNWD"
+DEFAULT_FOLDER = Path.home() / "Music" / "SOUNWD"
 SUPPORTED_HOSTS = {
     "youtube.com", "www.youtube.com", "music.youtube.com",
     "m.youtube.com", "youtu.be",
@@ -36,15 +36,15 @@ def valid_url(value: str) -> bool:
         return False
 
 
-class SonoraApp(ctk.CTk):
+class SoundwApp(ctk.CTk):
     def __init__(self) -> None:
         super().__init__()
-        self.title("Sonora · Music Downloader")
-        self.geometry("980x720")
-        self.minsize(840, 650)
+        self.title("SOUNWD · Your sound. Your moments.")
+        self.geometry("1000x740")
+        self.minsize(860, 680)
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("dark-blue")
-        self.configure(fg_color="#0B0D14")
+        self.configure(fg_color="#11111A")
 
         self.events: queue.Queue[tuple[str, object]] = queue.Queue()
         self.downloading = False
@@ -59,7 +59,7 @@ class SonoraApp(ctk.CTk):
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        sidebar = ctk.CTkFrame(self, width=220, corner_radius=0, fg_color="#10131D")
+        sidebar = ctk.CTkFrame(self, width=220, corner_radius=0, fg_color="#191824")
         sidebar.grid(row=0, column=0, sticky="nsew")
         sidebar.grid_propagate(False)
 
@@ -67,20 +67,20 @@ class SonoraApp(ctk.CTk):
         brand.pack(fill="x", padx=25, pady=(34, 38))
         ctk.CTkLabel(
             brand, text="♫", font=ctk.CTkFont(size=34, weight="bold"),
-            text_color="#A78BFA",
+            text_color="#C6B5E8",
         ).pack(anchor="w")
         ctk.CTkLabel(
             brand, text="SONORA", font=ctk.CTkFont(size=23, weight="bold"),
             text_color="#F5F3FF",
         ).pack(anchor="w", pady=(2, 0))
         ctk.CTkLabel(
-            brand, text="MUSIC DOWNLOADER", font=ctk.CTkFont(size=10, weight="bold"),
-            text_color="#777C91",
+            brand, text="YOUR PERSONAL SOUNDSPACE", font=ctk.CTkFont(size=10, weight="bold"),
+            text_color="#898294",
         ).pack(anchor="w", pady=(1, 0))
 
         ctk.CTkLabel(
             sidebar, text="TU ESPACIO", font=ctk.CTkFont(size=10, weight="bold"),
-            text_color="#777C91",
+            text_color="#898294",
         ).pack(anchor="w", padx=25, pady=(0, 12))
         self._nav_item(sidebar, "↓   Descargar", active=True)
         self._nav_item(sidebar, "♫   Tu biblioteca", active=False)
@@ -89,12 +89,12 @@ class SonoraApp(ctk.CTk):
         sidebar_bottom.pack(side="bottom", fill="x", padx=22, pady=24)
         ctk.CTkLabel(
             sidebar_bottom, text="Hecho para disfrutar\nde la música.",
-            justify="left", text_color="#777C91",
+            justify="left", text_color="#898294",
             font=ctk.CTkFont(size=12),
         ).pack(anchor="w")
         ctk.CTkLabel(
-            sidebar_bottom, text="SONORA  ·  v0.2",
-            text_color="#555B70", font=ctk.CTkFont(size=10),
+            sidebar_bottom, text="SOUNWD  ·  v0.3",
+            text_color="#716A7B", font=ctk.CTkFont(size=10),
         ).pack(anchor="w", pady=(15, 0))
 
         content = ctk.CTkFrame(self, fg_color="transparent")
@@ -102,23 +102,23 @@ class SonoraApp(ctk.CTk):
         content.grid_columnconfigure(0, weight=1)
 
         ctk.CTkLabel(
-            content, text="Tu música, a tu manera.",
-            font=ctk.CTkFont(size=30, weight="bold"), text_color="#F4F1FF",
+            content, text="Tu sonido. Tus momentos.",
+            font=ctk.CTkFont(size=30, weight="bold"), text_color="#F2EDF8",
         ).grid(row=0, column=0, sticky="w")
         ctk.CTkLabel(
-            content, text="Pega un enlace y nosotros nos encargamos del resto.",
-            font=ctk.CTkFont(size=13), text_color="#9297AA",
+            content, text="Guarda los sonidos que acompañan tus días.",
+            font=ctk.CTkFont(size=13), text_color="#AAA3B5",
         ).grid(row=1, column=0, sticky="w", pady=(6, 25))
 
         link_card = self._card(content, 2)
         ctk.CTkLabel(
-            link_card, text="01  ·  ENLACE",
-            font=ctk.CTkFont(size=11, weight="bold"), text_color="#A78BFA",
+            link_card, text="01  ·  ENLACE DE AUDIO",
+            font=ctk.CTkFont(size=11, weight="bold"), text_color="#C6B5E8",
         ).pack(anchor="w", padx=22, pady=(19, 10))
         self.url_entry = ctk.CTkEntry(
             link_card, height=48, corner_radius=12,
             placeholder_text="https://www.youtube.com/watch?v=…",
-            border_color="#303448", fg_color="#141826",
+            border_color="#3B3549", fg_color="#191824",
             font=ctk.CTkFont(size=13),
         )
         self.url_entry.pack(fill="x", padx=22, pady=(0, 18))
@@ -130,30 +130,30 @@ class SonoraApp(ctk.CTk):
         format_card = self._card(options, 0, in_columns=True)
         ctk.CTkLabel(
             format_card, text="02  ·  FORMATO",
-            font=ctk.CTkFont(size=11, weight="bold"), text_color="#A78BFA",
+            font=ctk.CTkFont(size=11, weight="bold"), text_color="#C6B5E8",
         ).pack(anchor="w", padx=20, pady=(18, 9))
         ctk.CTkOptionMenu(
             format_card, variable=self.audio_format, values=list(FORMATS),
-            height=42, corner_radius=10, fg_color="#292341",
-            button_color="#7255C7", button_hover_color="#886CE0",
+            height=42, corner_radius=10, fg_color="#30283D",
+            button_color="#8872AE", button_hover_color="#A08AC5",
             dropdown_fg_color="#191D2B",
         ).pack(fill="x", padx=20, pady=(0, 18))
 
         dest_card = self._card(options, 1, in_columns=True)
         ctk.CTkLabel(
-            dest_card, text="03  ·  CARPETA DE DESTINO",
-            font=ctk.CTkFont(size=11, weight="bold"), text_color="#A78BFA",
+            dest_card, text="03  ·  DÓNDE GUARDARLO",
+            font=ctk.CTkFont(size=11, weight="bold"), text_color="#C6B5E8",
         ).pack(anchor="w", padx=20, pady=(18, 9))
         dest_row = ctk.CTkFrame(dest_card, fg_color="transparent")
         dest_row.pack(fill="x", padx=20, pady=(0, 18))
         self.dest_label = ctk.CTkLabel(
             dest_row, text=self._short_path(self.destination.get()),
-            text_color="#C8CAD6", font=ctk.CTkFont(size=11), anchor="w",
+            text_color="#D2CBD9", font=ctk.CTkFont(size=11), anchor="w",
         )
         self.dest_label.pack(side="left", fill="x", expand=True)
         ctk.CTkButton(
             dest_row, text="Elegir", width=70, height=34,
-            corner_radius=9, fg_color="#292341", hover_color="#403260",
+            corner_radius=9, fg_color="#30283D", hover_color="#4A405B",
             command=self._choose_folder,
         ).pack(side="right", padx=(8, 0))
 
@@ -162,30 +162,30 @@ class SonoraApp(ctk.CTk):
         ctk.CTkCheckBox(
             playlist_row, text="Es una lista de reproducción",
             variable=self.playlist, font=ctk.CTkFont(size=12),
-            text_color="#C8CAD6", fg_color="#8063D5",
-            hover_color="#9B82E8", border_color="#555B70",
+            text_color="#D2CBD9", fg_color="#8872AE",
+            hover_color="#9B82E8", border_color="#716A7B",
         ).pack(side="left")
 
         action_card = self._card(content, 5)
         ctk.CTkLabel(
-            action_card, text="TODO LISTO",
-            font=ctk.CTkFont(size=11, weight="bold"), text_color="#A78BFA",
+            action_card, text="A TU RITMO",
+            font=ctk.CTkFont(size=11, weight="bold"), text_color="#C6B5E8",
         ).pack(anchor="w", padx=22, pady=(18, 5))
         self.status_label = ctk.CTkLabel(
-            action_card, text="Preparado para empezar",
-            text_color="#9297AA", font=ctk.CTkFont(size=12),
+            action_card, text="Cuando quieras, empezamos.",
+            text_color="#AAA3B5", font=ctk.CTkFont(size=12),
         )
         self.status_label.pack(anchor="w", padx=22, pady=(0, 12))
         self.progress = ctk.CTkProgressBar(
             action_card, height=8, corner_radius=8,
-            progress_color="#9B7AF4", fg_color="#282B3A",
+            progress_color="#B5A0D7", fg_color="#373242",
         )
         self.progress.pack(fill="x", padx=22, pady=(0, 16))
         self.progress.set(0)
         self.download_button = ctk.CTkButton(
-            action_card, text="↓   Descargar audio", height=48,
+            action_card, text="↓   Guardar mi música", height=48,
             corner_radius=12, font=ctk.CTkFont(size=14, weight="bold"),
-            fg_color="#8063D5", hover_color="#9679E8",
+            fg_color="#8872AE", hover_color="#A08AC5",
             command=self._start_download,
         )
         self.download_button.pack(fill="x", padx=22, pady=(0, 20))
@@ -194,22 +194,22 @@ class SonoraApp(ctk.CTk):
             content,
             text="Descarga únicamente contenido que tengas derecho a guardar.\n"
                  "Sonora usa yt-dlp y no descarga música desde Spotify.",
-            text_color="#666C80", justify="left",
+            text_color="#898294", justify="left",
             font=ctk.CTkFont(size=10),
         ).grid(row=6, column=0, sticky="w", pady=(16, 0))
 
     def _nav_item(self, parent: ctk.CTkFrame, text: str, active: bool) -> None:
         ctk.CTkLabel(
             parent, text=text, height=42, corner_radius=10, anchor="w",
-            padx=14, fg_color="#252039" if active else "transparent",
-            text_color="#E9E4FF" if active else "#858A9D",
+            padx=14, fg_color="#30283D" if active else "transparent",
+            text_color="#F2EDF8" if active else "#A39BAC",
             font=ctk.CTkFont(size=13, weight="bold" if active else "normal"),
         ).pack(fill="x", padx=14, pady=3)
 
     def _card(self, parent: ctk.CTkFrame, row: int, in_columns: bool = False) -> ctk.CTkFrame:
         card = ctk.CTkFrame(
-            parent, corner_radius=16, fg_color="#151927",
-            border_width=1, border_color="#252B3B",
+            parent, corner_radius=16, fg_color="#201E2B",
+            border_width=1, border_color="#302C3B",
         )
         if in_columns:
             card.grid(row=0, column=row, sticky="nsew",
@@ -239,7 +239,7 @@ class SonoraApp(ctk.CTk):
         if not valid_url(url):
             messagebox.showwarning(
                 "Enlace no válido",
-                "Pega un enlace válido de YouTube o YouTube Music.",
+                "Pega un enlace válido de YouTube o YouTube Music para continuar.",
             )
             return
 
@@ -331,7 +331,7 @@ class SonoraApp(ctk.CTk):
 
 
 def main() -> None:
-    app = SonoraApp()
+    app = SoundwApp()
     app.mainloop()
 
 

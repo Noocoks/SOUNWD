@@ -1,0 +1,1 @@
+@echo off\nsetlocal\ncd /d "%~dp0\\.."\npython -m src.main\nif errorlevel 1 (\n  echo.\n  echo El programa ha terminado con un error.\n)\npause\n

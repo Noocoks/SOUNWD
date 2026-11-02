@@ -1,36 +1,30 @@
 from __future__ import annotations
 
+import os
 import queue
+import subprocess
 import threading
 from pathlib import Path
 from urllib.parse import urlparse
-
-import customtkinter as ctk
-import yt_dlp
 from tkinter import filedialog, messagebox
 
+import customtkinter as ctk
+import imageio_ffmpeg
+import yt_dlp
 
-APP_TITLE = "SOUNWD"
-DEFAULT_FOLDER = Path.home() / "Music" / "SOUNWD"
-SUPPORTED_HOSTS = {
-    "youtube.com", "www.youtube.com", "music.youtube.com",
-    "m.youtube.com", "youtu.be",
-}
-FORMATS = {
-    "MP3": "mp3",
-    "M4A · AAC": "m4a",
-    "FLAC": "flac",
-    "OPUS": "opus",
-    "WAV": "wav",
-}
+
+APP_NAME = "SOUNWD"
+DEFAULT_FOLDER = Path.home() / "Music" / APP_NAME
+FORMATS = {"MP3 (recomendado)": "mp3", "M4A": "m4a", "FLAC": "flac", "OPUS": "opus", "WAV": "wav"}
+SUPPORTED_HOSTS = {"youtube.com", "www.youtube.com", "music.youtube.com", "m.youtube.com", "youtu.be"}
 
 
 def valid_url(value: str) -> bool:
     try:
         parsed = urlparse(value.strip())
-        return (
-            parsed.scheme in {"http", "https"}
-            and (parsed.hostname or "").lower() in SUPPORTED_HOSTS
+        host = (parsed.hostname or "").lower()
+        return parsed.scheme in {"http", "https"} and (
+            host in SUPPORTED_HOSTS or any(host.endswith("." + item) for item in SUPPORTED_HOSTS)
         )
     except ValueError:
         return False
@@ -39,229 +33,194 @@ def valid_url(value: str) -> bool:
 class SoundwApp(ctk.CTk):
     def __init__(self) -> None:
         super().__init__()
-        self.title("SOUNWD · Your sound. Your moments.")
-        self.geometry("1000x740")
-        self.minsize(860, 680)
+        self.title("SOUNWD · Tu sonido. Tus momentos.")
+        self.geometry("760x650")
+        self.minsize(620, 570)
+        self.configure(fg_color="#12111A")
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("dark-blue")
-        self.configure(fg_color="#11111A")
 
         self.events: queue.Queue[tuple[str, object]] = queue.Queue()
         self.downloading = False
+        self.advanced_visible = False
         self.destination = ctk.StringVar(value=str(DEFAULT_FOLDER))
-        self.audio_format = ctk.StringVar(value="M4A · AAC")
+        self.audio_format = ctk.StringVar(value="MP3 (recomendado)")
         self.playlist = ctk.BooleanVar(value=False)
 
         self._build_ui()
         self.after(120, self._process_events)
 
     def _build_ui(self) -> None:
-        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        sidebar = ctk.CTkFrame(self, width=220, corner_radius=0, fg_color="#191824")
-        sidebar.grid(row=0, column=0, sticky="nsew")
-        sidebar.grid_propagate(False)
+        page = ctk.CTkFrame(self, fg_color="transparent")
+        page.grid(row=0, column=0, sticky="nsew", padx=46, pady=30)
+        page.grid_columnconfigure(0, weight=1)
 
-        brand = ctk.CTkFrame(sidebar, fg_color="transparent")
-        brand.pack(fill="x", padx=25, pady=(34, 38))
-        ctk.CTkLabel(
-            brand, text="♫", font=ctk.CTkFont(size=34, weight="bold"),
-            text_color="#C6B5E8",
-        ).pack(anchor="w")
-        ctk.CTkLabel(
-            brand, text="SONORA", font=ctk.CTkFont(size=23, weight="bold"),
-            text_color="#F5F3FF",
-        ).pack(anchor="w", pady=(2, 0))
-        ctk.CTkLabel(
-            brand, text="YOUR PERSONAL SOUNDSPACE", font=ctk.CTkFont(size=10, weight="bold"),
-            text_color="#898294",
-        ).pack(anchor="w", pady=(1, 0))
+        brand = ctk.CTkFrame(page, fg_color="transparent")
+        brand.grid(row=0, column=0, sticky="ew", pady=(0, 28))
+        ctk.CTkLabel(brand, text="◖♪", text_color="#C8B6E8",
+                     font=ctk.CTkFont(size=30, weight="bold")).pack()
+        ctk.CTkLabel(brand, text="SOUNWD.", text_color="#F4EFFA",
+                     font=ctk.CTkFont(size=27, weight="bold")).pack(pady=(0, 2))
+        ctk.CTkLabel(brand, text="YOUR SOUND. YOUR MOMENTS.",
+                     text_color="#A69CAF", font=ctk.CTkFont(size=10, weight="bold")).pack()
 
-        ctk.CTkLabel(
-            sidebar, text="TU ESPACIO", font=ctk.CTkFont(size=10, weight="bold"),
-            text_color="#898294",
-        ).pack(anchor="w", padx=25, pady=(0, 12))
-        self._nav_item(sidebar, "↓   Descargar", active=True)
-        self._nav_item(sidebar, "♫   Tu biblioteca", active=False)
+        ctk.CTkLabel(page, text="Tu música, en tus manos.",
+                     text_color="#F4EFFA", font=ctk.CTkFont(size=25, weight="bold")
+                     ).grid(row=1, column=0, pady=(0, 7))
+        ctk.CTkLabel(page, text="Pega el enlace de tu audio y nosotros hacemos el resto.",
+                     text_color="#B6ADBF", font=ctk.CTkFont(size=13)
+                     ).grid(row=2, column=0, pady=(0, 24))
 
-        sidebar_bottom = ctk.CTkFrame(sidebar, fg_color="transparent")
-        sidebar_bottom.pack(side="bottom", fill="x", padx=22, pady=24)
-        ctk.CTkLabel(
-            sidebar_bottom, text="Hecho para disfrutar\nde la música.",
-            justify="left", text_color="#898294",
-            font=ctk.CTkFont(size=12),
-        ).pack(anchor="w")
-        ctk.CTkLabel(
-            sidebar_bottom, text="SOUNWD  ·  v0.3",
-            text_color="#716A7B", font=ctk.CTkFont(size=10),
-        ).pack(anchor="w", pady=(15, 0))
-
-        content = ctk.CTkFrame(self, fg_color="transparent")
-        content.grid(row=0, column=1, sticky="nsew", padx=42, pady=34)
-        content.grid_columnconfigure(0, weight=1)
-
-        ctk.CTkLabel(
-            content, text="Tu sonido. Tus momentos.",
-            font=ctk.CTkFont(size=30, weight="bold"), text_color="#F2EDF8",
-        ).grid(row=0, column=0, sticky="w")
-        ctk.CTkLabel(
-            content, text="Guarda los sonidos que acompañan tus días.",
-            font=ctk.CTkFont(size=13), text_color="#AAA3B5",
-        ).grid(row=1, column=0, sticky="w", pady=(6, 25))
-
-        link_card = self._card(content, 2)
-        ctk.CTkLabel(
-            link_card, text="01  ·  ENLACE DE AUDIO",
-            font=ctk.CTkFont(size=11, weight="bold"), text_color="#C6B5E8",
-        ).pack(anchor="w", padx=22, pady=(19, 10))
+        link_card = ctk.CTkFrame(page, fg_color="#211E2B", corner_radius=18,
+                                 border_width=1, border_color="#332D40")
+        link_card.grid(row=3, column=0, sticky="ew", pady=(0, 14))
+        link_card.grid_columnconfigure(0, weight=1)
+        ctk.CTkLabel(link_card, text="1.  PEGA AQUÍ EL ENLACE",
+                     text_color="#C9B8E8", font=ctk.CTkFont(size=11, weight="bold")
+                     ).grid(row=0, column=0, sticky="w", padx=20, pady=(18, 8))
         self.url_entry = ctk.CTkEntry(
-            link_card, height=48, corner_radius=12,
-            placeholder_text="https://www.youtube.com/watch?v=…",
-            border_color="#3B3549", fg_color="#191824",
+            link_card, height=52, corner_radius=12,
+            placeholder_text="Copia el enlace de YouTube y pégalo aquí",
+            border_color="#443B53", fg_color="#17151F",
+            text_color="#F4EFFA", placeholder_text_color="#8E8499",
             font=ctk.CTkFont(size=13),
         )
-        self.url_entry.pack(fill="x", padx=22, pady=(0, 18))
+        self.url_entry.grid(row=1, column=0, sticky="ew", padx=20, pady=(0, 18))
+        self.url_entry.bind("<Return>", lambda _event: self._start_download())
 
-        options = ctk.CTkFrame(content, fg_color="transparent")
-        options.grid(row=3, column=0, sticky="ew", pady=16)
-        options.grid_columnconfigure((0, 1), weight=1)
+        self.options_toggle = ctk.CTkButton(
+            page, text="＋  Más opciones", height=34, width=150,
+            fg_color="transparent", hover_color="#282333",
+            text_color="#C5B6D8", anchor="w",
+            font=ctk.CTkFont(size=12), command=self._toggle_advanced,
+        )
+        self.options_toggle.grid(row=4, column=0, sticky="w", pady=(0, 8))
 
-        format_card = self._card(options, 0, in_columns=True)
-        ctk.CTkLabel(
-            format_card, text="02  ·  FORMATO",
-            font=ctk.CTkFont(size=11, weight="bold"), text_color="#C6B5E8",
-        ).pack(anchor="w", padx=20, pady=(18, 9))
+        self.advanced = ctk.CTkFrame(page, fg_color="#1C1A25", corner_radius=14,
+                                     border_width=1, border_color="#302B3A")
+        self.advanced.grid_columnconfigure(0, weight=1)
+        ctk.CTkLabel(self.advanced, text="Formato de audio",
+                     text_color="#C8BED2", font=ctk.CTkFont(size=12)
+                     ).grid(row=0, column=0, sticky="w", padx=16, pady=(14, 5))
         ctk.CTkOptionMenu(
-            format_card, variable=self.audio_format, values=list(FORMATS),
-            height=42, corner_radius=10, fg_color="#30283D",
-            button_color="#8872AE", button_hover_color="#A08AC5",
-            dropdown_fg_color="#191D2B",
-        ).pack(fill="x", padx=20, pady=(0, 18))
-
-        dest_card = self._card(options, 1, in_columns=True)
-        ctk.CTkLabel(
-            dest_card, text="03  ·  DÓNDE GUARDARLO",
-            font=ctk.CTkFont(size=11, weight="bold"), text_color="#C6B5E8",
-        ).pack(anchor="w", padx=20, pady=(18, 9))
-        dest_row = ctk.CTkFrame(dest_card, fg_color="transparent")
-        dest_row.pack(fill="x", padx=20, pady=(0, 18))
-        self.dest_label = ctk.CTkLabel(
-            dest_row, text=self._short_path(self.destination.get()),
-            text_color="#D2CBD9", font=ctk.CTkFont(size=11), anchor="w",
-        )
-        self.dest_label.pack(side="left", fill="x", expand=True)
-        ctk.CTkButton(
-            dest_row, text="Elegir", width=70, height=34,
-            corner_radius=9, fg_color="#30283D", hover_color="#4A405B",
-            command=self._choose_folder,
-        ).pack(side="right", padx=(8, 0))
-
-        playlist_row = ctk.CTkFrame(content, fg_color="transparent")
-        playlist_row.grid(row=4, column=0, sticky="ew", pady=(0, 15))
+            self.advanced, variable=self.audio_format, values=list(FORMATS),
+            height=38, corner_radius=10, fg_color="#40364F",
+            button_color="#8872AE", button_hover_color="#9B86BB",
+            dropdown_fg_color="#211E2B",
+        ).grid(row=1, column=0, sticky="ew", padx=16, pady=(0, 12))
+        folder_row = ctk.CTkFrame(self.advanced, fg_color="transparent")
+        folder_row.grid(row=2, column=0, sticky="ew", padx=16, pady=(0, 10))
+        folder_row.grid_columnconfigure(0, weight=1)
+        ctk.CTkLabel(folder_row, text="Guardar en: Música/SOUNWD",
+                     text_color="#C8BED2", font=ctk.CTkFont(size=12)
+                     ).grid(row=0, column=0, sticky="w")
+        ctk.CTkButton(folder_row, text="Cambiar carpeta", width=130, height=32,
+                      fg_color="#40364F", hover_color="#554766",
+                      command=self._choose_folder).grid(row=0, column=1, padx=(8, 0))
         ctk.CTkCheckBox(
-            playlist_row, text="Es una lista de reproducción",
-            variable=self.playlist, font=ctk.CTkFont(size=12),
-            text_color="#D2CBD9", fg_color="#8872AE",
-            hover_color="#9B82E8", border_color="#716A7B",
-        ).pack(side="left")
+            self.advanced, text="El enlace contiene una lista: descargar todos los audios",
+            variable=self.playlist, text_color="#C8BED2",
+            fg_color="#8872AE", hover_color="#9B86BB",
+            font=ctk.CTkFont(size=11),
+        ).grid(row=3, column=0, sticky="w", padx=16, pady=(0, 14))
 
-        action_card = self._card(content, 5)
-        ctk.CTkLabel(
-            action_card, text="A TU RITMO",
-            font=ctk.CTkFont(size=11, weight="bold"), text_color="#C6B5E8",
-        ).pack(anchor="w", padx=22, pady=(18, 5))
+        self.action_card = ctk.CTkFrame(page, fg_color="#211E2B", corner_radius=18,
+                                        border_width=1, border_color="#332D40")
+        self.action_card.grid(row=5, column=0, sticky="ew", pady=(8, 0))
+        self.action_card.grid_columnconfigure(0, weight=1)
         self.status_label = ctk.CTkLabel(
-            action_card, text="Cuando quieras, empezamos.",
-            text_color="#AAA3B5", font=ctk.CTkFont(size=12),
+            self.action_card, text="2.  Pulsa el botón y espera un momento.",
+            text_color="#B6ADBF", font=ctk.CTkFont(size=12),
         )
-        self.status_label.pack(anchor="w", padx=22, pady=(0, 12))
+        self.status_label.grid(row=0, column=0, pady=(17, 10))
         self.progress = ctk.CTkProgressBar(
-            action_card, height=8, corner_radius=8,
-            progress_color="#B5A0D7", fg_color="#373242",
+            self.action_card, height=8, corner_radius=8,
+            progress_color="#BCA7DE", fg_color="#393342",
         )
-        self.progress.pack(fill="x", padx=22, pady=(0, 16))
+        self.progress.grid(row=1, column=0, sticky="ew", padx=20, pady=(0, 14))
         self.progress.set(0)
         self.download_button = ctk.CTkButton(
-            action_card, text="↓   Guardar mi música", height=48,
-            corner_radius=12, font=ctk.CTkFont(size=14, weight="bold"),
+            self.action_card, text="Guardar audio", height=54, corner_radius=13,
+            font=ctk.CTkFont(size=16, weight="bold"),
             fg_color="#8872AE", hover_color="#A08AC5",
             command=self._start_download,
         )
-        self.download_button.pack(fill="x", padx=22, pady=(0, 20))
-
-        ctk.CTkLabel(
-            content,
-            text="Descarga únicamente contenido que tengas derecho a guardar.\n"
-                 "Sonora usa yt-dlp y no descarga música desde Spotify.",
-            text_color="#898294", justify="left",
-            font=ctk.CTkFont(size=10),
-        ).grid(row=6, column=0, sticky="w", pady=(16, 0))
-
-    def _nav_item(self, parent: ctk.CTkFrame, text: str, active: bool) -> None:
-        ctk.CTkLabel(
-            parent, text=text, height=42, corner_radius=10, anchor="w",
-            padx=14, fg_color="#30283D" if active else "transparent",
-            text_color="#F2EDF8" if active else "#A39BAC",
-            font=ctk.CTkFont(size=13, weight="bold" if active else "normal"),
-        ).pack(fill="x", padx=14, pady=3)
-
-    def _card(self, parent: ctk.CTkFrame, row: int, in_columns: bool = False) -> ctk.CTkFrame:
-        card = ctk.CTkFrame(
-            parent, corner_radius=16, fg_color="#201E2B",
-            border_width=1, border_color="#302C3B",
+        self.download_button.grid(row=2, column=0, sticky="ew", padx=20, pady=(0, 12))
+        self.open_folder_button = ctk.CTkButton(
+            self.action_card, text="Abrir mi carpeta de música", height=34,
+            fg_color="transparent", hover_color="#302A3A",
+            text_color="#CDBFE0", font=ctk.CTkFont(size=12),
+            command=self._open_folder, state="disabled",
         )
-        if in_columns:
-            card.grid(row=0, column=row, sticky="nsew",
-                      padx=(0, 8) if row == 0 else (8, 0))
-        else:
-            card.grid(row=row, column=0, sticky="ew")
-        return card
+        self.open_folder_button.grid(row=3, column=0, pady=(0, 12))
 
-    @staticmethod
-    def _short_path(value: str) -> str:
-        path = Path(value)
-        parts = path.parts
-        if len(parts) > 3:
-            return "…/" + "/".join(parts[-2:])
-        return str(path)
+        ctk.CTkLabel(
+            page, text="Solo descarga contenido que tengas permiso para guardar.\nSOUNWD no descarga música desde Spotify.",
+            text_color="#81798A", justify="center", font=ctk.CTkFont(size=10),
+        ).grid(row=6, column=0, pady=(18, 0))
+
+    def _toggle_advanced(self) -> None:
+        self.advanced_visible = not self.advanced_visible
+        if self.advanced_visible:
+            self.advanced.grid(row=4, column=0, sticky="ew", pady=(0, 10))
+            self.options_toggle.configure(text="−  Ocultar opciones")
+            self.action_card.grid_configure(row=5)
+        else:
+            self.advanced.grid_remove()
+            self.options_toggle.configure(text="＋  Más opciones")
+            self.action_card.grid_configure(row=5)
 
     def _choose_folder(self) -> None:
-        selected = filedialog.askdirectory(initialdir=self.destination.get())
+        selected = filedialog.askdirectory(
+            title="Elige dónde guardar tu música",
+            initialdir=self.destination.get(),
+        )
         if selected:
             self.destination.set(selected)
-            self.dest_label.configure(text=self._short_path(selected))
+
+    def _open_folder(self) -> None:
+        folder = Path(self.destination.get()).expanduser()
+        folder.mkdir(parents=True, exist_ok=True)
+        try:
+            if os.name == "nt":
+                os.startfile(str(folder))
+            elif sys_platform() == "darwin":
+                subprocess.Popen(["open", str(folder)])
+            else:
+                subprocess.Popen(["xdg-open", str(folder)])
+        except Exception:
+            messagebox.showinfo("Tu carpeta", f"Tu música está guardada aquí:\n{folder}")
 
     def _start_download(self) -> None:
         if self.downloading:
             return
         url = self.url_entry.get().strip()
         if not valid_url(url):
-            messagebox.showwarning(
-                "Enlace no válido",
-                "Pega un enlace válido de YouTube o YouTube Music para continuar.",
+            messagebox.showinfo(
+                "Primero pega un enlace",
+                "Copia un enlace de YouTube o YouTube Music, pégalo en el recuadro y vuelve a pulsar «Guardar audio».",
             )
+            self.url_entry.focus_set()
             return
-
-        if not self.playlist.get() and "list=" in url and "watch?v=" not in url:
-            if not messagebox.askyesno(
-                "Parece una lista",
-                "El enlace parece ser una lista de reproducción. ¿Quieres descargarla completa?",
-            ):
-                return
-            self.playlist.set(True)
 
         destination = Path(self.destination.get()).expanduser()
         try:
             destination.mkdir(parents=True, exist_ok=True)
-        except OSError as error:
-            messagebox.showerror("Carpeta no disponible", str(error))
+        except OSError:
+            messagebox.showerror(
+                "No encuentro la carpeta",
+                "No he podido preparar la carpeta para guardar tu música. Prueba a elegir otra en «Más opciones».",
+            )
             return
 
         self.downloading = True
-        self.download_button.configure(state="disabled", text="Descargando…")
+        self.download_button.configure(state="disabled", text="Un momento…")
+        self.open_folder_button.configure(state="disabled")
         self.progress.set(0)
-        self.status_label.configure(text="Conectando y preparando la descarga…")
+        self.status_label.configure(text="Conectando… no cierres esta ventana.")
         thread = threading.Thread(
             target=self._download_worker,
             args=(url, FORMATS[self.audio_format.get()], destination, self.playlist.get()),
@@ -271,18 +230,17 @@ class SoundwApp(ctk.CTk):
 
     def _download_worker(self, url: str, audio_format: str, destination: Path, playlist: bool) -> None:
         def hook(data: dict) -> None:
-            status = data.get("status")
-            if status == "downloading":
+            if data.get("status") == "downloading":
                 downloaded = data.get("downloaded_bytes", 0)
                 total = data.get("total_bytes") or data.get("total_bytes_estimate")
                 fraction = downloaded / total if total else 0
-                self.events.put(("progress", (min(max(fraction, 0), 1), "Descargando audio…")))
-            elif status == "finished":
-                self.events.put(("progress", (0.98, "Convirtiendo formato…")))
+                self.events.put(("progress", (min(max(fraction, 0), 1), "Descargando tu audio…")))
+            elif data.get("status") == "finished":
+                self.events.put(("progress", (0.98, "Preparando el archivo…")))
 
         options = {
             "format": "bestaudio/best",
-            "ffmpeg_location": __import__("imageio_ffmpeg").get_ffmpeg_exe(),
+            "ffmpeg_location": imageio_ffmpeg.get_ffmpeg_exe(),
             "outtmpl": str(destination / "%(title)s.%(ext)s"),
             "noplaylist": not playlist,
             "windowsfilenames": True,
@@ -291,17 +249,27 @@ class SoundwApp(ctk.CTk):
             "progress_hooks": [hook],
             "postprocessors": [
                 {"key": "FFmpegExtractAudio", "preferredcodec": audio_format, "preferredquality": "0"},
-                {"key": "FFmpegMetadata"},
             ],
         }
         try:
             with yt_dlp.YoutubeDL(options) as downloader:
                 result = downloader.download([url])
             if result:
-                raise yt_dlp.utils.DownloadError("yt-dlp no pudo completar la descarga.")
+                raise RuntimeError("La descarga no ha podido terminar.")
             self.events.put(("done", str(destination)))
         except Exception as error:
-            self.events.put(("error", str(error)))
+            message = str(error).lower()
+            if "private" in message or "members-only" in message:
+                friendly = "Este audio es privado o requiere una cuenta especial. Prueba con otro enlace."
+            elif "unavailable" in message or "not available" in message:
+                friendly = "Este audio no está disponible. Comprueba el enlace o prueba con otro."
+            elif "ffmpeg" in message:
+                friendly = "No se ha podido preparar el formato de audio. Vuelve a intentarlo; si continúa, prueba MP3."
+            elif "network" in message or "connection" in message or "timed out" in message:
+                friendly = "Parece que la conexión a Internet ha fallado. Comprueba tu conexión y vuelve a intentarlo."
+            else:
+                friendly = "No se ha podido guardar este audio. Comprueba el enlace y tu conexión, y vuelve a intentarlo."
+            self.events.put(("error", friendly))
 
     def _process_events(self) -> None:
         try:
@@ -314,20 +282,28 @@ class SoundwApp(ctk.CTk):
                 elif kind == "done":
                     self.downloading = False
                     self.progress.set(1)
-                    self.status_label.configure(text="¡Descarga terminada! Tus archivos están listos.")
-                    self.download_button.configure(state="normal", text="↓   Descargar otra vez")
-                    messagebox.showinfo("¡Todo listo!", f"Tu audio está guardado en:\n{payload}")
+                    self.status_label.configure(text="¡Listo! Tu audio ya está guardado.")
+                    self.download_button.configure(state="normal", text="Guardar otro audio")
+                    self.open_folder_button.configure(state="normal")
+                    self.url_entry.delete(0, "end")
+                    messagebox.showinfo(
+                        "¡Ya lo tienes!",
+                        "Tu audio se ha guardado correctamente. Pulsa «Abrir mi carpeta de música» para encontrarlo.",
+                    )
                 elif kind == "error":
                     self.downloading = False
-                    self.status_label.configure(text="No se pudo completar la descarga.")
-                    self.download_button.configure(state="normal", text="↓   Intentar de nuevo")
-                    messagebox.showerror(
-                        "Error en la descarga",
-                        f"{payload}\n\nComprueba el enlace y tu conexión a Internet."
-                    )
+                    self.progress.set(0)
+                    self.status_label.configure(text="No ha salido bien. Puedes volver a intentarlo.")
+                    self.download_button.configure(state="normal", text="Intentar de nuevo")
+                    messagebox.showinfo("No se ha podido guardar", str(payload))
         except queue.Empty:
             pass
         self.after(120, self._process_events)
+
+
+def sys_platform() -> str:
+    import sys
+    return sys.platform
 
 
 def main() -> None:

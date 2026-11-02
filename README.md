@@ -1,51 +1,48 @@
-# ♫ Sonora — Music Downloader
+# SOUNWD. — Your sound. Your moments.
 
-Sonora es una aplicación de escritorio en Python con una interfaz gráfica oscura y sencilla para gestionar descargas de audio mediante yt-dlp.
+**SOUNWD** es tu pequeño espacio para guardar los sonidos que forman parte de tus momentos. Una aplicación de escritorio sencilla, con una interfaz tranquila y personalizable, construida con Python, CustomTkinter y yt-dlp.
 
-> Utiliza Sonora únicamente con contenido que tengas derecho a descargar y respeta las condiciones de la plataforma y las licencias aplicables. Sonora no descarga música desde Spotify.
+> Utiliza SOUNWD únicamente con contenido que tengas derecho a descargar y respeta las condiciones de la plataforma y las licencias aplicables. SOUNWD no descarga música desde Spotify.
 
-## Abrir Sonora
+## Abrir SOUNWD
 
-Estamos preparando también versiones independientes para no tener que instalar Python. Cada actualización de la rama principal genera los paquetes de Windows y Linux en la pestaña [Actions](https://github.com/Noocoks/music-downloader/actions), dentro de los artefactos de la ejecución más reciente. La primera compilación debe terminar correctamente antes de poder descargarlos.\n
+Estamos preparando versiones independientes para Windows y Linux. Cuando la compilación esté disponible, podrás descargarlas desde [Actions](https://github.com/Noocoks/music-downloader/actions), en los artefactos de la ejecución más reciente. La compilación debe finalizar correctamente antes de que aparezcan.
+
 ### Windows — doble clic
 
-1. Instala Python 3.10 o superior desde [python.org](https://www.python.org/downloads/). Durante la instalación, deja activado el Python Launcher.
+1. Instala Python 3.10 o superior desde [python.org](https://www.python.org/downloads/) (activa Python Launcher durante la instalación).
 2. Abre la carpeta del proyecto.
 3. Haz doble clic en **Windows/Abrir Sonora.vbs**.
 
-La primera vez aparecerá una pequeña ventana de preparación. Sonora creará su propio entorno e instalará las dependencias automáticamente. En los siguientes inicios abrirá mucho más rápido.
+La primera vez aparecerá una ventana de preparación. SOUNWD creará un entorno aislado e instalará sus dependencias. En los siguientes inicios abrirá directamente.
 
 ### Linux — acceso directo
 
-Necesitas Python 3.10 o superior y los componentes de Tkinter/venv de tu distribución (en Ubuntu y derivadas: `python3-tk` y `python3-venv`).
+Necesitas Python 3.10 o superior y los componentes Tkinter/venv de tu distribución (en Ubuntu y derivadas: `python3-tk` y `python3-venv`).
 
 1. Abre la carpeta del proyecto.
-2. Haz doble clic en **Linux/Sonora.desktop**. Si el escritorio pregunta, elige «Permitir ejecutar» o «Confiar y ejecutar».
-3. Para tener un acceso directo en el Escritorio, ejecuta una vez **Linux/Instalar acceso directo.sh** desde el gestor de archivos (elige «Ejecutar» si te lo pregunta). Después podrás abrir Sonora desde ese acceso directo.
+2. Ejecuta **Linux/Instalar acceso directo.sh** desde el gestor de archivos (si aparece una opción, elige «Ejecutar»).
+3. Abre **SOUNWD.desktop** desde el Escritorio.
 
-La primera vez aparecerá la ventana de preparación y se instalarán automáticamente las dependencias Python en un entorno aislado del proyecto.
+La primera vez aparecerá la ventana de preparación y se instalarán automáticamente las dependencias Python en un entorno aislado.
 
-## Componentes de audio
+## Tu música, a tu manera
 
-Sonora incluye FFmpeg mediante el paquete `imageio-ffmpeg`, por lo que no necesitas instalar FFmpeg por separado.
-
-## Funciones
-
-- Interfaz gráfica con CustomTkinter.
+- Interfaz gráfica oscura y serena, con tonos lavanda.
 - Enlaces de YouTube y YouTube Music.
 - Formatos MP3, M4A/AAC, FLAC, OPUS y WAV.
-- Selector de carpeta de destino.
-- Descarga individual o listas de reproducción.
-- Barra de progreso y avisos visuales.
+- Carpeta de destino elegible.
+- Descargas individuales o listas de reproducción.
+- Barra de progreso y avisos claros.
 
 ## Desarrollo
 
 - `bootstrap.py`: prepara el entorno e inicia la aplicación.
-- `src/gui.py`: interfaz gráfica.
+- `src/gui.py`: interfaz gráfica SOUNWD.
 - `src/cli.py`: versión de terminal.
 - `requirements.txt`: dependencias Python.
 - `Windows/` y `Linux/`: lanzadores.
 
 ## Aviso
 
-Sonora es una interfaz para yt-dlp. El usuario es responsable de comprobar que tiene los derechos y permisos necesarios para descargar y utilizar cada contenido.
+SOUNWD utiliza yt-dlp como herramienta de descarga. El usuario es responsable de comprobar que tiene los derechos y permisos necesarios para descargar y utilizar cada contenido.

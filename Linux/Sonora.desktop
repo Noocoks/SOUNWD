@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Sonora
+Comment=Tu música, a tu manera
+Exec=sh -c 'cd "$(dirname "%k")/.." && python3 bootstrap.py'
+Icon=audio-x-generic
+Terminal=false
+Categories=AudioVideo;Audio;
+StartupNotify=true

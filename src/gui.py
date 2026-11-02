@@ -192,6 +192,15 @@ class SoundwApp(ctk.CTk):
             self.options_toggle.configure(text="＋  Más opciones")
             self.action_card.grid_configure(row=7)
 
+    @staticmethod
+    def _short_path(value: str) -> str:
+        """Muestra una ruta compacta para que quepa en la interfaz."""
+        path = Path(value)
+        parts = path.parts
+        if len(parts) > 3:
+            return "…/" + "/".join(parts[-2:])
+        return str(path)
+
     def _choose_folder(self) -> None:
         selected = filedialog.askdirectory(
             title="Elige dónde guardar tu música",
@@ -199,6 +208,7 @@ class SoundwApp(ctk.CTk):
         )
         if selected:
             self.destination.set(selected)
+            self.folder_label.configure(text=self._short_path(selected))
 
     def _open_folder(self) -> None:
         folder = Path(self.destination.get()).expanduser()

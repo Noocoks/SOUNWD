@@ -127,7 +127,7 @@ class SonoraApp(ctk.CTk):
         options.grid(row=3, column=0, sticky="ew", pady=16)
         options.grid_columnconfigure((0, 1), weight=1)
 
-        format_card = self._card(options, 0)
+        format_card = self._card(options, 0, in_columns=True)
         ctk.CTkLabel(
             format_card, text="02  ·  FORMATO",
             font=ctk.CTkFont(size=11, weight="bold"), text_color="#A78BFA",
@@ -139,7 +139,7 @@ class SonoraApp(ctk.CTk):
             dropdown_fg_color="#191D2B",
         ).pack(fill="x", padx=20, pady=(0, 18))
 
-        dest_card = self._card(options, 1)
+        dest_card = self._card(options, 1, in_columns=True)
         ctk.CTkLabel(
             dest_card, text="03  ·  CARPETA DE DESTINO",
             font=ctk.CTkFont(size=11, weight="bold"), text_color="#A78BFA",
@@ -206,18 +206,16 @@ class SonoraApp(ctk.CTk):
             font=ctk.CTkFont(size=13, weight="bold" if active else "normal"),
         ).pack(fill="x", padx=14, pady=3)
 
-    def _card(self, parent: ctk.CTkBaseClass, row: int) -> ctk.CTkFrame:
+    def _card(self, parent: ctk.CTkFrame, row: int, in_columns: bool = False) -> ctk.CTkFrame:
         card = ctk.CTkFrame(
             parent, corner_radius=16, fg_color="#151927",
             border_width=1, border_color="#252B3B",
         )
-        if isinstance(parent, ctk.CTk):
+        if in_columns:
+            card.grid(row=0, column=row, sticky="nsew",
+                      padx=(0, 8) if row == 0 else (8, 0))
+        else:
             card.grid(row=row, column=0, sticky="ew")
-        elif parent is not None and parent.winfo_class() == "CTkFrame":
-            if row == 0:
-                card.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
-            else:
-                card.grid(row=0, column=1, sticky="nsew", padx=(8, 0))
         return card
 
     @staticmethod

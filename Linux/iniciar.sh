@@ -1,1 +1,4 @@
-#!/usr/bin/env bash\nset -e\ncd "$(dirname "$0")/.."\npython3 -m src.main\n
+#!/usr/bin/env bash
+set -e
+cd "$(dirname "$0")/.."
+python3 -m src.main

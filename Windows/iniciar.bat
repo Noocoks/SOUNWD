@@ -1,9 +1,10 @@
 @echo off
 setlocal
 cd /d "%~dp0\.."
-python -m src.main
+py -m pip install -r requirements.txt
+py -m src.gui
 if errorlevel 1 (
   echo.
-  echo El programa ha terminado con un error.
+  echo Sonora ha terminado con un error.
+  pause
 )
-pause

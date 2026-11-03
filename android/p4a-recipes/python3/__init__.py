@@ -1,8 +1,7 @@
-"""Android-specific Python recipe: disable CPython's grp extension.
+"""Android-specific CPython recipe and host-pip isolation for python-for-android.
 
-Android's Bionic libc does not expose the glibc group-enumeration APIs used
-by CPython's grp module. SOUNWD does not need grp, so omit it from the
-stdlib build configuration before CPython's configure/make steps.
+Android's Bionic libc lacks the glibc group-enumeration APIs used by CPython's
+grp module. SOUNWD does not need grp, so disable it in the stdlib build.
 """
 import importlib.util
 from pathlib import Path
@@ -11,11 +10,11 @@ import pythonforandroid
 import pythonforandroid.build as _p4a_build
 
 
-# python-for-android 58d2114 passes the target's PYTHONPATH into the
-# host-side pip self-upgrade. That can mix the target and host pip modules,
-# producing an inconsistent pip install (e.g. missing open_rich_spinner).
-# Keep the target PYTHONPATH for later cross-compilation, but isolate this
-# one host-side bootstrap command.
+# p4a's pure-Python package installer creates a host venv while its parent
+# process has target-Python paths configured. The venv's pip can then import
+# files from two different pip installations (notably open_rich_spinner).
+# Strip PYTHONPATH both from sh's child environment and from the shell before
+# activating the venv. Use "python -m pip" so the interpreter and pip agree.
 if not getattr(_p4a_build.shprint, "_sounwd_pip_env_fix", False):
     _original_shprint = _p4a_build.shprint
 
@@ -23,12 +22,25 @@ if not getattr(_p4a_build.shprint, "_sounwd_pip_env_fix", False):
         command_text = " ".join(str(part) for part in (command, *args))
         if "pip install -U pip" in command_text:
             env = kwargs.get("_env")
-            if env is not None and "PYTHONPATH" in env:
+            if env is not None:
                 env = dict(env)
                 env.pop("PYTHONPATH", None)
+                env.pop("PYTHONHOME", None)
                 kwargs["_env"] = env
-                from pythonforandroid.logger import info
-                info("SOUNWD: isolated host pip upgrade from target PYTHONPATH")
+
+            # sh's _env handling differs between p4a releases; make the
+            # isolation explicit in the shell command as well.
+            args = tuple(
+                str(part).replace(
+                    "source venv/bin/activate && pip install -U pip",
+                    "unset PYTHONPATH PYTHONHOME; "
+                    "source venv/bin/activate && python -m pip install -U pip",
+                )
+                for part in args
+            )
+            from pythonforandroid.logger import info
+            info("SOUNWD: isolated host pip from target Python environment")
+
         return _original_shprint(command, *args, **kwargs)
 
     _sounwd_shprint._sounwd_pip_env_fix = True
@@ -47,13 +59,12 @@ _BasePython3Recipe = _base_module.Python3Recipe
 
 class SounwdPython3Recipe(_BasePython3Recipe):
     def get_recipe_dir(self):
-        # Keep upstream patch files available; this local recipe only
-        # overrides behaviour and does not duplicate python-for-android patches.
+        # Keep upstream patch files available; this recipe only overrides
+        # behaviour and does not duplicate python-for-android patch files.
         return str(_base_path.parent)
 
-    # CPython's setup.py enables grp when grp.h is detected. Android's
-    # NDK header exists on some API levels but its glibc enumeration APIs
-    # do not, so force the configure test off for every Android ABI.
+    # CPython's setup.py enables grp when grp.h is detected. Android's NDK
+    # header may exist, but Bionic does not provide the glibc APIs it needs.
     configure_args = list(_BasePython3Recipe.configure_args) + [
         "ac_cv_header_grp_h=no",
         "ac_cv_func_getgrgid=no",
@@ -63,7 +74,6 @@ class SounwdPython3Recipe(_BasePython3Recipe):
     ]
 
     def apply_patches(self, arch, build_dir=None):
-        # Apply the upstream python-for-android patches first.
         super().apply_patches(arch, build_dir=build_dir)
 
         source_dir = Path(build_dir or self.get_build_dir(arch.arch))

@@ -21,6 +21,11 @@ _BasePython3Recipe = _base_module.Python3Recipe
 
 
 class SounwdPython3Recipe(_BasePython3Recipe):
+    def get_recipe_dir(self):
+        # Keep upstream patch files available; this local recipe only
+        # overrides behaviour and does not duplicate python-for-android patches.
+        return str(_base_path.parent)
+
     # CPython's setup.py enables grp when grp.h is detected. Android's
     # NDK header exists on some API levels but its glibc enumeration APIs
     # do not, so force the configure test off for every Android ABI.

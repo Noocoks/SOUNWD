@@ -31,6 +31,8 @@ class SounwdPython3Recipe(_BasePython3Recipe):
     # do not, so force the configure test off for every Android ABI.
     configure_args = list(_BasePython3Recipe.configure_args) + [
         "ac_cv_header_grp_h=no",
+        "ac_cv_func_getgrgid=no",
+        "ac_cv_func_getgrgid_r=no",
     ]
 
     def apply_patches(self, arch, build_dir=None):

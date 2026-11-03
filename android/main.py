@@ -1,7 +1,58 @@
 from __future__ import annotations
+import faulthandler
+import os
 import queue
+import sys
 import threading
+import traceback
 from pathlib import Path
+
+# Keep a private startup log even when Android closes the process early.
+def _open_startup_log():
+    for base in (os.environ.get("ANDROID_PRIVATE"), os.environ.get("ANDROID_ARGUMENT"), str(Path.home())):
+        if not base:
+            continue
+        try:
+            folder = Path(base)
+            folder.mkdir(parents=True, exist_ok=True)
+            return (folder / "sounwd-startup.log").open("a", buffering=1)
+        except Exception:
+            pass
+    return None
+
+_STARTUP_LOG = _open_startup_log()
+if _STARTUP_LOG is not None:
+    sys.stderr = _STARTUP_LOG
+    sys.stdout = _STARTUP_LOG
+    try:
+        faulthandler.enable(_STARTUP_LOG, all_threads=True)
+    except Exception:
+        pass
+
+def _log_startup(message):
+    if _STARTUP_LOG is not None:
+        try:
+            _STARTUP_LOG.write("\n[SOUNWD] " + message + "\n")
+            _STARTUP_LOG.flush()
+        except Exception:
+            pass
+
+def _log_uncaught(exc_type, exc_value, exc_tb):
+    _log_startup("UNCAUGHT PYTHON EXCEPTION")
+    if _STARTUP_LOG is not None:
+        traceback.print_exception(exc_type, exc_value, exc_tb, file=_STARTUP_LOG)
+        _STARTUP_LOG.flush()
+    sys.__excepthook__(exc_type, exc_value, exc_tb)
+
+sys.excepthook = _log_uncaught
+
+def _log_thread_exception(args):
+    _log_startup("UNCAUGHT THREAD EXCEPTION: " + args.thread.name)
+    if _STARTUP_LOG is not None:
+        traceback.print_exception(args.exc_type, args.exc_value, args.exc_traceback, file=_STARTUP_LOG)
+        _STARTUP_LOG.flush()
+
+threading.excepthook = _log_thread_exception
 from urllib.parse import urlparse
 from kivy.app import App
 from kivy.clock import Clock
@@ -46,8 +97,10 @@ class Panel(BoxLayout):
 
 class SOUNWDApp(App):
     def build(self):
+        _log_startup('SOUNWDApp.build entered')
         self.title="SOUNWD"; self.events=queue.Queue(); self.downloading=False; self.last_files=[]
         self.store=JsonStore(str(Path(self.user_data_dir)/"preferences.json"))
+        _log_startup("preferences store initialized")
         self.private_dir=Path(self.user_data_dir)/"downloads"; self.private_dir.mkdir(parents=True,exist_ok=True)
         saved=self.store.get("preferences") if self.store.exists("preferences") else {}
         Window.clearcolor=BG; Window.softinput_mode="below_target"
@@ -128,6 +181,7 @@ class SOUNWDApp(App):
         body.add_widget(action)
         body.add_widget(self.label("Descarga solo contenido que tengas permiso para guardar.\nSOUNWD no descarga música desde Spotify.",10,MUTED,False,dp(42)))
         scroll.add_widget(body); root.add_widget(scroll)
+        _log_startup('main interface constructed')
         Window.bind(on_resize=self.on_resize)
         Clock.schedule_once(lambda _dt:self.on_resize(Window,Window.width,Window.height),0)
         Clock.schedule_interval(self.poll_events,0.15)
@@ -254,4 +308,13 @@ class SOUNWDApp(App):
             else:self.status.text="No se ha podido preparar el archivo para compartir."
         except Exception as e:self.popup("No se ha podido compartir: "+str(e))
 
-if __name__=="__main__": SOUNWDApp().run()
+if __name__=="__main__":
+    _log_startup("Python entrypoint reached; starting Kivy")
+    try:
+        SOUNWDApp().run()
+    except BaseException:
+        _log_startup("FATAL: exception escaped Kivy app")
+        if _STARTUP_LOG is not None:
+            traceback.print_exc(file=_STARTUP_LOG)
+            _STARTUP_LOG.flush()
+        raise

@@ -3,7 +3,6 @@ import queue
 import threading
 from pathlib import Path
 from urllib.parse import urlparse
-import yt_dlp
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.window import Window
@@ -197,6 +196,10 @@ class SOUNWDApp(App):
         if advanced["subtitle_langs"]: options["subtitleslangs"]=advanced["subtitle_langs"]
         if advanced["write_subtitles"]: options["writesubtitles"]=True
         try:
+            # Import yt-dlp only when the user starts a download. This keeps
+            # optional/network-heavy downloader imports out of Android startup
+            # and surfaces import errors through the normal UI error handler.
+            import yt_dlp
             with yt_dlp.YoutubeDL(options) as ydl: code=ydl.download([link])
             if code: raise RuntimeError("La descarga no ha podido terminar.")
             files=[p for p in self.private_dir.iterdir() if p.is_file() and p not in before]

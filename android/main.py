@@ -23,8 +23,9 @@ from kivy.uix.textinput import TextInput
 from kivy.graphics import Color, RoundedRectangle
 
 BG=(18/255,17/255,26/255,1); CARD=(33/255,30/255,43/255,1)
-LAVENDER=(136/255,114/255,174/255,1); TEXT=(244/255,239/255,250/255,1)
-MUTED=(182/255,173/255,191/255,1)
+LAVENDER=(136/255,114/255,174/255,1); BRAND_LAVENDER=(200/255,182/255,232/255,1)
+TEXT=(244/255,239/255,250/255,1); MUTED=(182/255,173/255,191/255,1)
+BRAND_MUTED=(166/255,156/255,175/255,1)
 FORMATS={"Mejor disponible":"bestaudio/best","M4A (si existe)":"bestaudio[ext=m4a]/bestaudio/best","OPUS (si existe)":"bestaudio[acodec=opus]/bestaudio/best"}
 DESTINATIONS={"Música / SOUNWD":"Music","Descargas / SOUNWD":"Downloads"}
 HOSTS={"youtube.com","www.youtube.com","music.youtube.com","m.youtube.com","youtu.be"}
@@ -51,13 +52,13 @@ class SOUNWDApp(App):
         saved=self.store.get("preferences") if self.store.exists("preferences") else {}
         Window.clearcolor=BG; Window.softinput_mode="below_target"
         root=BoxLayout(orientation="vertical",padding=[dp(17),dp(12),dp(17),dp(12)])
-        scroll=ScrollView(do_scroll_x=False,bar_width=dp(3))
+        scroll=ScrollView(do_scroll_x=False,do_scroll_y=True,scroll_y=1.0,scroll_type=["bars","content"],bar_width=dp(5),bar_color=BRAND_LAVENDER,bar_inactive_color=(200/255,182/255,232/255,0.28),effect_damped_scroll=True)
         body=BoxLayout(orientation="vertical",size_hint_y=None,spacing=dp(11),padding=[0,0,0,dp(12)])
         body.bind(minimum_height=body.setter("height"))
         brand=BoxLayout(orientation="vertical",size_hint_y=None,height=dp(100),spacing=0)
-        brand.add_widget(self.label("◖♪",30,LAVENDER,True,dp(34)))
+        brand.add_widget(self.label("◖♪",30,BRAND_LAVENDER,True,dp(34)))
         brand.add_widget(self.label("SOUNWD.",27,TEXT,True,dp(38)))
-        brand.add_widget(self.label("YOUR SOUND. YOUR MOMENTS.",10,MUTED,True,dp(22)))
+        brand.add_widget(self.label("YOUR SOUND. YOUR MOMENTS.",10,BRAND_MUTED,True,dp(22)))
         body.add_widget(brand)
         body.add_widget(self.label("Tu música. Tu espacio. Tu estilo.",20,TEXT,True,dp(34)))
         body.add_widget(self.label("Un lugar tranquilo para guardar los sonidos que te acompañan.",12,MUTED,False,dp(34)))

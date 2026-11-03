@@ -15,6 +15,9 @@ from kivy.uix.checkbox import CheckBox
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
+from kivy.uix.progressbar import ProgressBar
+from kivy.core.clipboard import Clipboard
+from kivy.storage.jsonstore import JsonStore
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.spinner import Spinner
 from kivy.uix.textinput import TextInput
@@ -44,7 +47,9 @@ class Panel(BoxLayout):
 class SOUNWDApp(App):
     def build(self):
         self.title="SOUNWD"; self.events=queue.Queue(); self.downloading=False; self.last_files=[]
+        self.store=JsonStore(str(Path(self.user_data_dir)/"preferences.json"))
         self.private_dir=Path(self.user_data_dir)/"downloads"; self.private_dir.mkdir(parents=True,exist_ok=True)
+        saved=self.store.get("preferences") if self.store.exists("preferences") else {}
         Window.clearcolor=BG; Window.softinput_mode="below_target"
         root=BoxLayout(orientation="vertical",padding=[dp(17),dp(12),dp(17),dp(12)])
         scroll=ScrollView(do_scroll_x=False,bar_width=dp(3))
@@ -63,18 +68,27 @@ class SOUNWDApp(App):
             background_normal="",background_active="",background_color=(23/255,21/255,31/255,1),
             foreground_color=TEXT,hint_text_color=(142/255,132/255,153/255,1),cursor_color=LAVENDER,
             padding=[dp(11),dp(15)],font_size="14sp")
-        link.add_widget(self.url); body.add_widget(link)
+        link.add_widget(self.url)
+        link_actions=BoxLayout(orientation="horizontal",size_hint_y=None,height=dp(34),spacing=dp(8))
+        paste=self.button("Pegar enlace",dp(32),(64/255,54/255,79/255,1),11)
+        paste.bind(on_release=self.paste_url)
+        clear=self.button("Limpiar",dp(32),(55/255,48/255,67/255,1),11)
+        clear.bind(on_release=lambda *_:setattr(self.url,"text",""))
+        link_actions.add_widget(paste); link_actions.add_widget(clear); link.add_widget(link_actions)
+        body.add_widget(link)
         row=GridLayout(cols=2,spacing=dp(9),size_hint_y=None,height=dp(124))
         fmt=Panel(orientation="vertical",padding=dp(11))
         fmt.add_widget(self.label("2. FORMATO",10,LAVENDER,True,dp(22)))
-        self.format=Spinner(text="Mejor disponible",values=list(FORMATS),size_hint_y=None,height=dp(42),
+        self.format=Spinner(text=saved.get("format","Mejor disponible"),values=list(FORMATS),size_hint_y=None,height=dp(42),
             background_normal="",background_color=(64/255,54/255,79/255,1),color=TEXT,font_size="11sp")
         fmt.add_widget(self.format)
+        self.format.bind(text=self.save_preferences)
         dest=Panel(orientation="vertical",padding=dp(11))
         dest.add_widget(self.label("3. GUARDAR EN",10,LAVENDER,True,dp(22)))
-        self.destination=Spinner(text="Música / SOUNWD",values=list(DESTINATIONS),size_hint_y=None,height=dp(42),
+        self.destination=Spinner(text=saved.get("destination","Música / SOUNWD"),values=list(DESTINATIONS),size_hint_y=None,height=dp(42),
             background_normal="",background_color=(64/255,54/255,79/255,1),color=TEXT,font_size="11sp")
-        dest.add_widget(self.destination); row.add_widget(fmt); row.add_widget(dest); body.add_widget(row)
+        dest.add_widget(self.destination); self.destination.bind(text=self.save_preferences)
+        row.add_widget(fmt); row.add_widget(dest); self.settings_row=row; self.settings_cards=(fmt,dest); body.add_widget(row)
         self.more_btn=self.button("＋  Más opciones",dp(38),(55/255,48/255,67/255,1))
         self.more_btn.bind(on_release=self.toggle_more); body.add_widget(self.more_btn)
         self.more=Panel(orientation="vertical",size_hint_y=None,height=0,opacity=0,disabled=True)
@@ -85,12 +99,16 @@ class SOUNWDApp(App):
         self.more.add_widget(checkrow); body.add_widget(self.more)
         action=Panel(orientation="vertical",size_hint_y=None,height=dp(178))
         self.status=self.label("4.  Pulsa el botón y espera un momento.",12,MUTED,False,dp(25)); action.add_widget(self.status)
-        self.progress=self.label("",10,LAVENDER,False,dp(20)); action.add_widget(self.progress)
+        self.progress=self.label("",10,LAVENDER,False,dp(18)); action.add_widget(self.progress)
+        self.progress_bar=ProgressBar(max=100,value=0,size_hint_y=None,height=dp(7))
+        action.add_widget(self.progress_bar)
         self.download=self.button("Guardar audio",dp(52),LAVENDER,17); self.download.bind(on_release=self.start_download); action.add_widget(self.download)
         self.share=self.button("Compartir último audio",dp(36),(55/255,48/255,67/255,1)); self.share.bind(on_release=self.share_last); action.add_widget(self.share)
         body.add_widget(action)
         body.add_widget(self.label("Descarga solo contenido que tengas permiso para guardar.\nSOUNWD no descarga música desde Spotify.",10,MUTED,False,dp(42)))
         scroll.add_widget(body); root.add_widget(scroll)
+        Window.bind(on_resize=self.on_resize)
+        Clock.schedule_once(lambda _dt:self.on_resize(Window,Window.width,Window.height),0)
         Clock.schedule_interval(self.poll_events,0.15)
         return root
 
@@ -100,6 +118,25 @@ class SOUNWDApp(App):
     def button(self,text,height,color,size=13):
         return Button(text=text,size_hint_y=None,height=height,background_normal="",background_down="",
                       background_color=color,color=TEXT,font_size=f"{size}sp",bold=True)
+    def save_preferences(self,*_):
+        self.store.put("preferences",format=self.format.text,destination=self.destination.text)
+    def paste_url(self,*_):
+        value=Clipboard.paste().strip()
+        if value:
+            self.url.text=value
+            self.status.text="Enlace pegado. Ya puedes guardar tu audio."
+        else:
+            self.status.text="No hay ningún enlace en el portapapeles."
+    def on_resize(self,_window,width,height):
+        if not hasattr(self,"settings_row"): return
+        if width < dp(560):
+            self.settings_row.cols=1
+            for card in self.settings_cards: card.height=dp(106)
+            self.settings_row.height=dp(224)
+        else:
+            self.settings_row.cols=2
+            for card in self.settings_cards: card.height=dp(124)
+            self.settings_row.height=dp(124)
     def toggle_more(self,*_):
         show=self.more.height==0
         self.more.height=dp(65) if show else 0; self.more.opacity=1 if show else 0; self.more.disabled=not show
@@ -110,7 +147,8 @@ class SOUNWDApp(App):
         if not valid_url(link):
             self.status.text="Pega un enlace válido de YouTube o YouTube Music."; return
         self.downloading=True; self.download.disabled=True; self.download.text="Un momento…"
-        self.status.text="Conectando… no cierres SOUNWD."; self.progress.text=""
+        self.status.text="Conectando… no cierres SOUNWD."; self.progress.text=""; self.progress_bar.value=0
+        self.save_preferences()
         threading.Thread(target=self.download_worker,args=(link,FORMATS[self.format.text],self.playlist.active,self.destination.text),daemon=True).start()
     def download_worker(self,link,selector,playlist,destination):
         before=set(self.private_dir.iterdir())
@@ -118,7 +156,7 @@ class SOUNWDApp(App):
             if d.get("status")=="downloading":
                 total=d.get("total_bytes") or d.get("total_bytes_estimate"); got=d.get("downloaded_bytes",0)
                 pct=int(max(0,min(100,got/total*100))) if total else 0
-                Clock.schedule_once(lambda _dt,p=pct:setattr(self.progress,"text",f"{p}%"),0)
+                Clock.schedule_once(lambda _dt,p=pct:self.update_progress(p),0)
         options={"format":selector,"outtmpl":str(self.private_dir/"%(title)s.%(ext)s"),
                  "noplaylist":not playlist,"quiet":True,"no_warnings":True,"progress_hooks":[hook],"overwrites":False}
         try:
@@ -139,6 +177,9 @@ class SOUNWDApp(App):
             else: saved=[p.name for p in files]
             self.events.put(("done",saved))
         except Exception as e:self.events.put(("error",str(e)))
+    def update_progress(self,percent):
+        self.progress.text=f"{percent}%"
+        self.progress_bar.value=percent
     def poll_events(self,*_):
         try:
             while True:
@@ -146,10 +187,10 @@ class SOUNWDApp(App):
                 self.download.text="Guardar otro audio" if kind=="done" else "Intentar de nuevo"
                 if kind=="done":
                     self.last_files=payload; self.status.text="¡Listo! Audio guardado correctamente."
-                    self.progress.text=f"{len(payload)} archivo(s) guardado(s)"; self.url.text=""
+                    self.progress.text=f"{len(payload)} archivo(s) guardado(s)"; self.progress_bar.value=100; self.url.text=""
                 else:
                     self.status.text="No se ha podido guardar. Comprueba el enlace e inténtalo otra vez."
-                    self.progress.text=""; self.popup(str(payload))
+                    self.progress.text=""; self.progress_bar.value=0; self.popup(str(payload))
         except queue.Empty:pass
     def popup(self,message):
         box=BoxLayout(orientation="vertical",padding=dp(14),spacing=dp(10))

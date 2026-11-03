@@ -46,8 +46,8 @@ class SoundwApp(ctk.CTk):
     def __init__(self) -> None:
         super().__init__()
         self.title("SOUNWD · Tu sonido. Tus momentos.")
-        self.geometry("820x760")
-        self.minsize(680, 680)
+        self.geometry("820x780")
+        self.minsize(520, 650)
         self.configure(fg_color="#12111A")
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("dark-blue")
@@ -76,6 +76,8 @@ class SoundwApp(ctk.CTk):
 
         self._build_ui()
         self._apply_personalization()
+        self.bind("<Configure>", self._responsive_layout)
+        self.after(80, self._responsive_layout)
         self.after(120, self._process_events)
 
     def _build_ui(self) -> None:
@@ -83,7 +85,8 @@ class SoundwApp(ctk.CTk):
         self.grid_rowconfigure(0, weight=1)
 
         page = ctk.CTkFrame(self, fg_color="transparent")
-        page.grid(row=0, column=0, sticky="nsew", padx=46, pady=30)
+        self.page = page
+        page.grid(row=0, column=0, sticky="nsew", padx=24, pady=22)
         page.grid_columnconfigure(0, weight=1)
 
         brand = ctk.CTkFrame(page, fg_color="transparent")
@@ -116,10 +119,23 @@ class SoundwApp(ctk.CTk):
             text_color="#F4EFFA", placeholder_text_color="#8E8499",
             font=ctk.CTkFont(size=13),
         )
-        self.url_entry.grid(row=1, column=0, sticky="ew", padx=20, pady=(0, 18))
+        self.url_entry.grid(row=1, column=0, sticky="ew", padx=20, pady=(0, 8))
         self.url_entry.bind("<Return>", lambda _event: self._start_download())
+        link_actions = ctk.CTkFrame(link_card, fg_color="transparent")
+        link_actions.grid(row=2, column=0, sticky="ew", padx=20, pady=(0, 14))
+        ctk.CTkButton(
+            link_actions, text="Pegar enlace", width=110, height=30,
+            fg_color="#40364F", hover_color="#554766",
+            command=self._paste_url,
+        ).pack(side="left")
+        ctk.CTkButton(
+            link_actions, text="Limpiar", width=76, height=30,
+            fg_color="transparent", hover_color="#302A3A",
+            text_color="#CDBFE0", command=lambda: self.url_entry.delete(0, "end"),
+        ).pack(side="left", padx=(8, 0))
 
         settings = ctk.CTkFrame(page, fg_color="transparent")
+        self.settings = settings
         settings.grid(row=4, column=0, sticky="ew", pady=(0, 8))
         settings.grid_columnconfigure((0, 1), weight=1, uniform="settings")
 
@@ -147,7 +163,7 @@ class SoundwApp(ctk.CTk):
         folder_row.pack(fill="x", padx=12, pady=(0, 13))
         folder_row.grid_columnconfigure(0, weight=1)
         self.folder_label = ctk.CTkLabel(
-            folder_row, text=self._short_path(str(DEFAULT_FOLDER)),
+            folder_row, text=self._short_path(str(self.destination.get())),
             text_color="#D2CBD9", font=ctk.CTkFont(size=10), anchor="w",
         )
         self.folder_label.grid(row=0, column=0, sticky="ew")
@@ -251,6 +267,39 @@ class SoundwApp(ctk.CTk):
             page, text="Solo descarga contenido que tengas permiso para guardar.\nSOUNWD no descarga música desde Spotify.",
             text_color="#81798A", justify="center", font=ctk.CTkFont(size=10),
         ).grid(row=8, column=0, pady=(18, 0))
+
+    def _responsive_layout(self, event=None) -> None:
+        if event is not None and event.widget is not self:
+            return
+        width = max(self.winfo_width(), 520)
+        horizontal = 18 if width < 650 else (30 if width < 850 else 46)
+        self.page.grid_configure(padx=horizontal, pady=18 if width < 650 else 26)
+        if width < 650:
+            self.settings.grid_columnconfigure(0, weight=1)
+            self.settings.grid_columnconfigure(1, weight=0)
+            for card in self.settings.winfo_children():
+                column = card.grid_info().get("column", 0)
+                card.grid_configure(row=column, column=0, padx=0, pady=(0, 8), sticky="ew")
+        else:
+            self.settings.grid_columnconfigure(0, weight=1, uniform="settings")
+            self.settings.grid_columnconfigure(1, weight=1, uniform="settings")
+            for index, card in enumerate(self.settings.winfo_children()):
+                card.grid_configure(row=0, column=index,
+                                    padx=(0, 7) if index == 0 else (7, 0),
+                                    pady=0, sticky="nsew")
+
+    def _paste_url(self) -> None:
+        try:
+            value = self.clipboard_get()
+        except Exception:
+            value = ""
+        if value:
+            self.url_entry.delete(0, "end")
+            self.url_entry.insert(0, value.strip())
+            self.url_entry.focus_set()
+            self.status_label.configure(text="Enlace pegado. Ya puedes guardar tu audio.")
+        else:
+            self.status_label.configure(text="No encuentro un enlace en el portapapeles.")
 
     def _load_preferences(self) -> dict:
         try:

@@ -440,10 +440,13 @@ class SoundwApp(ctk.CTk):
 
         quality = {"Máxima": "0", "Alta": "192", "Normal": "128"}.get(quality_choice, "0")
         filename = "%(title)s" if filename_choice == "Solo título" else "%(title)s - %(uploader)s"
+        output_template = advanced["outtmpl"]
+        if output_template and not Path(output_template).expanduser().is_absolute():
+            output_template = str(destination / output_template)
         options = {
             "format": advanced["format"] or "bestaudio/best",
             "ffmpeg_location": imageio_ffmpeg.get_ffmpeg_exe(),
-            "outtmpl": advanced["outtmpl"] or str(destination / (filename + ".%(ext)s")),
+            "outtmpl": output_template or str(destination / (filename + ".%(ext)s")),
             "noplaylist": not playlist,
             "windowsfilenames": True,
             "quiet": True,

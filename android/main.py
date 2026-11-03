@@ -52,7 +52,7 @@ class SOUNWDApp(App):
         saved=self.store.get("preferences") if self.store.exists("preferences") else {}
         Window.clearcolor=BG; Window.softinput_mode="below_target"
         root=BoxLayout(orientation="vertical",padding=[dp(17),dp(12),dp(17),dp(12)])
-        scroll=ScrollView(do_scroll_x=False,do_scroll_y=True,scroll_y=1.0,scroll_type=["bars","content"],bar_width=dp(5),bar_color=BRAND_LAVENDER,bar_inactive_color=(200/255,182/255,232/255,0.28),effect_damped_scroll=True)
+        scroll=ScrollView(do_scroll_x=False,do_scroll_y=True,scroll_y=1.0,scroll_type=["bars","content"],bar_width=dp(5),bar_color=BRAND_LAVENDER,bar_inactive_color=(200/255,182/255,232/255,0.28),scroll_wheel_distance=dp(40))
         body=BoxLayout(orientation="vertical",size_hint_y=None,spacing=dp(11),padding=[0,0,0,dp(12)])
         body.bind(minimum_height=body.setter("height"))
         brand=BoxLayout(orientation="vertical",size_hint_y=None,height=dp(100),spacing=0)

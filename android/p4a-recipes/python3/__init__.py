@@ -8,6 +8,31 @@ import importlib.util
 from pathlib import Path
 
 import pythonforandroid
+import pythonforandroid.build as _p4a_build
+
+
+# python-for-android 58d2114 passes the target's PYTHONPATH into the
+# host-side pip self-upgrade. That can mix the target and host pip modules,
+# producing an inconsistent pip install (e.g. missing open_rich_spinner).
+# Keep the target PYTHONPATH for later cross-compilation, but isolate this
+# one host-side bootstrap command.
+if not getattr(_p4a_build.shprint, "_sounwd_pip_env_fix", False):
+    _original_shprint = _p4a_build.shprint
+
+    def _sounwd_shprint(command, *args, **kwargs):
+        command_text = " ".join(str(part) for part in (command, *args))
+        if "pip install -U pip" in command_text:
+            env = kwargs.get("_env")
+            if env is not None and "PYTHONPATH" in env:
+                env = dict(env)
+                env.pop("PYTHONPATH", None)
+                kwargs["_env"] = env
+                from pythonforandroid.logger import info
+                info("SOUNWD: isolated host pip upgrade from target PYTHONPATH")
+        return _original_shprint(command, *args, **kwargs)
+
+    _sounwd_shprint._sounwd_pip_env_fix = True
+    _p4a_build.shprint = _sounwd_shprint
 
 
 _p4a_root = Path(pythonforandroid.__file__).resolve().parent

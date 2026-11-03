@@ -53,6 +53,7 @@ def _log_thread_exception(args):
         _STARTUP_LOG.flush()
 
 threading.excepthook = _log_thread_exception
+_log_startup('main.py module entered; Python standard-library setup complete')
 from urllib.parse import urlparse
 from kivy.app import App
 from kivy.clock import Clock
@@ -72,6 +73,8 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.spinner import Spinner
 from kivy.uix.textinput import TextInput
 from kivy.graphics import Color, RoundedRectangle
+
+_log_startup('Kivy imports completed successfully')
 
 BG=(18/255,17/255,26/255,1); CARD=(33/255,30/255,43/255,1)
 LAVENDER=(136/255,114/255,174/255,1); BRAND_LAVENDER=(200/255,182/255,232/255,1)

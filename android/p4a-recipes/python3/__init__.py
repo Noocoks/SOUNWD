@@ -1,6 +1,5 @@
-"""SOUNWD CPython recipe and safe recreation of p4a's host venv."""
+"""SOUNWD CPython recipe: clean p4a host venv and isolate pip."""
 import importlib.util
-import os
 import shutil
 from pathlib import Path
 
@@ -8,12 +7,11 @@ import pythonforandroid
 import pythonforandroid.build as _p4a_build
 
 
-# python-for-android reuses build/venv for each target architecture. Running
-# "python -m venv venv" on an existing environment does NOT clear it: ensurepip
-# overlays the bundled pip files on the upgraded pip from the previous arch.
-# This leaves mixed pip modules (e.g. installer.py from one version and
-# spinners.py from another), causing open_rich_spinner ImportError.
-if not getattr(_p4a_build.shprint, "_sounwd_venv_clear_fix", False):
+# p4a 58d2114 recreates build/venv for each target architecture but invokes
+# "python -m venv venv" without --clear. ensurepip then overlays pip files
+# onto the previous architecture's upgraded pip, leaving a mixed installation.
+# It also injects the target site-packages as PYTHONPATH while upgrading pip.
+if not getattr(_p4a_build.shprint, "_sounwd_host_venv_fix", False):
     _original_shprint = _p4a_build.shprint
 
     def _sounwd_shprint(command, *args, **kwargs):
@@ -23,24 +21,43 @@ if not getattr(_p4a_build.shprint, "_sounwd_venv_clear_fix", False):
             and arg_strings[0] == "-m"
             and arg_strings[1] == "venv"
         )
+        command_text = " ".join([str(command), *arg_strings])
+        is_pip_upgrade = "pip install -U pip" in command_text
 
         if is_venv_creation:
-            # p4a runs this command with cwd set to its shared build directory.
-            # Delete the old environment before ensurepip lays down a new one.
             venv_dir = Path.cwd() / "venv"
             if venv_dir.is_dir():
                 shutil.rmtree(venv_dir)
-
-            # --clear is a second line of defence if p4a changes its call shape.
             if "--clear" not in arg_strings:
                 args = (*args, "--clear")
-
             from pythonforandroid.logger import info
-            info("SOUNWD: removed previous host venv before recreating it")
+            info("SOUNWD: clean host venv created for this architecture")
+
+        if is_pip_upgrade:
+            # p4a sets PYTHONPATH to the Android target's site-packages here.
+            # That path must never be used to import the host pip being upgraded.
+            env = kwargs.get("_env")
+            if env is not None:
+                env = dict(env)
+                env.pop("PYTHONPATH", None)
+                env.pop("PYTHONHOME", None)
+                kwargs["_env"] = env
+
+            rewritten = []
+            for part in args:
+                value = str(part).replace(
+                    "source venv/bin/activate && pip install -U pip",
+                    "unset PYTHONPATH PYTHONHOME; "
+                    "source venv/bin/activate && python -m pip install -U pip",
+                )
+                rewritten.append(value)
+            args = tuple(rewritten)
+            from pythonforandroid.logger import info
+            info("SOUNWD: host pip upgrade isolated from target site-packages")
 
         return _original_shprint(command, *args, **kwargs)
 
-    _sounwd_shprint._sounwd_venv_clear_fix = True
+    _sounwd_shprint._sounwd_host_venv_fix = True
     _p4a_build.shprint = _sounwd_shprint
 
 

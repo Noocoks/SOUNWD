@@ -1,8 +1,48 @@
-"""SOUNWD CPython recipe: disable the unsupported grp extension on Android."""
+"""SOUNWD CPython recipe and safe recreation of p4a's host venv."""
 import importlib.util
+import os
+import shutil
 from pathlib import Path
 
 import pythonforandroid
+import pythonforandroid.build as _p4a_build
+
+
+# python-for-android reuses build/venv for each target architecture. Running
+# "python -m venv venv" on an existing environment does NOT clear it: ensurepip
+# overlays the bundled pip files on the upgraded pip from the previous arch.
+# This leaves mixed pip modules (e.g. installer.py from one version and
+# spinners.py from another), causing open_rich_spinner ImportError.
+if not getattr(_p4a_build.shprint, "_sounwd_venv_clear_fix", False):
+    _original_shprint = _p4a_build.shprint
+
+    def _sounwd_shprint(command, *args, **kwargs):
+        arg_strings = [str(arg) for arg in args]
+        is_venv_creation = (
+            len(arg_strings) >= 2
+            and arg_strings[0] == "-m"
+            and arg_strings[1] == "venv"
+        )
+
+        if is_venv_creation:
+            # p4a runs this command with cwd set to its shared build directory.
+            # Delete the old environment before ensurepip lays down a new one.
+            venv_dir = Path.cwd() / "venv"
+            if venv_dir.is_dir():
+                shutil.rmtree(venv_dir)
+
+            # --clear is a second line of defence if p4a changes its call shape.
+            if "--clear" not in arg_strings:
+                args = (*args, "--clear")
+
+            from pythonforandroid.logger import info
+            info("SOUNWD: removed previous host venv before recreating it")
+
+        return _original_shprint(command, *args, **kwargs)
+
+    _sounwd_shprint._sounwd_venv_clear_fix = True
+    _p4a_build.shprint = _sounwd_shprint
+
 
 _p4a_root = Path(pythonforandroid.__file__).resolve().parent
 _base_path = _p4a_root / "recipes" / "python3" / "__init__.py"

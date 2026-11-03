@@ -89,14 +89,35 @@ class SOUNWDApp(App):
             background_normal="",background_color=(64/255,54/255,79/255,1),color=TEXT,font_size="11sp")
         dest.add_widget(self.destination); self.destination.bind(text=self.save_preferences)
         row.add_widget(fmt); row.add_widget(dest); self.settings_row=row; self.settings_cards=(fmt,dest); body.add_widget(row)
-        self.more_btn=self.button("＋  Más opciones",dp(38),(55/255,48/255,67/255,1))
+        self.more_btn=self.button("＋  Opciones avanzadas (yt-dlp)",dp(38),(55/255,48/255,67/255,1))
         self.more_btn.bind(on_release=self.toggle_more); body.add_widget(self.more_btn)
+        basicrow=BoxLayout(orientation="horizontal",size_hint_y=None,height=dp(42),spacing=dp(8))
+        self.playlist=CheckBox(active=saved.get("playlist",False),size_hint=(None,None),size=(dp(30),dp(30)),color=LAVENDER)
+        basicrow.add_widget(self.playlist)
+        basicrow.add_widget(self.label("Descargar la lista completa",11,MUTED))
+        body.add_widget(basicrow)
         self.more=Panel(orientation="vertical",size_hint_y=None,height=0,opacity=0,disabled=True)
-        checkrow=BoxLayout(orientation="horizontal",size_hint_y=None,height=dp(36),spacing=dp(8))
-        self.playlist=CheckBox(size_hint=(None,None),size=(dp(30),dp(30)),color=LAVENDER)
-        checkrow.add_widget(self.playlist)
-        checkrow.add_widget(self.label("Descargar la lista completa si el enlace contiene una",11,MUTED))
-        self.more.add_widget(checkrow); body.add_widget(self.more)
+        self.more.add_widget(self.label("OPCIONES AVANZADAS DE YT-DLP",11,LAVENDER,True,dp(28)))
+        self.advanced_fields={}
+        def advanced_field(key,title,hint):
+            self.more.add_widget(self.label(title,10,MUTED,True,dp(22)))
+            field=TextInput(text=saved.get(key,""),hint_text=hint,multiline=False,size_hint_y=None,height=dp(42),
+                background_normal="",background_active="",background_color=(23/255,21/255,31/255,1),
+                foreground_color=TEXT,hint_text_color=(142/255,132/255,153/255,1),cursor_color=LAVENDER,
+                padding=[dp(10),dp(11)],font_size="13sp")
+            self.more.add_widget(field); self.advanced_fields[key]=field
+        advanced_field("ydl_format","Selector de formato (-f)","Vacío = mejor audio")
+        advanced_field("output_template","Plantilla de nombre (-o)","Vacío = nombre automático")
+        advanced_field("playlist_items","Elementos de lista (--playlist-items)","Ej. 1,3,5-8")
+        advanced_field("limit_rate","Límite de velocidad (--limit-rate)","Ej. 1M o 500K")
+        advanced_field("retries","Reintentos (--retries)","Ej. 10")
+        advanced_field("subtitle_langs","Idiomas de subtítulos (--sub-langs)","Ej. es,en")
+        self.write_subtitles=CheckBox(active=saved.get("write_subtitles",False),size_hint=(None,None),size=(dp(30),dp(30)),color=LAVENDER)
+        subrow=BoxLayout(orientation="horizontal",size_hint_y=None,height=dp(36),spacing=dp(8))
+        subrow.add_widget(self.write_subtitles); subrow.add_widget(self.label("Descargar subtítulos (--write-subs)",11,MUTED))
+        self.more.add_widget(subrow)
+        self.more.add_widget(self.label("La incrustación de portada y metadatos requiere FFmpeg y no está disponible en esta versión Android.",9,MUTED,False,dp(38)))
+        body.add_widget(self.more)
         action=Panel(orientation="vertical",size_hint_y=None,height=dp(178))
         self.status=self.label("4.  Pulsa el botón y espera un momento.",12,MUTED,False,dp(25)); action.add_widget(self.status)
         self.progress=self.label("",10,LAVENDER,False,dp(18)); action.add_widget(self.progress)
@@ -119,7 +140,9 @@ class SOUNWDApp(App):
         return Button(text=text,size_hint_y=None,height=height,background_normal="",background_down="",
                       background_color=color,color=TEXT,font_size=f"{size}sp",bold=True)
     def save_preferences(self,*_):
-        self.store.put("preferences",format=self.format.text,destination=self.destination.text)
+        values={key:field.text.strip() for key,field in getattr(self,"advanced_fields",{}).items()}
+        self.store.put("preferences",format=self.format.text,destination=self.destination.text,
+                       playlist=self.playlist.active,write_subtitles=getattr(self,"write_subtitles",CheckBox()).active,**values)
     def paste_url(self,*_):
         value=Clipboard.paste().strip()
         if value:
@@ -139,8 +162,8 @@ class SOUNWDApp(App):
             self.settings_row.height=dp(124)
     def toggle_more(self,*_):
         show=self.more.height==0
-        self.more.height=dp(65) if show else 0; self.more.opacity=1 if show else 0; self.more.disabled=not show
-        self.more_btn.text="−  Ocultar opciones" if show else "＋  Más opciones"
+        self.more.height=dp(600) if show else 0; self.more.opacity=1 if show else 0; self.more.disabled=not show
+        self.more_btn.text="−  Ocultar opciones avanzadas" if show else "＋  Opciones avanzadas (yt-dlp)"
     def start_download(self,*_):
         if self.downloading:return
         link=self.url.text.strip()
@@ -149,16 +172,28 @@ class SOUNWDApp(App):
         self.downloading=True; self.download.disabled=True; self.download.text="Un momento…"
         self.status.text="Conectando… no cierres SOUNWD."; self.progress.text=""; self.progress_bar.value=0
         self.save_preferences()
-        threading.Thread(target=self.download_worker,args=(link,FORMATS[self.format.text],self.playlist.active,self.destination.text),daemon=True).start()
-    def download_worker(self,link,selector,playlist,destination):
+        self.save_preferences()
+        advanced={key:field.text.strip() for key,field in self.advanced_fields.items()}
+        advanced["write_subtitles"]=self.write_subtitles.active
+        threading.Thread(target=self.download_worker,args=(link,FORMATS[self.format.text],self.playlist.active,self.destination.text,advanced),daemon=True).start()
+    def download_worker(self,link,selector,playlist,destination,advanced):
         before=set(self.private_dir.iterdir())
         def hook(d):
             if d.get("status")=="downloading":
                 total=d.get("total_bytes") or d.get("total_bytes_estimate"); got=d.get("downloaded_bytes",0)
                 pct=int(max(0,min(100,got/total*100))) if total else 0
                 Clock.schedule_once(lambda _dt,p=pct:self.update_progress(p),0)
-        options={"format":selector,"outtmpl":str(self.private_dir/"%(title)s.%(ext)s"),
+        options={"format":advanced["ydl_format"] or selector,
+                 "outtmpl":str(self.private_dir/(advanced["output_template"] or "%(title)s.%(ext)s")),
                  "noplaylist":not playlist,"quiet":True,"no_warnings":True,"progress_hooks":[hook],"overwrites":False}
+        if advanced["playlist_items"]: options["playlist_items"]=advanced["playlist_items"]
+        if advanced["limit_rate"]: options["ratelimit"]=advanced["limit_rate"]
+        if advanced["retries"]:
+            try: options["retries"]=max(0,int(advanced["retries"]))
+            except ValueError:
+                self.events.put(("error","El número de reintentos debe ser un entero.")); return
+        if advanced["subtitle_langs"]: options["subtitleslangs"]=advanced["subtitle_langs"]
+        if advanced["write_subtitles"]: options["writesubtitles"]=True
         try:
             with yt_dlp.YoutubeDL(options) as ydl: code=ydl.download([link])
             if code: raise RuntimeError("La descarga no ha podido terminar.")

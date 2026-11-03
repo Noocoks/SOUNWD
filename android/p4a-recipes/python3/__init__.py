@@ -21,6 +21,13 @@ _BasePython3Recipe = _base_module.Python3Recipe
 
 
 class SounwdPython3Recipe(_BasePython3Recipe):
+    # CPython's setup.py enables grp when grp.h is detected. Android's
+    # NDK header exists on some API levels but its glibc enumeration APIs
+    # do not, so force the configure test off for every Android ABI.
+    configure_args = list(_BasePython3Recipe.configure_args) + [
+        "ac_cv_header_grp_h=no",
+    ]
+
     def apply_patches(self, arch, build_dir=None):
         # Apply the upstream python-for-android patches first.
         super().apply_patches(arch, build_dir=build_dir)

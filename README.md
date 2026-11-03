@@ -23,6 +23,15 @@ Haz doble clic en **SOUNWD.exe**. Si Windows muestra SmartScreen, comprueba que 
 
 Haz clic derecho sobre **SOUNWD**, abre Propiedades → Permisos y activa «Permitir ejecutar el archivo como un programa». Después, haz doble clic y selecciona «Ejecutar».
 
+## Estado de las compilaciones
+
+*Última comprobación: 3 de noviembre de 2026.*
+
+- **Windows y Linux:** compilación correcta en la ejecución [#35](https://github.com/Noocoks/SOUNWD/actions/runs/41551842978). Los artefactos `SOUNWD-Windows` y `SOUNWD-Linux` están disponibles en esa ejecución.
+- **Android:** la ejecución [#6](https://github.com/Noocoks/SOUNWD/actions/runs/41551834307) falla durante la construcción del APK. Buildozer intenta actualizar `pip` en un entorno interno de Python 3.14 y termina con `ImportError: cannot import name 'capture_logging'`. Por tanto, esta ejecución no genera ni publica una APK.
+
+El workflow de escritorio se ejecuta al actualizar `main` y compila Windows y Linux en paralelo. El workflow Android se ejecuta cuando cambian los archivos de `android/` o su propio workflow, y publica el artefacto `SOUNWD-Android-APK` únicamente si la compilación termina correctamente. Puedes consultar el [historial completo de Actions](https://github.com/Noocoks/SOUNWD/actions).
+
 ## Cómo usarlo
 
 1. Copia el enlace del audio en YouTube.
@@ -47,7 +56,7 @@ Si ya conoces yt-dlp, abre **Opciones avanzadas (yt-dlp)** para configurar direc
 - Descargas individuales o listas de reproducción.
 - Indicador de progreso y mensajes fáciles de entender.
 - Aplicaciones independientes compiladas para Windows y Linux.
-- Versión Android en desarrollo, con interfaz Kivy inspirada en el escritorio y compilación APK automática mediante GitHub Actions.
+- Versión Android en desarrollo, con interfaz Kivy inspirada en el escritorio. La compilación automática de la APK está configurada, pero actualmente falla por una incompatibilidad de `pip` en el entorno interno de Python 3.14; consulta el estado de compilaciones más arriba.
 
 ## Desarrollo
 

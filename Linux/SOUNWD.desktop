@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=SOUNWD
+Comment=Your sound. Your moments.
+Exec=sh -c 'cd "$(dirname "%k")/.." && python3 bootstrap.py'
+Icon=audio-x-generic
+Terminal=false
+Categories=AudioVideo;Audio;
+StartupNotify=true

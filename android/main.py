@@ -9,7 +9,15 @@ from pathlib import Path
 
 # Keep a private startup log even when Android closes the process early.
 def _open_startup_log():
-    for base in (os.environ.get("ANDROID_PRIVATE"), os.environ.get("ANDROID_ARGUMENT"), str(Path.home())):
+    # python-for-android does not always expose ANDROID_PRIVATE / ANDROID_ARGUMENT.
+    # Use the verified app-private files directory as an explicit fallback.
+    candidates = (
+        os.environ.get("ANDROID_PRIVATE"),
+        os.environ.get("ANDROID_ARGUMENT"),
+        "/data/user/0/org.sounwd.sounwd/files/app",
+        str(Path.home()),
+    )
+    for base in candidates:
         if not base:
             continue
         try:

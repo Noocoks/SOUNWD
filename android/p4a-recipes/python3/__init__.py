@@ -33,6 +33,8 @@ class SounwdPython3Recipe(_BasePython3Recipe):
         "ac_cv_header_grp_h=no",
         "ac_cv_func_getgrgid=no",
         "ac_cv_func_getgrgid_r=no",
+        "ac_cv_func_getgrouplist=no",
+        "ac_cv_func_initgroups=no",
     ]
 
     def apply_patches(self, arch, build_dir=None):

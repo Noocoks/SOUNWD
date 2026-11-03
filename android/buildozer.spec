@@ -18,6 +18,7 @@ android.enable_androidx = True
 p4a.bootstrap = sdl2
 p4a.branch = master
 p4a.commit = 58d21141f17c889bf8585f5665921d72028f8831
+p4a.local_recipes = p4a-recipes
 log_level = 2
 
 [buildozer]

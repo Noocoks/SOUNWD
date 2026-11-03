@@ -32,12 +32,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y git zip unzip build-essential autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev automake
           python -m pip install --upgrade pip
-          python -m pip install buildozer cython==0.29.34
+          python -m pip install buildozer==1.6.0 cython==0.29.34
+      - name: Verify Android toolchain pins
+        working-directory: android
+        run: |
+          grep -E '^(requirements|p4a.branch|p4a.commit) *=' buildozer.spec
       - name: Build debug APK
         working-directory: android
         env:
           BUILDOZER_WARN_ON_ROOT: "0"
-        run: buildozer -v android debug
+        run: buildozer -v --log-level 2 android debug
+      - name: Verify APK exists
+        run: |
+          test -n "$(find android/bin -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          ls -lh android/bin/*.apk
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:

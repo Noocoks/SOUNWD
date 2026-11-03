@@ -33,10 +33,12 @@ jobs:
           sudo apt-get install -y git zip unzip build-essential autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev automake
           python -m pip install --upgrade pip
           python -m pip install buildozer==1.6.0 cython==0.29.34
-      - name: Verify Android toolchain pins
+      - name: Verify Android toolchain and local recipe
         working-directory: android
         run: |
-          grep -E '^(requirements|p4a.branch|p4a.commit) *=' buildozer.spec
+          grep -E '^(requirements|p4a.branch|p4a.commit|p4a.local_recipes) *=' buildozer.spec
+          test -f p4a-recipes/python3/__init__.py
+          python -m py_compile p4a-recipes/python3/__init__.py
       - name: Build debug APK
         working-directory: android
         env:

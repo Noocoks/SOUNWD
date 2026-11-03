@@ -89,13 +89,13 @@ class SOUNWDApp(App):
             background_normal="",background_color=(64/255,54/255,79/255,1),color=TEXT,font_size="11sp")
         dest.add_widget(self.destination); self.destination.bind(text=self.save_preferences)
         row.add_widget(fmt); row.add_widget(dest); self.settings_row=row; self.settings_cards=(fmt,dest); body.add_widget(row)
-        self.more_btn=self.button("＋  Opciones avanzadas (yt-dlp)",dp(38),(55/255,48/255,67/255,1))
-        self.more_btn.bind(on_release=self.toggle_more); body.add_widget(self.more_btn)
         basicrow=BoxLayout(orientation="horizontal",size_hint_y=None,height=dp(42),spacing=dp(8))
         self.playlist=CheckBox(active=saved.get("playlist",False),size_hint=(None,None),size=(dp(30),dp(30)),color=LAVENDER)
         basicrow.add_widget(self.playlist)
         basicrow.add_widget(self.label("Descargar la lista completa",11,MUTED))
         body.add_widget(basicrow)
+        self.more_btn=self.button("＋  Opciones avanzadas (yt-dlp)",dp(38),(55/255,48/255,67/255,1))
+        self.more_btn.bind(on_release=self.toggle_more); body.add_widget(self.more_btn)
         self.more=Panel(orientation="vertical",size_hint_y=None,height=0,opacity=0,disabled=True)
         self.more.add_widget(self.label("OPCIONES AVANZADAS DE YT-DLP",11,LAVENDER,True,dp(28)))
         self.advanced_fields={}
@@ -171,7 +171,6 @@ class SOUNWDApp(App):
             self.status.text="Pega un enlace válido de YouTube o YouTube Music."; return
         self.downloading=True; self.download.disabled=True; self.download.text="Un momento…"
         self.status.text="Conectando… no cierres SOUNWD."; self.progress.text=""; self.progress_bar.value=0
-        self.save_preferences()
         self.save_preferences()
         advanced={key:field.text.strip() for key,field in self.advanced_fields.items()}
         advanced["write_subtitles"]=self.write_subtitles.active

@@ -59,23 +59,25 @@ class SoundwApp(ctk.CTk):
         self.destination = ctk.StringVar(value=preferences.get("destination", str(DEFAULT_FOLDER)))
         self.audio_format = ctk.StringVar(value=preferences.get("audio_format", "MP3 (recomendado)"))
         self.playlist = ctk.BooleanVar(value=preferences.get("playlist", False))
-        self.appearance = ctk.StringVar(value=preferences.get("appearance", "Oscuro"))
-        self.accent = ctk.StringVar(value=preferences.get("accent", "Lavanda"))
         self.quality = ctk.StringVar(value=preferences.get("quality", "Máxima"))
         self.filename_style = ctk.StringVar(value=preferences.get("filename_style", "Solo título"))
+        self.ydl_format = ctk.StringVar(value=preferences.get("ydl_format", ""))
+        self.output_template = ctk.StringVar(value=preferences.get("output_template", ""))
+        self.playlist_items = ctk.StringVar(value=preferences.get("playlist_items", ""))
+        self.limit_rate = ctk.StringVar(value=preferences.get("limit_rate", ""))
+        self.retries = ctk.StringVar(value=preferences.get("retries", ""))
+        self.subtitle_langs = ctk.StringVar(value=preferences.get("subtitle_langs", ""))
+        self.embed_thumbnail = ctk.BooleanVar(value=preferences.get("embed_thumbnail", False))
+        self.embed_metadata = ctk.BooleanVar(value=preferences.get("embed_metadata", True))
+        self.write_subtitles = ctk.BooleanVar(value=preferences.get("write_subtitles", False))
         if self.audio_format.get() not in FORMATS:
             self.audio_format.set("MP3 (recomendado)")
-        if self.appearance.get() not in {"Oscuro", "Claro", "Sistema"}:
-            self.appearance.set("Oscuro")
-        if self.accent.get() not in ACCENTS:
-            self.accent.set("Lavanda")
         if self.quality.get() not in {"Máxima", "Alta", "Normal"}:
             self.quality.set("Máxima")
         if self.filename_style.get() not in {"Solo título", "Título y canal"}:
             self.filename_style.set("Solo título")
 
         self._build_ui()
-        self._apply_personalization()
         self.bind("<Configure>", self._responsive_layout)
         self.after(80, self._responsive_layout)
         self.after(120, self._process_events)
@@ -173,65 +175,66 @@ class SoundwApp(ctk.CTk):
             command=self._choose_folder,
         ).grid(row=0, column=1, padx=(6, 0))
 
-        self.options_toggle = ctk.CTkButton(
-            page, text="＋  Personalizar experiencia", height=30, width=145,
-            fg_color="transparent", hover_color="#282333",
-            text_color="#C5B6D8", anchor="w",
-            font=ctk.CTkFont(size=11), command=self._toggle_advanced,
-        )
-        self.options_toggle.grid(row=5, column=0, sticky="w", pady=(0, 4))
-
-        self.advanced = ctk.CTkFrame(page, fg_color="#1C1A25", corner_radius=16,
-                                     border_width=1, border_color="#302B3A")
-        self.advanced.grid_columnconfigure((0, 1), weight=1, uniform="personal")
-        ctk.CTkLabel(self.advanced, text="APARIENCIA",
-                     text_color="#C9B8E8", font=ctk.CTkFont(size=10, weight="bold")
-                     ).grid(row=0, column=0, sticky="w", padx=14, pady=(13, 5))
-        self.appearance_menu = ctk.CTkOptionMenu(
-            self.advanced, variable=self.appearance,
-            values=["Oscuro", "Claro", "Sistema"], command=self._preference_changed,
-            height=34, fg_color="#40364F", button_color="#8872AE",
-            dropdown_fg_color="#211E2B",
-        )
-        self.appearance_menu.grid(row=1, column=0, sticky="ew", padx=12, pady=(0, 10))
-        ctk.CTkLabel(self.advanced, text="COLOR DE ACENTO",
-                     text_color="#C9B8E8", font=ctk.CTkFont(size=10, weight="bold")
-                     ).grid(row=0, column=1, sticky="w", padx=14, pady=(13, 5))
-        self.accent_menu = ctk.CTkOptionMenu(
-            self.advanced, variable=self.accent, values=list(ACCENTS),
-            command=self._preference_changed, height=34,
-            fg_color="#40364F", button_color="#8872AE",
-            dropdown_fg_color="#211E2B",
-        )
-        self.accent_menu.grid(row=1, column=1, sticky="ew", padx=12, pady=(0, 10))
-        ctk.CTkLabel(self.advanced, text="CALIDAD DEL AUDIO",
-                     text_color="#C9B8E8", font=ctk.CTkFont(size=10, weight="bold")
-                     ).grid(row=2, column=0, sticky="w", padx=14, pady=(3, 5))
-        self.quality_menu = ctk.CTkOptionMenu(
-            self.advanced, variable=self.quality,
-            values=["Máxima", "Alta", "Normal"], command=self._preference_changed,
-            height=34, fg_color="#40364F", button_color="#8872AE",
-            dropdown_fg_color="#211E2B",
-        )
-        self.quality_menu.grid(row=3, column=0, sticky="ew", padx=12, pady=(0, 10))
-        ctk.CTkLabel(self.advanced, text="NOMBRE DEL ARCHIVO",
-                     text_color="#C9B8E8", font=ctk.CTkFont(size=10, weight="bold")
-                     ).grid(row=2, column=1, sticky="w", padx=14, pady=(3, 5))
-        self.filename_menu = ctk.CTkOptionMenu(
-            self.advanced, variable=self.filename_style,
-            values=["Solo título", "Título y canal"], command=self._preference_changed,
-            height=34, fg_color="#40364F", button_color="#8872AE",
-            dropdown_fg_color="#211E2B",
-        )
-        self.filename_menu.grid(row=3, column=1, sticky="ew", padx=12, pady=(0, 10))
         self.playlist_check = ctk.CTkCheckBox(
-            self.advanced, text="Descargar la lista completa si el enlace contiene una",
+            page, text="Descargar la lista completa si el enlace contiene una",
             variable=self.playlist, command=self._save_preferences,
             text_color="#C8BED2", fg_color="#8872AE", hover_color="#9B86BB",
             font=ctk.CTkFont(size=11),
         )
-        self.playlist_check.grid(row=4, column=0, columnspan=2, sticky="w",
-                                 padx=14, pady=(0, 13))
+        self.playlist_check.grid(row=5, column=0, sticky="w", pady=(0, 5))
+
+        self.options_toggle = ctk.CTkButton(
+            page, text="＋  Opciones avanzadas (yt-dlp)", height=30, width=145,
+            fg_color="transparent", hover_color="#282333",
+            text_color="#C5B6D8", anchor="w",
+            font=ctk.CTkFont(size=11), command=self._toggle_advanced,
+        )
+        self.options_toggle.grid(row=6, column=0, sticky="w", pady=(0, 4))
+
+        self.advanced = ctk.CTkFrame(page, fg_color="#1C1A25", corner_radius=16,
+                                     border_width=1, border_color="#302B3A")
+        self.advanced.grid_columnconfigure((0, 1), weight=1, uniform="personal")
+        ctk.CTkLabel(self.advanced, text="OPCIONES AVANZADAS DE YT-DLP",
+                     text_color="#C9B8E8", font=ctk.CTkFont(size=11, weight="bold")
+                     ).grid(row=0, column=0, columnspan=2, sticky="w", padx=14, pady=(13, 8))
+
+        def add_option(label, variable, row, column, placeholder=""):
+            ctk.CTkLabel(self.advanced, text=label, text_color="#C8BED2",
+                         font=ctk.CTkFont(size=10, weight="bold")
+                         ).grid(row=row, column=column, sticky="w", padx=12, pady=(5, 3))
+            entry = ctk.CTkEntry(self.advanced, textvariable=variable, height=34,
+                                 placeholder_text=placeholder, fg_color="#17151F",
+                                 border_color="#443B53", text_color="#F4EFFA")
+            entry.grid(row=row + 1, column=column, sticky="ew", padx=12, pady=(0, 7))
+            entry.bind("<FocusOut>", lambda _e: self._save_preferences())
+            return entry
+
+        add_option("Selector de formato (-f)", self.ydl_format, 1, 0, "Vacío = mejor audio")
+        add_option("Plantilla de nombre (-o)", self.output_template, 1, 1, "Vacío = nombre automático")
+        add_option("Elementos de lista (--playlist-items)", self.playlist_items, 3, 0, "Ej. 1,3,5-8")
+        add_option("Límite de velocidad (--limit-rate)", self.limit_rate, 3, 1, "Ej. 1M o 500K")
+        add_option("Reintentos (--retries)", self.retries, 5, 0, "Ej. 10")
+        add_option("Idiomas de subtítulos (--sub-langs)", self.subtitle_langs, 5, 1, "Ej. es,en")
+
+        self.embed_thumbnail_check = ctk.CTkCheckBox(
+            self.advanced, text="Incrustar portada (--embed-thumbnail)",
+            variable=self.embed_thumbnail, command=self._save_preferences,
+            text_color="#C8BED2", fg_color="#8872AE", hover_color="#9B86BB",
+            font=ctk.CTkFont(size=10))
+        self.embed_thumbnail_check.grid(row=7, column=0, sticky="w", padx=12, pady=4)
+        self.embed_metadata_check = ctk.CTkCheckBox(
+            self.advanced, text="Incrustar metadatos (--embed-metadata)",
+            variable=self.embed_metadata, command=self._save_preferences,
+            text_color="#C8BED2", fg_color="#8872AE", hover_color="#9B86BB",
+            font=ctk.CTkFont(size=10))
+        self.embed_metadata_check.grid(row=7, column=1, sticky="w", padx=12, pady=4)
+        self.write_subtitles_check = ctk.CTkCheckBox(
+            self.advanced, text="Descargar subtítulos (--write-subs)",
+            variable=self.write_subtitles, command=self._save_preferences,
+            text_color="#C8BED2", fg_color="#8872AE", hover_color="#9B86BB",
+            font=ctk.CTkFont(size=10))
+        self.write_subtitles_check.grid(row=8, column=0, sticky="w", padx=12, pady=(4, 12))
+
 
         self.action_card = ctk.CTkFrame(page, fg_color="#211E2B", corner_radius=18,
                                         border_width=1, border_color="#332D40")
@@ -315,10 +318,17 @@ class SoundwApp(ctk.CTk):
             "destination": self.destination.get(),
             "audio_format": self.audio_format.get(),
             "playlist": self.playlist.get(),
-            "appearance": self.appearance.get(),
-            "accent": self.accent.get(),
             "quality": self.quality.get(),
             "filename_style": self.filename_style.get(),
+            "ydl_format": self.ydl_format.get(),
+            "output_template": self.output_template.get(),
+            "playlist_items": self.playlist_items.get(),
+            "limit_rate": self.limit_rate.get(),
+            "retries": self.retries.get(),
+            "subtitle_langs": self.subtitle_langs.get(),
+            "embed_thumbnail": self.embed_thumbnail.get(),
+            "embed_metadata": self.embed_metadata.get(),
+            "write_subtitles": self.write_subtitles.get(),
         }
         try:
             CONFIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -327,38 +337,15 @@ class SoundwApp(ctk.CTk):
         except OSError:
             pass
 
-    def _preference_changed(self, _value: str = "") -> None:
-        self._apply_personalization()
-        self._save_preferences()
-
-    def _apply_personalization(self) -> None:
-        mode = {"Oscuro": "Dark", "Claro": "Light", "Sistema": "System"}.get(
-            self.appearance.get(), "Dark"
-        )
-        ctk.set_appearance_mode(mode)
-        color = ACCENTS.get(self.accent.get(), ACCENTS["Lavanda"])
-        for widget_name in ("download_button", "appearance_menu", "accent_menu",
-                            "quality_menu", "filename_menu"):
-            widget = getattr(self, widget_name, None)
-            if widget is not None:
-                if widget_name == "download_button":
-                    widget.configure(fg_color=color, hover_color=color)
-                else:
-                    widget.configure(button_color=color, button_hover_color=color)
-        if hasattr(self, "progress"):
-            self.progress.configure(progress_color=color)
-        if hasattr(self, "playlist_check"):
-            self.playlist_check.configure(fg_color=color, hover_color=color)
-
     def _toggle_advanced(self) -> None:
         self.advanced_visible = not self.advanced_visible
         if self.advanced_visible:
-            self.advanced.grid(row=6, column=0, sticky="ew", pady=(0, 8))
-            self.options_toggle.configure(text="−  Ocultar personalización")
+            self.advanced.grid(row=7, column=0, sticky="ew", pady=(0, 8))
+            self.options_toggle.configure(text="−  Ocultar opciones avanzadas")
             self.action_card.grid_configure(row=7)
         else:
             self.advanced.grid_remove()
-            self.options_toggle.configure(text="＋  Más opciones")
+            self.options_toggle.configure(text="＋  Opciones avanzadas (yt-dlp)")
             self.action_card.grid_configure(row=7)
 
     @staticmethod
@@ -423,12 +410,22 @@ class SoundwApp(ctk.CTk):
         self.status_label.configure(text="Conectando… no cierres esta ventana.")
         thread = threading.Thread(
             target=self._download_worker,
-            args=(url, FORMATS[self.audio_format.get()], destination, self.playlist.get(), self.quality.get(), self.filename_style.get()),
+            args=(url, FORMATS[self.audio_format.get()], destination, self.playlist.get(), self.quality.get(), self.filename_style.get(), {
+                "format": self.ydl_format.get().strip(),
+                "outtmpl": self.output_template.get().strip(),
+                "playlist_items": self.playlist_items.get().strip(),
+                "ratelimit": self.limit_rate.get().strip(),
+                "retries": self.retries.get().strip(),
+                "subtitleslangs": self.subtitle_langs.get().strip(),
+                "embedthumbnail": self.embed_thumbnail.get(),
+                "addmetadata": self.embed_metadata.get(),
+                "writesubtitles": self.write_subtitles.get(),
+            }),
             daemon=True,
         )
         thread.start()
 
-    def _download_worker(self, url: str, audio_format: str, destination: Path, playlist: bool, quality_choice: str, filename_choice: str) -> None:
+    def _download_worker(self, url: str, audio_format: str, destination: Path, playlist: bool, quality_choice: str, filename_choice: str, advanced: dict) -> None:
         def hook(data: dict) -> None:
             if data.get("status") == "downloading":
                 downloaded = data.get("downloaded_bytes", 0)
@@ -441,9 +438,9 @@ class SoundwApp(ctk.CTk):
         quality = {"Máxima": "0", "Alta": "192", "Normal": "128"}.get(quality_choice, "0")
         filename = "%(title)s" if filename_choice == "Solo título" else "%(title)s - %(uploader)s"
         options = {
-            "format": "bestaudio/best",
+            "format": advanced["format"] or "bestaudio/best",
             "ffmpeg_location": imageio_ffmpeg.get_ffmpeg_exe(),
-            "outtmpl": str(destination / (filename + ".%(ext)s")),
+            "outtmpl": advanced["outtmpl"] or str(destination / (filename + ".%(ext)s")),
             "noplaylist": not playlist,
             "windowsfilenames": True,
             "quiet": True,
@@ -453,6 +450,25 @@ class SoundwApp(ctk.CTk):
                 {"key": "FFmpegExtractAudio", "preferredcodec": audio_format, "preferredquality": quality},
             ],
         }
+        if advanced["playlist_items"]:
+            options["playlist_items"] = advanced["playlist_items"]
+        if advanced["ratelimit"]:
+            options["ratelimit"] = advanced["ratelimit"]
+        if advanced["retries"]:
+            try:
+                options["retries"] = max(0, int(advanced["retries"]))
+            except ValueError:
+                self.events.put(("error", "El número de reintentos debe ser un entero."))
+                return
+        if advanced["subtitleslangs"]:
+            options["subtitleslangs"] = advanced["subtitleslangs"]
+        if advanced["writesubtitles"]:
+            options["writesubtitles"] = True
+        if advanced["embedthumbnail"]:
+            options["writethumbnail"] = True
+            options["postprocessors"].append({"key": "EmbedThumbnail"})
+        if advanced["addmetadata"]:
+            options["addmetadata"] = True
         try:
             with yt_dlp.YoutubeDL(options) as downloader:
                 result = downloader.download([url])

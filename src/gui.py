@@ -23,14 +23,6 @@ else:
 PREFERENCES_FILE = CONFIG_DIR / "preferences.json"
 FORMATS = {"MP3 (recomendado)": "mp3", "M4A": "m4a", "FLAC": "flac", "OPUS": "opus", "WAV": "wav"}
 SUPPORTED_HOSTS = {"youtube.com", "www.youtube.com", "music.youtube.com", "m.youtube.com", "youtu.be"}
-ACCENTS = {
-    "Lavanda": "#8872AE",
-    "Azul": "#6686B8",
-    "Verde salvia": "#739887",
-    "Rosa": "#B77F9B",
-}
-
-
 def valid_url(value: str) -> bool:
     try:
         parsed = urlparse(value.strip())

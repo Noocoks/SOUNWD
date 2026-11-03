@@ -1,8 +1,4 @@
-"""Android-specific CPython recipe and host-pip isolation for python-for-android.
-
-Android's Bionic libc lacks the glibc group-enumeration APIs used by CPython's
-grp module. SOUNWD does not need grp, so disable it in the stdlib build.
-"""
+"""SOUNWD's Android-specific python-for-android recipe fixes."""
 import importlib.util
 from pathlib import Path
 
@@ -10,40 +6,47 @@ import pythonforandroid
 import pythonforandroid.build as _p4a_build
 
 
-# p4a's pure-Python package installer creates a host venv while its parent
-# process has target-Python paths configured. The venv's pip can then import
-# files from two different pip installations (notably open_rich_spinner).
-# Strip PYTHONPATH both from sh's child environment and from the shell before
-# activating the venv. Use "python -m pip" so the interpreter and pip agree.
-if not getattr(_p4a_build.shprint, "_sounwd_pip_env_fix", False):
+# p4a runs a host-side venv while cross-compilation environment variables are
+# active. If PYTHONPATH/PYTHONHOME leak into "python -m venv", pip in the new
+# venv can be assembled from incompatible host/target modules. Isolate the
+# venv creation itself (not merely the later pip upgrade).
+if not getattr(_p4a_build.shprint, "_sounwd_host_env_fix", False):
     _original_shprint = _p4a_build.shprint
 
     def _sounwd_shprint(command, *args, **kwargs):
         command_text = " ".join(str(part) for part in (command, *args))
-        if "pip install -U pip" in command_text:
-            env = kwargs.get("_env")
+        env = kwargs.get("_env")
+
+        if "python -m venv venv" in command_text or "pip install -U pip" in command_text:
             if env is not None:
                 env = dict(env)
                 env.pop("PYTHONPATH", None)
                 env.pop("PYTHONHOME", None)
                 kwargs["_env"] = env
 
-            # sh's _env handling differs between p4a releases; make the
-            # isolation explicit in the shell command as well.
-            args = tuple(
-                str(part).replace(
+            # Also protect shell-invoked commands when sh inherits the parent
+            # environment instead of receiving an explicit _env dictionary.
+            rewritten = []
+            for part in args:
+                value = str(part)
+                value = value.replace(
+                    "python -m venv venv",
+                    "env -u PYTHONPATH -u PYTHONHOME python -m venv venv",
+                )
+                value = value.replace(
                     "source venv/bin/activate && pip install -U pip",
                     "unset PYTHONPATH PYTHONHOME; "
                     "source venv/bin/activate && python -m pip install -U pip",
                 )
-                for part in args
-            )
+                rewritten.append(value)
+            args = tuple(rewritten)
+
             from pythonforandroid.logger import info
-            info("SOUNWD: isolated host pip from target Python environment")
+            info("SOUNWD: isolated host venv/pip from target Python environment")
 
         return _original_shprint(command, *args, **kwargs)
 
-    _sounwd_shprint._sounwd_pip_env_fix = True
+    _sounwd_shprint._sounwd_host_env_fix = True
     _p4a_build.shprint = _sounwd_shprint
 
 
@@ -59,12 +62,9 @@ _BasePython3Recipe = _base_module.Python3Recipe
 
 class SounwdPython3Recipe(_BasePython3Recipe):
     def get_recipe_dir(self):
-        # Keep upstream patch files available; this recipe only overrides
-        # behaviour and does not duplicate python-for-android patch files.
         return str(_base_path.parent)
 
-    # CPython's setup.py enables grp when grp.h is detected. Android's NDK
-    # header may exist, but Bionic does not provide the glibc APIs it needs.
+    # Android Bionic does not provide glibc's group-enumeration APIs.
     configure_args = list(_BasePython3Recipe.configure_args) + [
         "ac_cv_header_grp_h=no",
         "ac_cv_func_getgrgid=no",

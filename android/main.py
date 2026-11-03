@@ -142,7 +142,7 @@ class SOUNWDApp(App):
     def save_preferences(self,*_):
         values={key:field.text.strip() for key,field in getattr(self,"advanced_fields",{}).items()}
         self.store.put("preferences",format=self.format.text,destination=self.destination.text,
-                       playlist=self.playlist.active,write_subtitles=getattr(self,"write_subtitles",CheckBox()).active,**values)
+                       playlist=self.playlist.active,write_subtitles=self.write_subtitles.active,**values)
     def paste_url(self,*_):
         value=Clipboard.paste().strip()
         if value:
@@ -183,8 +183,11 @@ class SOUNWDApp(App):
                 total=d.get("total_bytes") or d.get("total_bytes_estimate"); got=d.get("downloaded_bytes",0)
                 pct=int(max(0,min(100,got/total*100))) if total else 0
                 Clock.schedule_once(lambda _dt,p=pct:self.update_progress(p),0)
+        template=advanced["output_template"] or "%(title)s.%(ext)s"
+        template_path=Path(template)
+        if not template_path.is_absolute(): template_path=self.private_dir/template_path
         options={"format":advanced["ydl_format"] or selector,
-                 "outtmpl":str(self.private_dir/(advanced["output_template"] or "%(title)s.%(ext)s")),
+                 "outtmpl":str(template_path),
                  "noplaylist":not playlist,"quiet":True,"no_warnings":True,"progress_hooks":[hook],"overwrites":False}
         if advanced["playlist_items"]: options["playlist_items"]=advanced["playlist_items"]
         if advanced["limit_rate"]: options["ratelimit"]=advanced["limit_rate"]

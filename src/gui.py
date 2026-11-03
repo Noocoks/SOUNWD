@@ -238,7 +238,7 @@ class SoundwApp(ctk.CTk):
 
         self.action_card = ctk.CTkFrame(page, fg_color="#211E2B", corner_radius=18,
                                         border_width=1, border_color="#332D40")
-        self.action_card.grid(row=7, column=0, sticky="ew", pady=(8, 0))
+        self.action_card.grid(row=8, column=0, sticky="ew", pady=(8, 0))
         self.action_card.grid_columnconfigure(0, weight=1)
         self.status_label = ctk.CTkLabel(
             self.action_card, text="2.  Pulsa el botón y espera un momento.",
@@ -269,7 +269,7 @@ class SoundwApp(ctk.CTk):
         ctk.CTkLabel(
             page, text="Solo descarga contenido que tengas permiso para guardar.\nSOUNWD no descarga música desde Spotify.",
             text_color="#81798A", justify="center", font=ctk.CTkFont(size=10),
-        ).grid(row=8, column=0, pady=(18, 0))
+        ).grid(row=9, column=0, pady=(18, 0))
 
     def _responsive_layout(self, event=None) -> None:
         if event is not None and event.widget is not self:
@@ -342,7 +342,7 @@ class SoundwApp(ctk.CTk):
         if self.advanced_visible:
             self.advanced.grid(row=7, column=0, sticky="ew", pady=(0, 8))
             self.options_toggle.configure(text="−  Ocultar opciones avanzadas")
-            self.action_card.grid_configure(row=7)
+            self.action_card.grid_configure(row=8)
         else:
             self.advanced.grid_remove()
             self.options_toggle.configure(text="＋  Opciones avanzadas (yt-dlp)")

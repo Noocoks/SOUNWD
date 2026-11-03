@@ -28,7 +28,7 @@ Haz clic derecho sobre **SOUNWD**, abre Propiedades → Permisos y activa «Perm
 *Última comprobación: 3 de noviembre de 2026.*
 
 - **Windows y Linux:** compilación correcta en la ejecución [#35](https://github.com/Noocoks/SOUNWD/actions/runs/41551842978). Los artefactos `SOUNWD-Windows` y `SOUNWD-Linux` están disponibles en esa ejecución.
-- **Android:** la ejecución [#6](https://github.com/Noocoks/SOUNWD/actions/runs/41551834307) falla durante la construcción del APK. Buildozer intenta actualizar `pip` en un entorno interno de Python 3.14 y termina con `ImportError: cannot import name 'capture_logging'`. Por tanto, esta ejecución no genera ni publica una APK.
+- **Android:** se ha actualizado la configuración de compilación para fijar Buildozer 1.6.0, python-for-android y Python/hostpython 3.12.10, evitando que se seleccione automáticamente Python 3.14. También se comprueba explícitamente que exista un APK antes de subirlo como artefacto. La ejecución de validación está disponible en [GitHub Actions](https://github.com/Noocoks/SOUNWD/actions/workflows/android.yml); la APK solo estará disponible cuando esa ejecución termine correctamente.
 
 El workflow de escritorio se ejecuta al actualizar `main` y compila Windows y Linux en paralelo. El workflow Android se ejecuta cuando cambian los archivos de `android/` o su propio workflow, y publica el artefacto `SOUNWD-Android-APK` únicamente si la compilación termina correctamente. Puedes consultar el [historial completo de Actions](https://github.com/Noocoks/SOUNWD/actions).
 

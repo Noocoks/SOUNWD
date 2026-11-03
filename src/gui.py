@@ -337,6 +337,9 @@ class SoundwApp(ctk.CTk):
         except OSError:
             pass
 
+    def _preference_changed(self, _value: str = "") -> None:
+        self._save_preferences()
+
     def _toggle_advanced(self) -> None:
         self.advanced_visible = not self.advanced_visible
         if self.advanced_visible:

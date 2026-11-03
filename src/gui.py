@@ -277,9 +277,8 @@ class SoundwApp(ctk.CTk):
         if width < 650:
             self.settings.grid_columnconfigure(0, weight=1)
             self.settings.grid_columnconfigure(1, weight=0)
-            for card in self.settings.winfo_children():
-                column = card.grid_info().get("column", 0)
-                card.grid_configure(row=column, column=0, padx=0, pady=(0, 8), sticky="ew")
+            for index, card in enumerate(self.settings.winfo_children()):
+                card.grid_configure(row=index, column=0, padx=0, pady=(0, 8), sticky="ew")
         else:
             self.settings.grid_columnconfigure(0, weight=1, uniform="settings")
             self.settings.grid_columnconfigure(1, weight=1, uniform="settings")

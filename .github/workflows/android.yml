@@ -46,7 +46,7 @@ jobs:
         run: |
           grep -E '^(requirements|p4a.branch|p4a.commit|p4a.local_recipes) *=' buildozer.spec
           test -f p4a-recipes/python3/__init__.py
-          python -m py_compile p4a-recipes/python3/__init__.py
+          python -m py_compile p4a-recipes/python3/__init__.py sitecustomize.py main.py
       - name: Build debug APK
         working-directory: android
         env:

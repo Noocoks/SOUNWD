@@ -1,7 +1,67 @@
 from __future__ import annotations
+import faulthandler
+import os
 import queue
+import sys
 import threading
+import traceback
 from pathlib import Path
+
+# Keep a private startup log even when Android closes the process early.
+def _open_startup_log():
+    # python-for-android does not always expose ANDROID_PRIVATE / ANDROID_ARGUMENT.
+    # Use the verified app-private files directory as an explicit fallback.
+    candidates = (
+        os.environ.get("ANDROID_PRIVATE"),
+        os.environ.get("ANDROID_ARGUMENT"),
+        "/data/user/0/org.sounwd.sounwd/files/app",
+        str(Path.home()),
+    )
+    for base in candidates:
+        if not base:
+            continue
+        try:
+            folder = Path(base)
+            folder.mkdir(parents=True, exist_ok=True)
+            return (folder / "sounwd-startup.log").open("a", buffering=1)
+        except Exception:
+            pass
+    return None
+
+_STARTUP_LOG = _open_startup_log()
+if _STARTUP_LOG is not None:
+    sys.stderr = _STARTUP_LOG
+    sys.stdout = _STARTUP_LOG
+    try:
+        faulthandler.enable(_STARTUP_LOG, all_threads=True)
+    except Exception:
+        pass
+
+def _log_startup(message):
+    if _STARTUP_LOG is not None:
+        try:
+            _STARTUP_LOG.write("\n[SOUNWD] " + message + "\n")
+            _STARTUP_LOG.flush()
+        except Exception:
+            pass
+
+def _log_uncaught(exc_type, exc_value, exc_tb):
+    _log_startup("UNCAUGHT PYTHON EXCEPTION")
+    if _STARTUP_LOG is not None:
+        traceback.print_exception(exc_type, exc_value, exc_tb, file=_STARTUP_LOG)
+        _STARTUP_LOG.flush()
+    sys.__excepthook__(exc_type, exc_value, exc_tb)
+
+sys.excepthook = _log_uncaught
+
+def _log_thread_exception(args):
+    _log_startup("UNCAUGHT THREAD EXCEPTION: " + args.thread.name)
+    if _STARTUP_LOG is not None:
+        traceback.print_exception(args.exc_type, args.exc_value, args.exc_traceback, file=_STARTUP_LOG)
+        _STARTUP_LOG.flush()
+
+threading.excepthook = _log_thread_exception
+_log_startup('main.py module entered; Python standard-library setup complete')
 from urllib.parse import urlparse
 from kivy.app import App
 from kivy.clock import Clock
@@ -22,9 +82,12 @@ from kivy.uix.spinner import Spinner
 from kivy.uix.textinput import TextInput
 from kivy.graphics import Color, RoundedRectangle
 
+_log_startup('Kivy imports completed successfully')
+
 BG=(18/255,17/255,26/255,1); CARD=(33/255,30/255,43/255,1)
-LAVENDER=(136/255,114/255,174/255,1); TEXT=(244/255,239/255,250/255,1)
-MUTED=(182/255,173/255,191/255,1)
+LAVENDER=(136/255,114/255,174/255,1); BRAND_LAVENDER=(200/255,182/255,232/255,1)
+TEXT=(244/255,239/255,250/255,1); MUTED=(182/255,173/255,191/255,1)
+BRAND_MUTED=(166/255,156/255,175/255,1)
 FORMATS={"Mejor disponible":"bestaudio/best","M4A (si existe)":"bestaudio[ext=m4a]/bestaudio/best","OPUS (si existe)":"bestaudio[acodec=opus]/bestaudio/best"}
 DESTINATIONS={"Música / SOUNWD":"Music","Descargas / SOUNWD":"Downloads"}
 HOSTS={"youtube.com","www.youtube.com","music.youtube.com","m.youtube.com","youtu.be"}
@@ -45,19 +108,21 @@ class Panel(BoxLayout):
 
 class SOUNWDApp(App):
     def build(self):
+        _log_startup('SOUNWDApp.build entered')
         self.title="SOUNWD"; self.events=queue.Queue(); self.downloading=False; self.last_files=[]
         self.store=JsonStore(str(Path(self.user_data_dir)/"preferences.json"))
+        _log_startup("preferences store initialized")
         self.private_dir=Path(self.user_data_dir)/"downloads"; self.private_dir.mkdir(parents=True,exist_ok=True)
         saved=self.store.get("preferences") if self.store.exists("preferences") else {}
         Window.clearcolor=BG; Window.softinput_mode="below_target"
         root=BoxLayout(orientation="vertical",padding=[dp(17),dp(12),dp(17),dp(12)])
-        scroll=ScrollView(do_scroll_x=False,bar_width=dp(3))
+        scroll=ScrollView(do_scroll_x=False,do_scroll_y=True,scroll_y=1.0,scroll_type=["bars","content"],bar_width=dp(5),bar_color=BRAND_LAVENDER,bar_inactive_color=(200/255,182/255,232/255,0.28),scroll_wheel_distance=dp(40))
         body=BoxLayout(orientation="vertical",size_hint_y=None,spacing=dp(11),padding=[0,0,0,dp(12)])
         body.bind(minimum_height=body.setter("height"))
         brand=BoxLayout(orientation="vertical",size_hint_y=None,height=dp(100),spacing=0)
-        brand.add_widget(self.label("◖♪",30,LAVENDER,True,dp(34)))
+        brand.add_widget(self.label("◖♪",30,BRAND_LAVENDER,True,dp(34)))
         brand.add_widget(self.label("SOUNWD.",27,TEXT,True,dp(38)))
-        brand.add_widget(self.label("YOUR SOUND. YOUR MOMENTS.",10,MUTED,True,dp(22)))
+        brand.add_widget(self.label("YOUR SOUND. YOUR MOMENTS.",10,BRAND_MUTED,True,dp(22)))
         body.add_widget(brand)
         body.add_widget(self.label("Tu música. Tu espacio. Tu estilo.",20,TEXT,True,dp(34)))
         body.add_widget(self.label("Un lugar tranquilo para guardar los sonidos que te acompañan.",12,MUTED,False,dp(34)))
@@ -127,6 +192,7 @@ class SOUNWDApp(App):
         body.add_widget(action)
         body.add_widget(self.label("Descarga solo contenido que tengas permiso para guardar.\nSOUNWD no descarga música desde Spotify.",10,MUTED,False,dp(42)))
         scroll.add_widget(body); root.add_widget(scroll)
+        _log_startup('main interface constructed')
         Window.bind(on_resize=self.on_resize)
         Clock.schedule_once(lambda _dt:self.on_resize(Window,Window.width,Window.height),0)
         Clock.schedule_interval(self.poll_events,0.15)
@@ -253,4 +319,13 @@ class SOUNWDApp(App):
             else:self.status.text="No se ha podido preparar el archivo para compartir."
         except Exception as e:self.popup("No se ha podido compartir: "+str(e))
 
-if __name__=="__main__": SOUNWDApp().run()
+if __name__=="__main__":
+    _log_startup("Python entrypoint reached; starting Kivy")
+    try:
+        SOUNWDApp().run()
+    except BaseException:
+        _log_startup("FATAL: exception escaped Kivy app")
+        if _STARTUP_LOG is not None:
+            traceback.print_exc(file=_STARTUP_LOG)
+            _STARTUP_LOG.flush()
+        raise

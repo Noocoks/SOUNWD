@@ -39,7 +39,7 @@ class SoundwApp(ctk.CTk):
         super().__init__()
         self.title("SOUNWD · Tu sonido. Tus momentos.")
         self.geometry("820x780")
-        self.minsize(520, 650)
+        self.minsize(520, 460)
         self.configure(fg_color="#12111A")
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("dark-blue")
@@ -78,7 +78,7 @@ class SoundwApp(ctk.CTk):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        page = ctk.CTkFrame(self, fg_color="transparent")
+        page = ctk.CTkScrollableFrame(self, fg_color="transparent", corner_radius=0, scrollbar_button_color="#554766", scrollbar_button_hover_color="#8872AE")
         self.page = page
         page.grid(row=0, column=0, sticky="nsew", padx=24, pady=22)
         page.grid_columnconfigure(0, weight=1)

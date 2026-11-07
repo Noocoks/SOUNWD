@@ -124,7 +124,11 @@ def main() -> int:
 
     is_playlist = Confirm.ask("¿Es una lista de reproducción y quieres descargar sus pistas?", default=False)
     audio_format, label = choose_format()
-    destination = choose_destination()
+    try:
+        destination = choose_destination()
+    except OSError as error:
+        console.print(f"\\n[red]No se puede preparar la carpeta de destino:[/red] {error}")
+        return 1
 
     console.print(Panel(
         f"[bold]Formato:[/bold] {label}\n[bold]Destino:[/bold] {destination}\n"

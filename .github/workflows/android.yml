@@ -1,4 +1,4 @@
-name: Build SOUNWD Android APK
+name: Build SOUNWD Android APK (PR validation)
 
 on:
   push:

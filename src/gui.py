@@ -409,16 +409,16 @@ class SoundwApp(ctk.CTk):
 
     def _open_folder(self) -> None:
         folder = Path(self.destination.get()).expanduser()
-        folder.mkdir(parents=True, exist_ok=True)
         try:
+            folder.mkdir(parents=True, exist_ok=True)
             if os.name == "nt":
                 os.startfile(str(folder))
             elif sys_platform() == "darwin":
                 subprocess.Popen(["open", str(folder)])
             else:
                 subprocess.Popen(["xdg-open", str(folder)])
-        except Exception:
-            messagebox.showinfo("Tu carpeta", f"Tu música está guardada aquí:\n{folder}")
+        except Exception as error:
+            messagebox.showerror("No se puede abrir la carpeta", f"No he podido abrir o preparar esta carpeta:\n{folder}\n\nDetalle: {error}")
 
     def _start_download(self) -> None:
         if self.downloading:

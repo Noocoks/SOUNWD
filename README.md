@@ -27,7 +27,7 @@ Haz clic derecho sobre **SOUNWD**, abre Propiedades → Permisos y activa «Perm
 
 *Última actualización: 7 de noviembre de 2026.*
 
-- **Windows y Linux:** compilación correcta en la ejecución [#35](https://github.com/Noocoks/SOUNWD/actions/runs/41551842978). Los artefactos `SOUNWD-Windows` y `SOUNWD-Linux` están disponibles en esa ejecución.
+- **Windows y Linux:** las compilaciones se generan mediante [GitHub Actions](https://github.com/Noocoks/SOUNWD/actions/workflows/build.yml). Descarga los artefactos de la ejecución más reciente que haya terminado correctamente.
 - **Android:** la compilación principal ha terminado correctamente y el workflow verifica que el APK exista antes de publicarlo como artefacto. Consulta [GitHub Actions](https://github.com/Noocoks/SOUNWD/actions/workflows/android.yml) para obtener la ejecución más reciente.
 
 El workflow de escritorio se ejecuta al actualizar `main` y compila Windows y Linux en paralelo. El workflow Android se ejecuta cuando cambian los archivos de `android/` o su propio workflow, y publica el artefacto `SOUNWD-Android-APK` únicamente si la compilación termina correctamente. Puedes consultar el [historial completo de Actions](https://github.com/Noocoks/SOUNWD/actions).

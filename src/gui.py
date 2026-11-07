@@ -4,6 +4,7 @@ import json
 import os
 import queue
 import subprocess
+import sys
 import threading
 from pathlib import Path
 from urllib.parse import urlparse
@@ -43,6 +44,7 @@ class SoundwApp(ctk.CTk):
         self.geometry("900x820")
         self.minsize(560, 520)
         self.configure(fg_color="#080808")
+        self._set_window_icon()
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("dark-blue")
 
@@ -82,6 +84,17 @@ class SoundwApp(ctk.CTk):
             self.page.bind_all("<Button-5>", self._on_linux_mousewheel, add="+")
         self.after(80, self._responsive_layout)
         self.after(120, self._process_events)
+
+    def _set_window_icon(self) -> None:
+        """Use the shared skull artwork for the native window/taskbar icon."""
+        bundle_root = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
+        icon_path = bundle_root / "assets" / "sounwd.png"
+        try:
+            self._window_icon = tkinter.PhotoImage(file=str(icon_path))
+            self.iconphoto(True, self._window_icon)
+        except (OSError, tkinter.TclError):
+            # Keep source runs functional if the optional generated raster is absent.
+            self._window_icon = None
 
     def _build_ui(self) -> None:
         self.grid_columnconfigure(0, weight=1)

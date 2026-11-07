@@ -17,9 +17,9 @@ try:
 
     top_spacer = app.content.grid_bbox(0, 0)[3]
     bottom_spacer = app.content.grid_bbox(0, 11)[3]
-    if top_spacer < 1 or bottom_spacer < 1:
+    if top_spacer < 5 or bottom_spacer < 5:
         raise AssertionError(
-            f"Centering spacers are missing: top={top_spacer}, bottom={bottom_spacer}; "
+            f"Centering spacers are too small: top={top_spacer}, bottom={bottom_spacer}; "
             f"content={app.content.winfo_reqheight()}px, "
             f"viewport={app.page._parent_canvas.winfo_height()}px"
         )

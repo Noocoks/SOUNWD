@@ -71,6 +71,11 @@ class SoundwApp(ctk.CTk):
 
         self._build_ui()
         self.bind("<Configure>", self._responsive_layout)
+        # Oculta la barra: el desplazamiento sigue disponible con la rueda.
+        self.page._scrollbar.grid_remove()
+        self.bind_all("<MouseWheel>", self._on_mousewheel, add="+")
+        self.bind_all("<Button-4>", self._on_mousewheel_linux, add="+")
+        self.bind_all("<Button-5>", self._on_mousewheel_linux, add="+")
         self.after(80, self._responsive_layout)
         self.after(120, self._process_events)
 
@@ -263,6 +268,44 @@ class SoundwApp(ctk.CTk):
             text_color="#81798A", justify="center", font=ctk.CTkFont(size=10),
         ).grid(row=9, column=0, pady=(18, 0))
 
+        # Reparte el espacio sobrante entre el margen superior e inferior.
+        page.grid_rowconfigure(0, weight=1)
+        page.grid_rowconfigure(9, weight=1)
+
+    def _center_content(self) -> None:
+        """Centra el contenido si cabe; conserva el área desplazable si no."""
+        canvas = self.page._parent_canvas
+        canvas.update_idletasks()
+        content_height = self.page.winfo_reqheight()
+        viewport_height = canvas.winfo_height()
+        canvas.itemconfigure(
+            self.page._parent_canvas_window,
+            height=max(content_height, viewport_height),
+        )
+
+    def _is_inside_page(self, widget) -> bool:
+        while widget is not None:
+            if widget is self.page:
+                return True
+            widget = getattr(widget, "master", None)
+        return False
+
+    def _on_mousewheel(self, event):
+        if not self._is_inside_page(event.widget):
+            return
+        steps = -int(event.delta / 120)
+        if steps == 0 and event.delta:
+            steps = -1 if event.delta > 0 else 1
+        self.page._parent_canvas.yview_scroll(steps, "units")
+        return "break"
+
+    def _on_mousewheel_linux(self, event):
+        if not self._is_inside_page(event.widget):
+            return
+        steps = -3 if event.num == 4 else 3
+        self.page._parent_canvas.yview_scroll(steps, "units")
+        return "break"
+
     def _responsive_layout(self, event=None) -> None:
         if event is not None and event.widget is not self:
             return
@@ -281,6 +324,7 @@ class SoundwApp(ctk.CTk):
                 card.grid_configure(row=0, column=index,
                                     padx=(0, 7) if index == 0 else (7, 0),
                                     pady=0, sticky="nsew")
+        self.after_idle(self._center_content)
 
     def _paste_url(self) -> None:
         try:
@@ -342,6 +386,7 @@ class SoundwApp(ctk.CTk):
             self.advanced.grid_remove()
             self.options_toggle.configure(text="＋  Opciones avanzadas (yt-dlp)")
             self.action_card.grid_configure(row=7)
+        self.after_idle(self._center_content)
 
     @staticmethod
     def _short_path(value: str) -> str:

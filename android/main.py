@@ -344,7 +344,8 @@ class SOUNWDApp(App):
             collection=Environment.DIRECTORY_DOWNLOADS if self.destination.text.startswith("Descargas") else Environment.DIRECTORY_MUSIC
             uris=[]
             for name in self.last_files:
-                file_path=Path(name).expanduser()\n                if not file_path.is_absolute(): file_path=self.private_dir/file_path\n                uri=shared.copy_to_shared(str(file_path.resolve()),collection=collection)
+                file_path=Path(name).expanduser()
+                if not file_path.is_absolute(): file_path=self.private_dir/file_path\n                uri=shared.copy_to_shared(str(file_path.resolve()),collection=collection)
                 if uri:uris.append(uri)
             if uris:ShareSheet().share_file_list(uris)
             else:self.status.text="No se ha podido preparar el archivo para compartir."

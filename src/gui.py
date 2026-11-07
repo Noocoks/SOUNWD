@@ -71,7 +71,7 @@ class SoundwApp(ctk.CTk):
 
         self._build_ui()
         self.bind("<Configure>", self._responsive_layout)
-        # Oculta la barra: el desplazamiento sigue disponible con la rueda.
+        # La barra no se muestra; el desplazamiento se controla con la rueda.
         self.page._scrollbar.grid_remove()
         self.bind_all("<MouseWheel>", self._on_mousewheel, add="+")
         self.bind_all("<Button-4>", self._on_mousewheel_linux, add="+")
@@ -87,9 +87,15 @@ class SoundwApp(ctk.CTk):
         self.page = page
         page.grid(row=0, column=0, sticky="nsew", padx=24, pady=22)
         page.grid_columnconfigure(0, weight=1)
+        # El canvas debe ocupar al menos la altura visible para poder centrar.
+        page._parent_canvas.bind("<Configure>", lambda _event: self.after_idle(self._center_content))
+
+        # Filas vacías superior e inferior: absorben el espacio sobrante.
+        page._parent_frame.grid_rowconfigure(0, weight=1)
+        page._parent_frame.grid_rowconfigure(10, weight=1)
 
         brand = ctk.CTkFrame(page, fg_color="transparent")
-        brand.grid(row=0, column=0, sticky="ew", pady=(0, 28))
+        brand.grid(row=2, column=0, sticky="ew", pady=(0, 28))
         ctk.CTkLabel(brand, text="◖♪", text_color="#C8B6E8",
                      font=ctk.CTkFont(size=30, weight="bold")).pack()
         ctk.CTkLabel(brand, text="SOUNWD.", text_color="#F4EFFA",
@@ -99,14 +105,14 @@ class SoundwApp(ctk.CTk):
 
         ctk.CTkLabel(page, text="Tu música. Tu espacio. Tu estilo.",
                      text_color="#F4EFFA", font=ctk.CTkFont(size=25, weight="bold")
-                     ).grid(row=1, column=0, pady=(0, 7))
+                     ).grid(row=2, column=0, pady=(0, 7))
         ctk.CTkLabel(page, text="Un lugar tranquilo para guardar los sonidos que te acompañan.",
                      text_color="#B6ADBF", font=ctk.CTkFont(size=13)
-                     ).grid(row=2, column=0, pady=(0, 24))
+                     ).grid(row=3, column=0, pady=(0, 24))
 
         link_card = ctk.CTkFrame(page, fg_color="#211E2B", corner_radius=18,
                                  border_width=1, border_color="#332D40")
-        link_card.grid(row=3, column=0, sticky="ew", pady=(0, 14))
+        link_card.grid(row=4, column=0, sticky="ew", pady=(0, 14))
         link_card.grid_columnconfigure(0, weight=1)
         ctk.CTkLabel(link_card, text="1.  PEGA AQUÍ EL ENLACE",
                      text_color="#C9B8E8", font=ctk.CTkFont(size=11, weight="bold")
@@ -118,10 +124,10 @@ class SoundwApp(ctk.CTk):
             text_color="#F4EFFA", placeholder_text_color="#8E8499",
             font=ctk.CTkFont(size=13),
         )
-        self.url_entry.grid(row=1, column=0, sticky="ew", padx=20, pady=(0, 8))
+        self.url_entry.grid(row=2, column=0, sticky="ew", padx=20, pady=(0, 8))
         self.url_entry.bind("<Return>", lambda _event: self._start_download())
         link_actions = ctk.CTkFrame(link_card, fg_color="transparent")
-        link_actions.grid(row=2, column=0, sticky="ew", padx=20, pady=(0, 14))
+        link_actions.grid(row=3, column=0, sticky="ew", padx=20, pady=(0, 14))
         ctk.CTkButton(
             link_actions, text="Pegar enlace", width=110, height=30,
             fg_color="#40364F", hover_color="#554766",
@@ -135,7 +141,7 @@ class SoundwApp(ctk.CTk):
 
         settings = ctk.CTkFrame(page, fg_color="transparent")
         self.settings = settings
-        settings.grid(row=4, column=0, sticky="ew", pady=(0, 8))
+        settings.grid(row=5, column=0, sticky="ew", pady=(0, 8))
         settings.grid_columnconfigure((0, 1), weight=1, uniform="settings")
 
         format_card = ctk.CTkFrame(settings, fg_color="#211E2B", corner_radius=14,
@@ -178,7 +184,7 @@ class SoundwApp(ctk.CTk):
             text_color="#C8BED2", fg_color="#8872AE", hover_color="#9B86BB",
             font=ctk.CTkFont(size=11),
         )
-        self.playlist_check.grid(row=5, column=0, sticky="w", pady=(0, 5))
+        self.playlist_check.grid(row=6, column=0, sticky="w", pady=(0, 5))
 
         self.options_toggle = ctk.CTkButton(
             page, text="＋  Opciones avanzadas (yt-dlp)", height=30, width=145,
@@ -186,7 +192,7 @@ class SoundwApp(ctk.CTk):
             text_color="#C5B6D8", anchor="w",
             font=ctk.CTkFont(size=11), command=self._toggle_advanced,
         )
-        self.options_toggle.grid(row=6, column=0, sticky="w", pady=(0, 4))
+        self.options_toggle.grid(row=7, column=0, sticky="w", pady=(0, 4))
 
         self.advanced = ctk.CTkFrame(page, fg_color="#1C1A25", corner_radius=16,
                                      border_width=1, border_color="#302B3A")
@@ -218,24 +224,24 @@ class SoundwApp(ctk.CTk):
             variable=self.embed_thumbnail, command=self._save_preferences,
             text_color="#C8BED2", fg_color="#8872AE", hover_color="#9B86BB",
             font=ctk.CTkFont(size=10))
-        self.embed_thumbnail_check.grid(row=7, column=0, sticky="w", padx=12, pady=4)
+        self.embed_thumbnail_check.grid(row=8, column=0, sticky="w", padx=12, pady=4)
         self.embed_metadata_check = ctk.CTkCheckBox(
             self.advanced, text="Incrustar metadatos (--embed-metadata)",
             variable=self.embed_metadata, command=self._save_preferences,
             text_color="#C8BED2", fg_color="#8872AE", hover_color="#9B86BB",
             font=ctk.CTkFont(size=10))
-        self.embed_metadata_check.grid(row=7, column=1, sticky="w", padx=12, pady=4)
+        self.embed_metadata_check.grid(row=8, column=1, sticky="w", padx=12, pady=4)
         self.write_subtitles_check = ctk.CTkCheckBox(
             self.advanced, text="Descargar subtítulos (--write-subs)",
             variable=self.write_subtitles, command=self._save_preferences,
             text_color="#C8BED2", fg_color="#8872AE", hover_color="#9B86BB",
             font=ctk.CTkFont(size=10))
-        self.write_subtitles_check.grid(row=8, column=0, sticky="w", padx=12, pady=(4, 12))
+        self.write_subtitles_check.grid(row=9, column=0, sticky="w", padx=12, pady=(4, 12))
 
 
         self.action_card = ctk.CTkFrame(page, fg_color="#211E2B", corner_radius=18,
                                         border_width=1, border_color="#332D40")
-        self.action_card.grid(row=8, column=0, sticky="ew", pady=(8, 0))
+        self.action_card.grid(row=9, column=0, sticky="ew", pady=(8, 0))
         self.action_card.grid_columnconfigure(0, weight=1)
         self.status_label = ctk.CTkLabel(
             self.action_card, text="2.  Pulsa el botón y espera un momento.",
@@ -246,7 +252,7 @@ class SoundwApp(ctk.CTk):
             self.action_card, height=8, corner_radius=8,
             progress_color="#BCA7DE", fg_color="#393342",
         )
-        self.progress.grid(row=1, column=0, sticky="ew", padx=20, pady=(0, 14))
+        self.progress.grid(row=2, column=0, sticky="ew", padx=20, pady=(0, 14))
         self.progress.set(0)
         self.download_button = ctk.CTkButton(
             self.action_card, text="Guardar audio", height=54, corner_radius=13,
@@ -254,54 +260,49 @@ class SoundwApp(ctk.CTk):
             fg_color="#8872AE", hover_color="#A08AC5",
             command=self._start_download,
         )
-        self.download_button.grid(row=2, column=0, sticky="ew", padx=20, pady=(0, 12))
+        self.download_button.grid(row=3, column=0, sticky="ew", padx=20, pady=(0, 12))
         self.open_folder_button = ctk.CTkButton(
             self.action_card, text="Abrir mi carpeta de música", height=34,
             fg_color="transparent", hover_color="#302A3A",
             text_color="#CDBFE0", font=ctk.CTkFont(size=12),
             command=self._open_folder, state="disabled",
         )
-        self.open_folder_button.grid(row=3, column=0, pady=(0, 12))
+        self.open_folder_button.grid(row=4, column=0, pady=(0, 12))
 
         ctk.CTkLabel(
             page, text="Solo descarga contenido que tengas permiso para guardar.\nSOUNWD no descarga música desde Spotify.",
             text_color="#81798A", justify="center", font=ctk.CTkFont(size=10),
-        ).grid(row=9, column=0, pady=(18, 0))
+        ).grid(row=10, column=0, pady=(18, 0))
 
-        # Reparte el espacio sobrante entre el margen superior e inferior.
-        page.grid_rowconfigure(0, weight=1)
-        page.grid_rowconfigure(9, weight=1)
 
     def _center_content(self) -> None:
-        """Centra el contenido si cabe; conserva el área desplazable si no."""
+        """Centra el contenido cuando cabe y conserva el scroll cuando sobra."""
         canvas = self.page._parent_canvas
+        inner = self.page._parent_frame
+        if not canvas.winfo_exists() or not inner.winfo_exists():
+            return
         canvas.update_idletasks()
-        content_height = self.page.winfo_reqheight()
+        inner.update_idletasks()
+        content_height = inner.winfo_reqheight()
         viewport_height = canvas.winfo_height()
-        canvas.itemconfigure(
-            self.page._parent_canvas_window,
-            height=max(content_height, viewport_height),
-        )
-
-    def _is_inside_page(self, widget) -> bool:
-        while widget is not None:
-            if widget is self.page:
-                return True
-            widget = getattr(widget, "master", None)
-        return False
+        target_height = max(content_height, viewport_height)
+        # CustomTkinter guarda el identificador del frame interno del canvas aquí.
+        window_id = getattr(self.page, "_create_window_id", None)
+        if window_id is not None:
+            canvas.itemconfigure(window_id, height=target_height)
+        inner.configure(height=target_height)
+        canvas.configure(scrollregion=canvas.bbox("all"))
 
     def _on_mousewheel(self, event):
-        if not self._is_inside_page(event.widget):
-            return
-        steps = -int(event.delta / 120)
-        if steps == 0 and event.delta:
-            steps = -1 if event.delta > 0 else 1
-        self.page._parent_canvas.yview_scroll(steps, "units")
+        # No filtrar por event.widget: CustomTkinter enruta eventos desde
+        # widgets internos y el cursor puede estar sobre cualquier control.
+        delta = event.delta
+        if delta:
+            steps = -int(delta / 120) if abs(delta) >= 120 else (-1 if delta > 0 else 1)
+            self.page._parent_canvas.yview_scroll(steps, "units")
         return "break"
 
     def _on_mousewheel_linux(self, event):
-        if not self._is_inside_page(event.widget):
-            return
         steps = -3 if event.num == 4 else 3
         self.page._parent_canvas.yview_scroll(steps, "units")
         return "break"

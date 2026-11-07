@@ -12,6 +12,7 @@ from tkinter import filedialog, messagebox
 import customtkinter as ctk
 import imageio_ffmpeg
 import yt_dlp
+from yt_dlp_support import youtube_runtime_options
 
 
 APP_NAME = "SOUNWD"
@@ -503,6 +504,7 @@ class SoundwApp(ctk.CTk):
             if output_template and not Path(output_template).expanduser().is_absolute():
                 output_template = str(destination / output_template)
             options = {
+                **youtube_runtime_options(),
                 "format": advanced["format"] or "bestaudio/best",
                 "ffmpeg_location": imageio_ffmpeg.get_ffmpeg_exe(),
                 "outtmpl": output_template or str(destination / (filename + ".%(ext)s")),

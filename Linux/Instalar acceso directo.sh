@@ -4,6 +4,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DESKTOP_DIR="${XDG_DESKTOP_DIR:-$HOME/Desktop}"
 mkdir -p "$DESKTOP_DIR"
 SHORTCUT="$DESKTOP_DIR/SOUNWD.desktop"
+ICON_DIR="$HOME/.local/share/icons/hicolor/scalable/apps"
+mkdir -p "$ICON_DIR"
+install -m 644 "$ROOT/assets/sounwd.svg" "$ICON_DIR/sounwd.svg"
 cat > "$SHORTCUT" <<EOF
 [Desktop Entry]
 Version=1.0
@@ -11,7 +14,7 @@ Type=Application
 Name=SOUNWD
 Comment=Tu música, a tu manera
 Exec=python3 "$ROOT/bootstrap.py"
-Icon=audio-x-generic
+Icon=sounwd
 Terminal=false
 Categories=AudioVideo;Audio;
 StartupNotify=true

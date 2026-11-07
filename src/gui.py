@@ -278,12 +278,11 @@ class SoundwApp(ctk.CTk):
     def _center_content(self) -> None:
         """Centra el contenido cuando cabe y conserva el scroll cuando sobra."""
         canvas = self.page._parent_canvas
-        inner = self.page._parent_frame
-        if not canvas.winfo_exists() or not inner.winfo_exists():
+        if not canvas.winfo_exists() or not self.page.winfo_exists():
             return
         canvas.update_idletasks()
-        inner.update_idletasks()
-        content_height = inner.winfo_reqheight()
+        self.page.update_idletasks()
+        content_height = self.page.winfo_reqheight()
         viewport_height = canvas.winfo_height()
         target_height = max(content_height, viewport_height)
         # CustomTkinter guarda el identificador del frame interno del canvas aquí.

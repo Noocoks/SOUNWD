@@ -6,6 +6,7 @@ on:
   pull_request:
     paths:
       - "src/**"
+      - "android/**"
       - "requirements.txt"
       - "bootstrap.py"
       - ".github/workflows/build.yml"
@@ -39,7 +40,9 @@ jobs:
           python-version: "3.11"
 
       - name: Validate desktop Python syntax
-        run: python -m py_compile src/gui.py src/cli.py bootstrap.py
+        run: |
+          python -m py_compile src/gui.py src/cli.py bootstrap.py
+          python -m compileall -q android
 
       - name: Install dependencies
         run: |

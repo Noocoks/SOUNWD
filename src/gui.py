@@ -466,6 +466,7 @@ class SoundwApp(ctk.CTk):
         thread.start()
 
     def _download_worker(self, url: str, audio_format: str, destination: Path, playlist: bool, quality_choice: str, filename_choice: str, advanced: dict) -> None:
+        """Prepara y ejecuta la descarga fuera del hilo de Tk, notificando siempre el resultado."""
         def hook(data: dict) -> None:
             if data.get("status") == "downloading":
                 downloaded = data.get("downloaded_bytes", 0)
@@ -475,44 +476,41 @@ class SoundwApp(ctk.CTk):
             elif data.get("status") == "finished":
                 self.events.put(("progress", (0.98, "Preparando el archivo…")))
 
-        quality = {"Máxima": "0", "Alta": "192", "Normal": "128"}.get(quality_choice, "0")
-        filename = "%(title)s" if filename_choice == "Solo título" else "%(title)s - %(uploader)s"
-        output_template = advanced["outtmpl"]
-        if output_template and not Path(output_template).expanduser().is_absolute():
-            output_template = str(destination / output_template)
-        options = {
-            "format": advanced["format"] or "bestaudio/best",
-            "ffmpeg_location": imageio_ffmpeg.get_ffmpeg_exe(),
-            "outtmpl": output_template or str(destination / (filename + ".%(ext)s")),
-            "noplaylist": not playlist,
-            "windowsfilenames": True,
-            "quiet": True,
-            "no_warnings": True,
-            "progress_hooks": [hook],
-            "postprocessors": [
-                {"key": "FFmpegExtractAudio", "preferredcodec": audio_format, "preferredquality": quality},
-            ],
-        }
-        if advanced["playlist_items"]:
-            options["playlist_items"] = advanced["playlist_items"]
-        if advanced["ratelimit"]:
-            options["ratelimit"] = advanced["ratelimit"]
-        if advanced["retries"]:
-            try:
-                options["retries"] = max(0, int(advanced["retries"]))
-            except ValueError:
-                self.events.put(("error", "El número de reintentos debe ser un entero."))
-                return
-        if advanced["subtitleslangs"]:
-            options["subtitleslangs"] = advanced["subtitleslangs"]
-        if advanced["writesubtitles"]:
-            options["writesubtitles"] = True
-        if advanced["embedthumbnail"]:
-            options["writethumbnail"] = True
-            options["postprocessors"].append({"key": "EmbedThumbnail"})
-        if advanced["addmetadata"]:
-            options["addmetadata"] = True
         try:
+            quality = {"Máxima": "0", "Alta": "192", "Normal": "128"}.get(quality_choice, "0")
+            filename = "%(title)s" if filename_choice == "Solo título" else "%(title)s - %(uploader)s"
+            output_template = advanced["outtmpl"]
+            if output_template and not Path(output_template).expanduser().is_absolute():
+                output_template = str(destination / output_template)
+            options = {
+                "format": advanced["format"] or "bestaudio/best",
+                "ffmpeg_location": imageio_ffmpeg.get_ffmpeg_exe(),
+                "outtmpl": output_template or str(destination / (filename + ".%(ext)s")),
+                "noplaylist": not playlist,
+                "windowsfilenames": True,
+                "quiet": True,
+                "no_warnings": True,
+                "progress_hooks": [hook],
+                "postprocessors": [
+                    {"key": "FFmpegExtractAudio", "preferredcodec": audio_format, "preferredquality": quality},
+                ],
+            }
+            if advanced["playlist_items"]:
+                options["playlist_items"] = advanced["playlist_items"]
+            if advanced["ratelimit"]:
+                options["ratelimit"] = advanced["ratelimit"]
+            if advanced["retries"]:
+                options["retries"] = max(0, int(advanced["retries"]))
+            if advanced["subtitleslangs"]:
+                options["subtitleslangs"] = advanced["subtitleslangs"]
+            if advanced["writesubtitles"]:
+                options["writesubtitles"] = True
+            if advanced["embedthumbnail"]:
+                options["writethumbnail"] = True
+                options["postprocessors"].append({"key": "EmbedThumbnail"})
+            if advanced["addmetadata"]:
+                options["addmetadata"] = True
+
             with yt_dlp.YoutubeDL(options) as downloader:
                 result = downloader.download([url])
             if result:
@@ -520,7 +518,9 @@ class SoundwApp(ctk.CTk):
             self.events.put(("done", str(destination)))
         except Exception as error:
             message = str(error).lower()
-            if "private" in message or "members-only" in message:
+            if isinstance(error, ValueError) and "retries" in advanced:
+                friendly = "El número de reintentos debe ser un entero."
+            elif "private" in message or "members-only" in message:
                 friendly = "Este audio es privado o requiere una cuenta especial. Prueba con otro enlace."
             elif "unavailable" in message or "not available" in message:
                 friendly = "Este audio no está disponible. Comprueba el enlace o prueba con otro."

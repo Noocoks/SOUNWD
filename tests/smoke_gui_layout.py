@@ -45,6 +45,11 @@ try:
             f"Vertical centering mismatch: y={actual_y}, expected={expected_y}, "
             f"viewport={viewport}, content={natural_height}"
         )
+    if actual_y < 8:
+        raise AssertionError(
+            f"Main block is not visibly centered at the standard window size: "
+            f"top offset={actual_y}px"
+        )
     if canvas.bbox(window_id) is None:
         raise AssertionError("The content window is not present in the scroll canvas")
 

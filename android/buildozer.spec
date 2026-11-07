@@ -11,7 +11,8 @@ fullscreen = 0
 android.permissions = INTERNET
 android.api = 35
 android.minapi = 24
-android.ndk = 25b
+# NDK r28c enables 16 KB ELF page alignment by default.
+android.ndk = 28c
 android.archs = arm64-v8a
 android.accept_sdk_license = True
 android.enable_androidx = True

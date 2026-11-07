@@ -127,7 +127,7 @@ def main() -> int:
     try:
         destination = choose_destination()
     except OSError as error:
-        console.print(f"\\n[red]No se puede preparar la carpeta de destino:[/red] {error}")
+        console.print(f"\n[red]No se puede preparar la carpeta de destino:[/red] {error}")
         return 1
 
     console.print(Panel(

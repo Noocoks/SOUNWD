@@ -7,6 +7,7 @@ import subprocess
 import threading
 from pathlib import Path
 from urllib.parse import urlparse
+import tkinter
 from tkinter import filedialog, messagebox
 
 import customtkinter as ctk
@@ -328,13 +329,13 @@ class SoundwApp(ctk.CTk):
         window_id = self.page._create_window_id
         current_height = int(float(canvas.itemcget(window_id, "height") or 0))
 
-        # En Windows con escalado DPI, el canvas puede crecer mientras el frame
-        # incrustado conserva su altura solicitada. Fijamos también el frame real
-        # del scroll (en píxeles Tk) para que las filas flexibles reciban el hueco.
-        scroll_frame = self.page._parent_frame
-        if int(scroll_frame.winfo_reqheight()) != target_height:
-            scroll_frame.configure(height=target_height)
-        scroll_frame.grid_propagate(False)
+        # CTkScrollableFrame no ajusta la altura de su frame incrustado en
+        # vertical (solo sincroniza el ancho). En Windows DPI el canvas puede
+        # crecer mientras ese frame conserva su altura natural. Fijamos el alto
+        # del tkinter.Frame real para que los spacers ponderados se expandan.
+        if self.page.winfo_height() != target_height:
+            tkinter.Frame.configure(self.page, height=target_height)
+        self.page.grid_propagate(False)
         if current_height != target_height:
             canvas.itemconfigure(window_id, height=target_height)
         canvas.configure(scrollregion=canvas.bbox("all"))

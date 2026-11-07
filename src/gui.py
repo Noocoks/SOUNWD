@@ -448,22 +448,29 @@ class SoundwApp(ctk.CTk):
         self.open_folder_button.configure(state="disabled")
         self.progress.set(0)
         self.status_label.configure(text="Conectando… no cierres esta ventana.")
-        thread = threading.Thread(
-            target=self._download_worker,
-            args=(url, FORMATS[self.audio_format.get()], destination, self.playlist.get(), self.quality.get(), self.filename_style.get(), {
-                "format": self.ydl_format.get().strip(),
-                "outtmpl": self.output_template.get().strip(),
-                "playlist_items": self.playlist_items.get().strip(),
-                "ratelimit": self.limit_rate.get().strip(),
-                "retries": self.retries.get().strip(),
-                "subtitleslangs": self.subtitle_langs.get().strip(),
-                "embedthumbnail": self.embed_thumbnail.get(),
-                "addmetadata": self.embed_metadata.get(),
-                "writesubtitles": self.write_subtitles.get(),
-            }),
-            daemon=True,
-        )
-        thread.start()
+        try:
+            thread = threading.Thread(
+                target=self._download_worker,
+                args=(url, FORMATS[self.audio_format.get()], destination, self.playlist.get(), self.quality.get(), self.filename_style.get(), {
+                    "format": self.ydl_format.get().strip(),
+                    "outtmpl": self.output_template.get().strip(),
+                    "playlist_items": self.playlist_items.get().strip(),
+                    "ratelimit": self.limit_rate.get().strip(),
+                    "retries": self.retries.get().strip(),
+                    "subtitleslangs": self.subtitle_langs.get().strip(),
+                    "embedthumbnail": self.embed_thumbnail.get(),
+                    "addmetadata": self.embed_metadata.get(),
+                    "writesubtitles": self.write_subtitles.get(),
+                }),
+                daemon=True,
+            )
+            thread.start()
+        except Exception as error:
+            self.downloading = False
+            self.download_button.configure(state="normal", text="Guardar audio")
+            self.open_folder_button.configure(state="normal")
+            self.status_label.configure(text="No se ha podido iniciar la descarga.")
+            messagebox.showerror("No se ha podido iniciar", str(error))
 
     def _download_worker(self, url: str, audio_format: str, destination: Path, playlist: bool, quality_choice: str, filename_choice: str, advanced: dict) -> None:
         """Prepara y ejecuta la descarga fuera del hilo de Tk, notificando siempre el resultado."""

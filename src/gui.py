@@ -110,11 +110,11 @@ class SoundwApp(ctk.CTk):
         page.bind("<Configure>", lambda _event: self.after_idle(self._center_content), add="+")
 
         brand = ctk.CTkFrame(page, fg_color="transparent")
-        brand.grid(row=1, column=0, sticky="ew", pady=(0, 28))
+        brand.grid(row=1, column=0, sticky="ew", pady=(0, 14))
         # Emblema propio: escudo industrial + pulso de audio en rojo señal.
-        mark = ctk.CTkCanvas(brand, width=104, height=76, bg="#080808",
+        mark = ctk.CTkCanvas(brand, width=96, height=64, bg="#080808",
                              highlightthickness=0, bd=0)
-        mark.pack(pady=(0, 5))
+        mark.pack(pady=(0, 2))
         mark.create_polygon(52, 3, 91, 17, 84, 55, 52, 72, 20, 55, 13, 17,
                             fill="#0D1117", outline="#858B93", width=2)
         mark.create_line(24, 42, 37, 42, 44, 25, 52, 53, 61, 33, 68, 42, 81, 42,
@@ -127,11 +127,11 @@ class SoundwApp(ctk.CTk):
                      text_color="#858B93", font=ctk.CTkFont(family="Consolas", size=10, weight="bold")).pack()
 
         ctk.CTkLabel(page, text="TU AUDIO. TUS REGLAS.",
-                     text_color="#E6E7E9", font=ctk.CTkFont(size=25, weight="bold")
+                     text_color="#E6E7E9", font=ctk.CTkFont(size=23, weight="bold")
                      ).grid(row=2, column=0, pady=(0, 7))
         ctk.CTkLabel(page, text="EXTRAE EL AUDIO. CONSERVA EL CONTROL. // YT-DLP ENGINE",
                      text_color="#B5BAC0", font=ctk.CTkFont(size=13)
-                     ).grid(row=3, column=0, pady=(0, 24))
+                     ).grid(row=3, column=0, pady=(0, 8))
 
         link_card = ctk.CTkFrame(page, fg_color="#101010", corner_radius=18,
                                  border_width=1, border_color="#3D000D")
@@ -139,18 +139,18 @@ class SoundwApp(ctk.CTk):
         link_card.grid_columnconfigure(0, weight=1)
         ctk.CTkLabel(link_card, text="[ 01 ]  INPUT // YOUTUBE SOURCE",
                      text_color="#B5BAC0", font=ctk.CTkFont(size=11, weight="bold")
-                     ).grid(row=0, column=0, sticky="w", padx=20, pady=(18, 8))
+                     ).grid(row=0, column=0, sticky="w", padx=18, pady=(12, 6))
         self.url_entry = ctk.CTkEntry(
-            link_card, height=52, corner_radius=12,
+            link_card, height=44, corner_radius=12,
             placeholder_text="https://www.youtube.com/watch?v=...",
             border_color="#790018", fg_color="#0D1117",
             text_color="#E6E7E9", placeholder_text_color="#858B93",
             font=ctk.CTkFont(size=13),
         )
-        self.url_entry.grid(row=1, column=0, sticky="ew", padx=20, pady=(0, 8))
+        self.url_entry.grid(row=1, column=0, sticky="ew", padx=18, pady=(0, 6))
         self.url_entry.bind("<Return>", lambda _event: self._start_download())
         link_actions = ctk.CTkFrame(link_card, fg_color="transparent")
-        link_actions.grid(row=2, column=0, sticky="ew", padx=20, pady=(0, 14))
+        link_actions.grid(row=2, column=0, sticky="ew", padx=18, pady=(0, 10))
         ctk.CTkButton(
             link_actions, text="Pegar enlace", width=110, height=30,
             fg_color="#790018", hover_color="#790018",
@@ -172,23 +172,23 @@ class SoundwApp(ctk.CTk):
         format_card.grid(row=0, column=0, sticky="nsew", padx=(0, 7))
         ctk.CTkLabel(format_card, text="[ 02 ]  OUTPUT FORMAT",
                      text_color="#B5BAC0", font=ctk.CTkFont(size=10, weight="bold")
-                     ).pack(anchor="w", padx=14, pady=(13, 6))
+                     ).pack(anchor="w", padx=12, pady=(10, 5))
         ctk.CTkOptionMenu(
             format_card, variable=self.audio_format, values=list(FORMATS),
             command=self._preference_changed,
-            height=38, corner_radius=10, fg_color="#790018",
+            height=34, corner_radius=10, fg_color="#790018",
             button_color="#858B93", button_hover_color="#B5BAC0",
             dropdown_fg_color="#101010",
-        ).pack(fill="x", padx=12, pady=(0, 13))
+        ).pack(fill="x", padx=10, pady=(0, 10))
 
         folder_card = ctk.CTkFrame(settings, fg_color="#101010", corner_radius=14,
                                    border_width=1, border_color="#3D000D")
         folder_card.grid(row=0, column=1, sticky="nsew", padx=(7, 0))
         ctk.CTkLabel(folder_card, text="[ 03 ]  DESTINATION",
                      text_color="#B5BAC0", font=ctk.CTkFont(size=10, weight="bold")
-                     ).pack(anchor="w", padx=14, pady=(13, 6))
+                     ).pack(anchor="w", padx=12, pady=(10, 5))
         folder_row = ctk.CTkFrame(folder_card, fg_color="transparent")
-        folder_row.pack(fill="x", padx=12, pady=(0, 13))
+        folder_row.pack(fill="x", padx=10, pady=(0, 10))
         folder_row.grid_columnconfigure(0, weight=1)
         self.folder_label = ctk.CTkLabel(
             folder_row, text=self._short_path(str(self.destination.get())),
@@ -270,32 +270,32 @@ class SoundwApp(ctk.CTk):
             self.action_card, text="[ SYSTEM READY ]  AWAITING INPUT",
             text_color="#B5BAC0", font=ctk.CTkFont(size=12),
         )
-        self.status_label.grid(row=0, column=0, pady=(17, 10))
+        self.status_label.grid(row=0, column=0, pady=(10, 6))
         self.progress = ctk.CTkProgressBar(
             self.action_card, height=8, corner_radius=8,
             progress_color="#790018", fg_color="#242424",
         )
-        self.progress.grid(row=1, column=0, sticky="ew", padx=20, pady=(0, 14))
+        self.progress.grid(row=1, column=0, sticky="ew", padx=18, pady=(0, 10))
         self.progress.set(0)
         self.download_button = ctk.CTkButton(
-            self.action_card, text="▶  EXTRAER AUDIO", height=54, corner_radius=13,
+            self.action_card, text="▶  EXTRAER AUDIO", height=48, corner_radius=13,
             font=ctk.CTkFont(size=16, weight="bold"),
             fg_color="#858B93", hover_color="#B5BAC0",
             command=self._start_download,
         )
-        self.download_button.grid(row=2, column=0, sticky="ew", padx=20, pady=(0, 12))
+        self.download_button.grid(row=2, column=0, sticky="ew", padx=18, pady=(0, 8))
         self.open_folder_button = ctk.CTkButton(
             self.action_card, text="OPEN OUTPUT DIRECTORY", height=34,
             fg_color="transparent", hover_color="#242424",
             text_color="#B5BAC0", font=ctk.CTkFont(size=12),
             command=self._open_folder, state="disabled",
         )
-        self.open_folder_button.grid(row=3, column=0, pady=(0, 12))
+        self.open_folder_button.grid(row=3, column=0, pady=(0, 8))
 
         ctk.CTkLabel(
             page, text="[ USE RESPONSIBLY ]  SOLO CONTENIDO AUTORIZADO.\nNO SPOTIFY // NO TRACKING // LOCAL OUTPUT.",
             text_color="#858B93", justify="center", font=ctk.CTkFont(size=10),
-        ).grid(row=10, column=0, pady=(18, 0))
+        ).grid(row=10, column=0, pady=(10, 0))
 
 
     def _center_content(self) -> None:

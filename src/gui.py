@@ -546,6 +546,8 @@ class SoundwApp(ctk.CTk):
                 friendly = "Este audio es privado o requiere una cuenta especial. Prueba con otro enlace."
             elif "unavailable" in message or "not available" in message:
                 friendly = "Este audio no está disponible. Comprueba el enlace o prueba con otro."
+            elif "deno" in message or "javascript runtime" in message or "challenge solver" in message:
+                friendly = "YouTube necesita el motor JavaScript Deno. Usa la última aplicación de escritorio de SOUNWD o instala Deno 2.3 o posterior si ejecutas desde el código fuente."
             elif "ffmpeg" in message:
                 friendly = "No se ha podido preparar el formato de audio. Vuelve a intentarlo; si continúa, prueba MP3."
             elif "network" in message or "connection" in message or "timed out" in message:

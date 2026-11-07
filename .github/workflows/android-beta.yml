@@ -1,0 +1,43 @@
+name: SOUNWD Android Beta
+
+on:
+  push:
+    branches: [beta/android-minimal-screen]
+    paths:
+      - 'beta-android/**'
+      - '.github/workflows/android-beta.yml'
+  pull_request:
+    paths:
+      - 'beta-android/**'
+      - '.github/workflows/android-beta.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    defaults:
+      run:
+        working-directory: beta-android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build debug APK
+        run: gradle assembleDebug
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: sounwd-beta-0.0.1
+          path: beta-android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

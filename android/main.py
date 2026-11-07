@@ -273,7 +273,7 @@ class SOUNWDApp(App):
             if code:
                 raise RuntimeError("La descarga no ha podido terminar.")
 
-            audio_extensions={".aac",".flac",".m4a",".mp3",".ogg",".opus",".wav",".weba",".webm"}
+            audio_extensions={".aac",".flac",".m4a",".mka",".mp3",".ogg",".opus",".wav",".weba",".webm"}
             files=[p for p in self.private_dir.rglob("*")
                    if p.is_file() and p.suffix.lower() in audio_extensions
                    and p.resolve() not in before and not p.name.endswith((".part",".ytdl"))]

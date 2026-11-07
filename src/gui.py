@@ -71,11 +71,8 @@ class SoundwApp(ctk.CTk):
 
         self._build_ui()
         self.bind("<Configure>", self._responsive_layout)
-        # La barra no se muestra; el desplazamiento se controla con la rueda.
+        # Ocultamos solo la barra; CTkScrollableFrame conserva su scroll nativo con rueda.
         self.page._scrollbar.grid_remove()
-        self.bind_all("<MouseWheel>", self._on_mousewheel, add="+")
-        self.bind_all("<Button-4>", self._on_mousewheel_linux, add="+")
-        self.bind_all("<Button-5>", self._on_mousewheel_linux, add="+")
         self.after(80, self._responsive_layout)
         self.after(120, self._process_events)
 
@@ -88,7 +85,10 @@ class SoundwApp(ctk.CTk):
         page.grid(row=0, column=0, sticky="nsew", padx=24, pady=22)
         page.grid_columnconfigure(0, weight=1)
         # El canvas debe ocupar al menos la altura visible para poder centrar.
-        page._parent_canvas.bind("<Configure>", lambda _event: self.after_idle(self._center_content))
+        # Añadimos nuestro callback sin sustituir el ajuste de ancho interno de CustomTkinter.
+        page._parent_canvas.bind(
+            "<Configure>", lambda _event: self.after_idle(self._center_content), add="+"
+        )
 
         # Filas vacías superior e inferior: absorben el espacio sobrante.
         page.grid_rowconfigure(0, weight=1)
@@ -276,33 +276,28 @@ class SoundwApp(ctk.CTk):
 
 
     def _center_content(self) -> None:
-        """Centra el contenido cuando cabe y conserva el scroll cuando sobra."""
+        """Centra el contenido si cabe y deja crecer el área desplazable si no cabe."""
         canvas = self.page._parent_canvas
         if not canvas.winfo_exists() or not self.page.winfo_exists():
             return
+
         canvas.update_idletasks()
         self.page.update_idletasks()
+
         content_height = self.page.winfo_reqheight()
         viewport_height = canvas.winfo_height()
+        if viewport_height <= 1:
+            return
+
         target_height = max(content_height, viewport_height)
-        # CustomTkinter guarda el identificador del frame interno del canvas aquí.
-        canvas.itemconfigure(self.page._parent_canvas_window, height=target_height)
-        self.page.configure(height=target_height)
+        window_id = self.page._create_window_id
+
+        # Evita escrituras redundantes y posibles ciclos de eventos Configure.
+        current_height = int(float(canvas.itemcget(window_id, "height") or 0))
+        if current_height != target_height:
+            canvas.itemconfigure(window_id, height=target_height)
+
         canvas.configure(scrollregion=canvas.bbox("all"))
-
-    def _on_mousewheel(self, event):
-        # No filtrar por event.widget: CustomTkinter enruta eventos desde
-        # widgets internos y el cursor puede estar sobre cualquier control.
-        delta = event.delta
-        if delta:
-            steps = -int(delta / 120) if abs(delta) >= 120 else (-1 if delta > 0 else 1)
-            self.page._parent_canvas.yview_scroll(steps, "units")
-        return "break"
-
-    def _on_mousewheel_linux(self, event):
-        steps = -3 if event.num == 4 else 3
-        self.page._parent_canvas.yview_scroll(steps, "units")
-        return "break"
 
     def _responsive_layout(self, event=None) -> None:
         if event is not None and event.widget is not self:

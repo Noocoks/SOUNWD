@@ -144,7 +144,7 @@ class SoundwApp(ctk.CTk):
             link_card, height=52, corner_radius=12,
             placeholder_text="https://www.youtube.com/watch?v=...",
             border_color="#790018", fg_color="#0D1117",
-            text_color="#E6E7E9", placeholder_text_color="#8E8499",
+            text_color="#E6E7E9", placeholder_text_color="#858B93",
             font=ctk.CTkFont(size=13),
         )
         self.url_entry.grid(row=1, column=0, sticky="ew", padx=20, pady=(0, 8))
@@ -211,7 +211,7 @@ class SoundwApp(ctk.CTk):
 
         self.options_toggle = ctk.CTkButton(
             page, text="+  ADVANCED // YT-DLP", height=30, width=145,
-            fg_color="transparent", hover_color="#282333",
+            fg_color="transparent", hover_color="#242424",
             text_color="#858B93", anchor="w",
             font=ctk.CTkFont(size=11), command=self._toggle_advanced,
         )
@@ -280,7 +280,7 @@ class SoundwApp(ctk.CTk):
         self.download_button = ctk.CTkButton(
             self.action_card, text="▶  EXTRAER AUDIO", height=54, corner_radius=13,
             font=ctk.CTkFont(size=16, weight="bold"),
-            fg_color="#858B93", hover_color="#A08AC5",
+            fg_color="#858B93", hover_color="#B5BAC0",
             command=self._start_download,
         )
         self.download_button.grid(row=2, column=0, sticky="ew", padx=20, pady=(0, 12))
@@ -416,7 +416,7 @@ class SoundwApp(ctk.CTk):
             self.action_card.grid_configure(row=9)
         else:
             self.advanced.grid_remove()
-            self.options_toggle.configure(text="＋  Opciones avanzadas (yt-dlp)")
+            self.options_toggle.configure(text="+  ADVANCED // YT-DLP")
             self.action_card.grid_configure(row=9)
         self.after_idle(self._center_content)
 
@@ -499,7 +499,7 @@ class SoundwApp(ctk.CTk):
             thread.start()
         except Exception as error:
             self.downloading = False
-            self.download_button.configure(state="normal", text="Guardar audio")
+            self.download_button.configure(state="normal", text="▶  EXTRAER AUDIO")
             self.open_folder_button.configure(state="normal")
             self.status_label.configure(text="No se ha podido iniciar la descarga.")
             messagebox.showerror("No se ha podido iniciar", str(error))
@@ -591,7 +591,7 @@ class SoundwApp(ctk.CTk):
                     self.url_entry.delete(0, "end")
                     messagebox.showinfo(
                         "¡Ya lo tienes!",
-                        "Tu audio se ha guardado correctamente. Pulsa «Abrir mi carpeta de música» para encontrarlo.",
+                        "Tu audio se ha guardado correctamente. Pulsa «OPEN OUTPUT DIRECTORY» para encontrarlo.",
                     )
                 elif kind == "error":
                     self.downloading = False

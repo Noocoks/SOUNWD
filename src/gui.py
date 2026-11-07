@@ -73,6 +73,11 @@ class SoundwApp(ctk.CTk):
         self.bind("<Configure>", self._responsive_layout)
         # Ocultamos solo la barra; CTkScrollableFrame conserva su scroll nativo con rueda.
         self.page._scrollbar.grid_remove()
+        # CustomTkinter 5.2.2 does not bind Linux wheel buttons (Button-4/5).
+        # Keep the scrollbar hidden, but preserve scrolling on Linux mice/touchpads.
+        if sys_platform().startswith("linux"):
+            self.page.bind_all("<Button-4>", self._on_linux_mousewheel, add="+")
+            self.page.bind_all("<Button-5>", self._on_linux_mousewheel, add="+")
         self.after(80, self._responsive_layout)
         self.after(120, self._process_events)
 
@@ -298,6 +303,21 @@ class SoundwApp(ctk.CTk):
             canvas.itemconfigure(window_id, height=target_height)
 
         canvas.configure(scrollregion=canvas.bbox("all"))
+
+    def _on_linux_mousewheel(self, event):
+        """Scroll the page on Linux, where Tk emits Button-4/Button-5 wheel events."""
+        canvas = self.page._parent_canvas
+        widget = getattr(event, "widget", None)
+        while widget is not None and widget is not canvas:
+            widget = getattr(widget, "master", None)
+        if widget is not canvas:
+            return None
+
+        if getattr(event, "num", None) == 4:
+            canvas.yview_scroll(-1, "units")
+        elif getattr(event, "num", None) == 5:
+            canvas.yview_scroll(1, "units")
+        return "break"
 
     def _responsive_layout(self, event=None) -> None:
         if event is not None and event.widget is not self:

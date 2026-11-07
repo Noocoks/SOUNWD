@@ -96,22 +96,13 @@ class SoundwApp(ctk.CTk):
         scroll_page.grid_columnconfigure(0, weight=1)
         scroll_page.grid_rowconfigure(0, weight=1)
 
-        # El contenido vive en un frame interior que SIEMPRE ocupa el viewport.
-        # Así Tk puede repartir el espacio libre entre las filas superior e inferior.
+        # Un único frame de contenido dentro del scroll nativo de CustomTkinter.
+        # El centrado vertical se calcula moviendo la ventana del Canvas, sin
+        # alterar alturas internas ni desactivar la propagación geométrica.
         page = ctk.CTkFrame(scroll_page, fg_color="transparent", corner_radius=0)
         self.content = page
-        page.grid(row=0, column=0, sticky="nsew")
+        page.grid(row=0, column=0, sticky="ew")
         page.grid_columnconfigure(0, weight=1)
-        page.grid_rowconfigure(0, weight=1)
-        page.grid_rowconfigure(11, weight=1)
-        # Las filas vacías no reciben espacio en Tk si no tienen un widget.
-        # Estos dos spacers transparentes hacen efectivo el reparto simétrico.
-        ctk.CTkFrame(page, fg_color="transparent", height=1).grid(
-            row=0, column=0, sticky="ew"
-        )
-        ctk.CTkFrame(page, fg_color="transparent", height=1).grid(
-            row=11, column=0, sticky="ew"
-        )
 
         scroll_page._parent_canvas.bind(
             "<Configure>", lambda _event: self.after_idle(self._center_content), add="+"
@@ -331,37 +322,31 @@ class SoundwApp(ctk.CTk):
 
 
     def _center_content(self) -> None:
-        """Centra el contenido si cabe y deja crecer el área desplazable si no cabe."""
+        """Centra el bloque moviendo la ventana del Canvas; conserva el scroll."""
         canvas = self.page._parent_canvas
         if not canvas.winfo_exists() or not self.page.winfo_exists():
             return
 
         canvas.update_idletasks()
-        self.page.update_idletasks()
-
-        content = self.content
+        self.content.update_idletasks()
         viewport_height = canvas.winfo_height()
         if viewport_height <= 1:
             return
 
-        # Medimos el contenido REAL, sin contar el alto que el canvas le haya
-        # asignado en un redimensionado anterior. Luego forzamos el frame interior
-        # a ocupar como mínimo el viewport; sus filas 0 y 11 centran el bloque.
-        content_height = content.winfo_reqheight()
-        target_height = max(content_height, viewport_height)
+        # La ventana del Canvas conserva la altura natural de CTkScrollableFrame.
+        # No forzamos height ni grid_propagate: eso rompe la geometría en Windows.
+        content_height = max(
+            self.page.winfo_reqheight(),
+            self.content.winfo_reqheight(),
+        )
         window_id = self.page._create_window_id
-        current_height = int(float(canvas.itemcget(window_id, "height") or 0))
-
-        # CTkScrollableFrame no ajusta la altura de su frame incrustado en
-        # vertical (solo sincroniza el ancho). En Windows DPI el canvas puede
-        # crecer mientras ese frame conserva su altura natural. Fijamos el alto
-        # del tkinter.Frame real para que los spacers ponderados se expandan.
-        if self.page.winfo_height() != target_height:
-            tkinter.Frame.configure(self.page, height=target_height)
-        tkinter.Frame.grid_propagate(self.page, False)
-        if current_height != target_height:
-            canvas.itemconfigure(window_id, height=target_height)
-        canvas.configure(scrollregion=canvas.bbox("all"))
+        canvas.itemconfigure(window_id, height="")
+        y_offset = max(0, (viewport_height - content_height) // 2)
+        canvas.coords(window_id, 0, y_offset)
+        canvas.configure(
+            scrollregion=(0, 0, max(canvas.winfo_width(), 1),
+                          max(viewport_height, content_height + y_offset))
+        )
 
     def _on_linux_mousewheel(self, event):
         """Scroll the page on Linux, where Tk emits Button-4/Button-5 wheel events."""

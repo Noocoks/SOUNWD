@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 
 import yt_dlp
 import imageio_ffmpeg
+from yt_dlp_support import youtube_runtime_options
 from rich import box
 from rich.console import Console
 from rich.panel import Panel
@@ -88,6 +89,7 @@ def download_audio(url: str, audio_format: str, destination: Path, is_playlist: 
             progress.update(task_id, description="Convirtiendo audio…")
 
     options = {
+        **youtube_runtime_options(),
         "format": "bestaudio/best",
         "ffmpeg_location": imageio_ffmpeg.get_ffmpeg_exe(),
         "outtmpl": str(destination / "%(title)s.%(ext)s"),

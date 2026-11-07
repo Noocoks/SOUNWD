@@ -8,7 +8,7 @@
 
 No necesitas instalar Python ni abrir una terminal si descargas la aplicación ya compilada.
 
-1. Entra en [Descargas de SOUNWD](https://github.com/Noocoks/music-downloader/actions).
+1. Entra en [Descargas de SOUNWD](https://github.com/Noocoks/SOUNWD/actions).
 2. Abre la ejecución más reciente que tenga una marca verde de éxito.
 3. Baja hasta **Artifacts** y descarga el archivo de tu sistema:
    - **SOUNWD-Windows** para Windows.
@@ -25,10 +25,10 @@ Haz clic derecho sobre **SOUNWD**, abre Propiedades → Permisos y activa «Perm
 
 ## Estado de las compilaciones
 
-*Última comprobación: 3 de noviembre de 2026.*
+*Última actualización: 7 de noviembre de 2026.*
 
-- **Windows y Linux:** compilación correcta en la ejecución [#35](https://github.com/Noocoks/SOUNWD/actions/runs/41551842978). Los artefactos `SOUNWD-Windows` y `SOUNWD-Linux` están disponibles en esa ejecución.
-- **Android:** se ha actualizado la configuración de compilación para fijar Buildozer 1.6.0, python-for-android y Python/hostpython 3.12.10, evitando que se seleccione automáticamente Python 3.14. También se comprueba explícitamente que exista un APK antes de subirlo como artefacto. La ejecución de validación está disponible en [GitHub Actions](https://github.com/Noocoks/SOUNWD/actions/workflows/android.yml); la APK solo estará disponible cuando esa ejecución termine correctamente.
+- **Windows y Linux:** las compilaciones se generan mediante [GitHub Actions](https://github.com/Noocoks/SOUNWD/actions/workflows/build.yml). Descarga los artefactos de la ejecución más reciente que haya terminado correctamente.
+- **Android:** la compilación principal ha terminado correctamente y el workflow verifica que el APK exista antes de publicarlo como artefacto. Consulta [GitHub Actions](https://github.com/Noocoks/SOUNWD/actions/workflows/android.yml) para obtener la ejecución más reciente.
 
 El workflow de escritorio se ejecuta al actualizar `main` y compila Windows y Linux en paralelo. El workflow Android se ejecuta cuando cambian los archivos de `android/` o su propio workflow, y publica el artefacto `SOUNWD-Android-APK` únicamente si la compilación termina correctamente. Puedes consultar el [historial completo de Actions](https://github.com/Noocoks/SOUNWD/actions).
 
@@ -56,7 +56,7 @@ Si ya conoces yt-dlp, abre **Opciones avanzadas (yt-dlp)** para configurar direc
 - Descargas individuales o listas de reproducción.
 - Indicador de progreso y mensajes fáciles de entender.
 - Aplicaciones independientes compiladas para Windows y Linux.
-- Versión Android en desarrollo, con interfaz Kivy inspirada en el escritorio. La compilación automática de la APK está configurada, pero actualmente falla por una incompatibilidad de `pip` en el entorno interno de Python 3.14; consulta el estado de compilaciones más arriba.
+- Versión Android en desarrollo, con interfaz Kivy inspirada en el escritorio. La compilación automática de la APK está configurada y ha completado una compilación correctamente; consulta el historial de Actions para ver el estado más reciente.
 
 ## Desarrollo
 
@@ -68,4 +68,4 @@ Si ya conoces yt-dlp, abre **Opciones avanzadas (yt-dlp)** para configurar direc
 - `android/main.py` y `android/buildozer.spec`: aplicación móvil y configuración de Android.
 - `.github/workflows/android.yml`: compilación automática de la APK.
 
-SOUNWD utiliza yt-dlp para obtener audio. En Android, esta primera versión conserva el formato disponible en origen: la conversión a MP3/FLAC/WAV con FFmpeg todavía no está integrada. Por ese motivo, las opciones de incrustar portada y metadatos no se ofrecen en Android. La APK se publica como artefacto de GitHub Actions cuando la compilación termina correctamente.
+SOUNWD utiliza yt-dlp para obtener audio. La aplicación de escritorio incluye Deno y los componentes EJS de yt-dlp para resolver los retos JavaScript que YouTube exige actualmente; no necesitas instalar ese motor por separado. En Android, esta primera versión conserva el formato disponible en origen: la conversión a MP3/FLAC/WAV con FFmpeg todavía no está integrada. Por ese motivo, las opciones de incrustar portada y metadatos no se ofrecen en Android. La APK se publica como artefacto de GitHub Actions cuando la compilación termina correctamente.

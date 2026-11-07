@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import os
 import subprocess
 import sys
@@ -67,13 +68,20 @@ def worker(window: SetupWindow) -> None:
 
         if not python.exists():
             window.set_status("Creando un entorno seguro para SOUNWD…")
-            subprocess.run([sys.executable, "-m", "venv", str(VENV)],
+            subprocess.run([sys.executable, "-m", "venv", "--clear", str(VENV)],
                            check=True, cwd=ROOT)
 
-        window.set_status("Instalando los componentes necesarios…")
-        subprocess.run([str(python), "-m", "pip", "install", "--disable-pip-version-check",
-                        "-r", str(REQUIREMENTS)],
-                       check=True, cwd=ROOT)
+        # Reinstala/actualiza dependencias solo cuando cambia requirements.txt.
+        requirements_hash = hashlib.sha256(REQUIREMENTS.read_bytes()).hexdigest()
+        stamp = VENV / ".requirements.sha256"
+        installed_hash = stamp.read_text(encoding="ascii").strip() if stamp.exists() else ""
+        if installed_hash != requirements_hash:
+            window.set_status("Instalando o actualizando los componentes necesarios…")
+            subprocess.run([str(python), "-m", "pip", "install", "--disable-pip-version-check",
+                            "-r", str(REQUIREMENTS)],
+                           check=True, cwd=ROOT)
+            stamp.write_text(requirements_hash, encoding="ascii")
+
 
         window.set_status("Abriendo SOUNWD…")
         subprocess.Popen([str(pythonw), str(ROOT / "src" / "gui.py")],

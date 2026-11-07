@@ -236,53 +236,84 @@ class SOUNWDApp(App):
             self.status.text="Pega un enlace válido de YouTube o YouTube Music."; return
         self.downloading=True; self.download.disabled=True; self.download.text="Un momento…"
         self.status.text="Conectando… no cierres SOUNWD."; self.progress.text=""; self.progress_bar.value=0
-        self.save_preferences()
-        advanced={key:field.text.strip() for key,field in self.advanced_fields.items()}
-        advanced["write_subtitles"]=self.write_subtitles.active
-        threading.Thread(target=self.download_worker,args=(link,FORMATS[self.format.text],self.playlist.active,self.destination.text,advanced),daemon=True).start()
-    def download_worker(self,link,selector,playlist,destination,advanced):
-        before=set(self.private_dir.iterdir())
-        def hook(d):
-            if d.get("status")=="downloading":
-                total=d.get("total_bytes") or d.get("total_bytes_estimate"); got=d.get("downloaded_bytes",0)
-                pct=int(max(0,min(100,got/total*100))) if total else 0
-                Clock.schedule_once(lambda _dt,p=pct:self.update_progress(p),0)
-        template=advanced["output_template"] or "%(title)s.%(ext)s"
-        template_path=Path(template)
-        if not template_path.is_absolute(): template_path=self.private_dir/template_path
-        options={"format":advanced["ydl_format"] or selector,
-                 "outtmpl":str(template_path),
-                 "noplaylist":not playlist,"quiet":True,"no_warnings":True,"progress_hooks":[hook],"overwrites":False}
-        if advanced["playlist_items"]: options["playlist_items"]=advanced["playlist_items"]
-        if advanced["limit_rate"]: options["ratelimit"]=advanced["limit_rate"]
-        if advanced["retries"]:
-            try: options["retries"]=max(0,int(advanced["retries"]))
-            except ValueError:
-                self.events.put(("error","El número de reintentos debe ser un entero.")); return
-        if advanced["subtitle_langs"]: options["subtitleslangs"]=advanced["subtitle_langs"]
-        if advanced["write_subtitles"]: options["writesubtitles"]=True
         try:
-            # Import yt-dlp only when the user starts a download. This keeps
-            # optional/network-heavy downloader imports out of Android startup
-            # and surfaces import errors through the normal UI error handler.
+            self.save_preferences()
+            advanced={key:field.text.strip() for key,field in self.advanced_fields.items()}
+            advanced["write_subtitles"]=self.write_subtitles.active
+            worker=threading.Thread(target=self.download_worker,args=(link,FORMATS[self.format.text],self.playlist.active,self.destination.text,advanced),daemon=True)
+            worker.start()
+        except Exception as error:
+            self.downloading=False
+            self.download.disabled=False
+            self.download.text="Guardar audio"
+            self.status.text="No se ha podido iniciar la descarga."
+            self.popup(str(error))
+    def download_worker(self,link,selector,playlist,destination,advanced):
+        """Descarga y publica solo archivos de audio; cualquier fallo vuelve a la UI."""
+        try:
+            self.private_dir.mkdir(parents=True, exist_ok=True)
+            before={p.resolve() for p in self.private_dir.rglob("*") if p.is_file()}
+            downloaded_paths=set()
+
+            def hook(data):
+                if data.get("status")=="downloading":
+                    total=data.get("total_bytes") or data.get("total_bytes_estimate")
+                    got=data.get("downloaded_bytes",0)
+                    pct=int(max(0,min(100,got/total*100))) if total else 0
+                    Clock.schedule_once(lambda _dt,p=pct:self.update_progress(p),0)
+                elif data.get("status")=="finished" and data.get("filename"):
+                    downloaded_paths.add(Path(data["filename"]).expanduser().resolve())
+
+            template=advanced["output_template"] or "%(title)s.%(ext)s"
+            template_path=Path(template).expanduser()
+            if not template_path.is_absolute():
+                template_path=self.private_dir/template_path
+            options={"format":advanced["ydl_format"] or selector,
+                     "outtmpl":str(template_path),
+                     "noplaylist":not playlist,"quiet":True,"no_warnings":True,
+                     "progress_hooks":[hook],"overwrites":False}
+            if advanced["playlist_items"]: options["playlist_items"]=advanced["playlist_items"]
+            if advanced["limit_rate"]: options["ratelimit"]=advanced["limit_rate"]
+            if advanced["retries"]: options["retries"]=max(0,int(advanced["retries"]))
+            if advanced["subtitle_langs"]: options["subtitleslangs"]=advanced["subtitle_langs"]
+            if advanced["write_subtitles"]: options["writesubtitles"]=True
+
             import yt_dlp
-            with yt_dlp.YoutubeDL(options) as ydl: code=ydl.download([link])
-            if code: raise RuntimeError("La descarga no ha podido terminar.")
-            files=[p for p in self.private_dir.iterdir() if p.is_file() and p not in before]
-            if not files: raise RuntimeError("No se ha encontrado el archivo descargado.")
+            with yt_dlp.YoutubeDL(options) as ydl:
+                code=ydl.download([link])
+            if code:
+                raise RuntimeError("La descarga no ha podido terminar.")
+
+            audio_extensions={".aac",".flac",".m4a",".mka",".mp3",".ogg",".opus",".wav",".weba",".webm"}
+            files=[p for p in downloaded_paths
+                   if p.is_file() and p.suffix.lower() in audio_extensions
+                   and not p.name.endswith((".part",".ytdl"))]
+            # Fallback for downloader versions that omit the final filename in hooks.
+            if not files:
+                files=[p.resolve() for p in self.private_dir.rglob("*")
+                       if p.is_file() and p.suffix.lower() in audio_extensions
+                       and p.resolve() not in before and not p.name.endswith((".part",".ytdl"))]
+            if not files:
+                raise RuntimeError("No se ha encontrado ningún archivo de audio nuevo.")
             saved=[]
             if platform=="android":
                 from androidstorage4kivy import SharedStorage
                 from jnius import autoclass
-                Environment=autoclass("android.os.Environment"); shared=SharedStorage()
+                Environment=autoclass("android.os.Environment")
+                shared=SharedStorage()
                 collection=Environment.DIRECTORY_DOWNLOADS if destination.startswith("Descargas") else Environment.DIRECTORY_MUSIC
                 for path in files:
                     uri=shared.copy_to_shared(str(path),collection=collection)
-                    if uri:saved.append(path.name)
-                if not saved: raise RuntimeError("Android no ha podido guardar el audio en la carpeta compartida.")
-            else: saved=[p.name for p in files]
+                    if uri:
+                        saved.append(str(path.resolve()))
+                if not saved:
+                    raise RuntimeError("Android no ha podido guardar el audio en la carpeta compartida.")
+            else:
+                saved=[str(path.resolve()) for path in files]
             self.events.put(("done",saved))
-        except Exception as e:self.events.put(("error",str(e)))
+        except Exception as e:
+            self.events.put(("error",str(e)))
+
     def update_progress(self,percent):
         self.progress.text=f"{percent}%"
         self.progress_bar.value=percent
@@ -313,7 +344,9 @@ class SOUNWDApp(App):
             collection=Environment.DIRECTORY_DOWNLOADS if self.destination.text.startswith("Descargas") else Environment.DIRECTORY_MUSIC
             uris=[]
             for name in self.last_files:
-                uri=shared.copy_to_shared(str(self.private_dir/name),collection=collection)
+                file_path=Path(name).expanduser()
+                if not file_path.is_absolute(): file_path=self.private_dir/file_path
+                uri=shared.copy_to_shared(str(file_path.resolve()),collection=collection)
                 if uri:uris.append(uri)
             if uris:ShareSheet().share_file_list(uris)
             else:self.status.text="No se ha podido preparar el archivo para compartir."

@@ -115,7 +115,7 @@ class SoundwApp(ctk.CTk):
         # Está dibujado en Canvas para que sea vectorial, nítido y no dependa de
         # recursos externos ni de rutas especiales dentro del ejecutable.
         mark = ctk.CTkCanvas(
-            brand, width=112, height=86, bg="#080808",
+            brand, width=112, height=74, bg="#080808",
             highlightthickness=0, bd=0,
         )
         self.brand_mark = mark
@@ -144,6 +144,7 @@ class SoundwApp(ctk.CTk):
         mark.create_line(92, 25, 83, 33, fill="#790018", width=3)
         mark.create_line(44, 8, 49, 14, fill="#790018", width=2)
         mark.create_line(68, 8, 63, 14, fill="#790018", width=2)
+        mark.scale("all", 0, 0, 1, 0.85)
         ctk.CTkLabel(brand, text="SOUNWD //", text_color="#D8DADD",
                      font=ctk.CTkFont(family="Consolas", size=25, weight="bold")).pack(pady=(0, 1))
         ctk.CTkLabel(brand, text="UNDERGROUND AUDIO DIVISION  •  NO COMFORT ZONE",
@@ -370,7 +371,7 @@ class SoundwApp(ctk.CTk):
         # CTkScrollableFrame se muestra mediante su _parent_frame (grid).
         # self.page vive dentro del Canvas y no debe recibir grid_configure().
         self.page._parent_frame.grid_configure(
-            padx=horizontal, pady=18 if width < 650 else 26
+            padx=horizontal, pady=14 if width < 650 else 14
         )
         if width < 650:
             self.settings.grid_columnconfigure(0, weight=1)

@@ -103,6 +103,14 @@ class SoundwApp(ctk.CTk):
         page.grid_columnconfigure(0, weight=1)
         page.grid_rowconfigure(0, weight=1)
         page.grid_rowconfigure(11, weight=1)
+        # Las filas vacías no reciben espacio en Tk si no tienen un widget.
+        # Estos dos spacers transparentes hacen efectivo el reparto simétrico.
+        ctk.CTkFrame(page, fg_color="transparent", height=1).grid(
+            row=0, column=0, sticky="ew"
+        )
+        ctk.CTkFrame(page, fg_color="transparent", height=1).grid(
+            row=11, column=0, sticky="ew"
+        )
 
         scroll_page._parent_canvas.bind(
             "<Configure>", lambda _event: self.after_idle(self._center_content), add="+"

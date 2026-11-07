@@ -1,4 +1,4 @@
-name: Build SOUNWD Android APK (PR validation)
+name: Build SOUNWD Android APK
 
 on:
   push:
@@ -41,6 +41,9 @@ jobs:
           sudo apt-get install -y git zip unzip build-essential autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev automake
           python -m pip install --upgrade pip
           python -m pip install buildozer==1.6.0 cython==0.29.34
+      - name: Validate Android Python syntax
+        working-directory: android
+        run: python -m compileall -q .
       - name: Verify Android toolchain and local recipe
         working-directory: android
         run: |

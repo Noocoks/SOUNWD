@@ -8,7 +8,7 @@
 
 No necesitas instalar Python ni abrir una terminal si descargas la aplicación ya compilada.
 
-1. Entra en [Descargas de SOUNWD](https://github.com/Noocoks/music-downloader/actions).
+1. Entra en [Descargas de SOUNWD](https://github.com/Noocoks/SOUNWD/actions).
 2. Abre la ejecución más reciente que tenga una marca verde de éxito.
 3. Baja hasta **Artifacts** y descarga el archivo de tu sistema:
    - **SOUNWD-Windows** para Windows.
@@ -25,10 +25,10 @@ Haz clic derecho sobre **SOUNWD**, abre Propiedades → Permisos y activa «Perm
 
 ## Estado de las compilaciones
 
-*Última comprobación: 3 de noviembre de 2026.*
+*Última actualización: 7 de noviembre de 2026.*
 
 - **Windows y Linux:** compilación correcta en la ejecución [#35](https://github.com/Noocoks/SOUNWD/actions/runs/41551842978). Los artefactos `SOUNWD-Windows` y `SOUNWD-Linux` están disponibles en esa ejecución.
-- **Android:** se ha actualizado la configuración de compilación para fijar Buildozer 1.6.0, python-for-android y Python/hostpython 3.12.10, evitando que se seleccione automáticamente Python 3.14. También se comprueba explícitamente que exista un APK antes de subirlo como artefacto. La ejecución de validación está disponible en [GitHub Actions](https://github.com/Noocoks/SOUNWD/actions/workflows/android.yml); la APK solo estará disponible cuando esa ejecución termine correctamente.
+- **Android:** la compilación principal ha terminado correctamente y el workflow verifica que el APK exista antes de publicarlo como artefacto. Consulta [GitHub Actions](https://github.com/Noocoks/SOUNWD/actions/workflows/android.yml) para obtener la ejecución más reciente.
 
 El workflow de escritorio se ejecuta al actualizar `main` y compila Windows y Linux en paralelo. El workflow Android se ejecuta cuando cambian los archivos de `android/` o su propio workflow, y publica el artefacto `SOUNWD-Android-APK` únicamente si la compilación termina correctamente. Puedes consultar el [historial completo de Actions](https://github.com/Noocoks/SOUNWD/actions).
 

@@ -345,7 +345,8 @@ class SOUNWDApp(App):
             uris=[]
             for name in self.last_files:
                 file_path=Path(name).expanduser()
-                if not file_path.is_absolute(): file_path=self.private_dir/file_path\n                uri=shared.copy_to_shared(str(file_path.resolve()),collection=collection)
+                if not file_path.is_absolute(): file_path=self.private_dir/file_path
+                uri=shared.copy_to_shared(str(file_path.resolve()),collection=collection)
                 if uri:uris.append(uri)
             if uris:ShareSheet().share_file_list(uris)
             else:self.status.text="No se ha podido preparar el archivo para compartir."

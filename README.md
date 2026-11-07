@@ -56,7 +56,7 @@ Si ya conoces yt-dlp, abre **Opciones avanzadas (yt-dlp)** para configurar direc
 - Descargas individuales o listas de reproducción.
 - Indicador de progreso y mensajes fáciles de entender.
 - Aplicaciones independientes compiladas para Windows y Linux.
-- Versión Android en desarrollo, con interfaz Kivy inspirada en el escritorio. La compilación automática de la APK está configurada, pero actualmente falla por una incompatibilidad de `pip` en el entorno interno de Python 3.14; consulta el estado de compilaciones más arriba.
+- Versión Android en desarrollo, con interfaz Kivy inspirada en el escritorio. La compilación automática de la APK está configurada y ha completado una compilación correctamente; consulta el historial de Actions para ver el estado más reciente.
 
 ## Desarrollo
 

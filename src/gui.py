@@ -317,8 +317,6 @@ class SoundwApp(ctk.CTk):
         # a ocupar como mínimo el viewport; sus filas 0 y 11 centran el bloque.
         content_height = content.winfo_reqheight()
         target_height = max(content_height, viewport_height)
-        if content.winfo_height() != target_height:
-            content.configure(height=target_height)
         window_id = self.page._create_window_id
         current_height = int(float(canvas.itemcget(window_id, "height") or 0))
         if current_height != target_height:

@@ -44,7 +44,8 @@ jobs:
       - name: Verify Android toolchain and local recipe
         working-directory: android
         run: |
-          grep -E '^(requirements|p4a.branch|p4a.commit|p4a.local_recipes) *=' buildozer.spec
+          grep -E '^(requirements|android.ndk|p4a.branch|p4a.commit|p4a.local_recipes) *=' buildozer.spec
+          grep -q '^android.ndk = 28c$' buildozer.spec
           test -f p4a-recipes/python3/__init__.py
           python -m py_compile p4a-recipes/python3/__init__.py
       - name: Build debug APK
@@ -55,9 +56,75 @@ jobs:
           set -o pipefail
           buildozer -v android debug 2>&1 | tee ../android-build.log
       - name: Verify APK exists
+        id: apk
         run: |
-          test -n "$(find android/bin -maxdepth 1 -type f -name '*.apk' -print -quit)"
-          ls -lh android/bin/*.apk
+          APK="$(find android/bin -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          test -n "$APK"
+          echo "path=$APK" >> "$GITHUB_OUTPUT"
+          ls -lh "$APK"
+      - name: Verify 16 KB native-library alignment
+        env:
+          APK_PATH: ${{ steps.apk.outputs.path }}
+        run: |
+          set -euo pipefail
+          LLVM_READELF="$(find "$HOME/.buildozer" -type f -path '*/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf' -print -quit)"
+          ZIPALIGN="$(find "$HOME/.buildozer" -type f -name zipalign -print -quit)"
+          test -x "$LLVM_READELF"
+          test -x "$ZIPALIGN"
+
+          # Check APK ZIP alignment for any uncompressed native libraries.
+          "$ZIPALIGN" -c -P 16 -v 4 "$APK_PATH"
+
+          TMP_DIR="$(mktemp -d)"
+          trap 'rm -rf "$TMP_DIR"' EXIT
+          python - "$APK_PATH" "$TMP_DIR" "$LLVM_READELF" <<'PY'
+          import pathlib
+          import re
+          import subprocess
+          import sys
+          import zipfile
+
+          apk_path, temp_dir, readelf = sys.argv[1:]
+          root = pathlib.Path(temp_dir)
+          with zipfile.ZipFile(apk_path) as apk:
+              libs = [name for name in apk.namelist()
+                      if name.endswith(".so") and "/lib/" in name]
+              if not libs:
+                  raise SystemExit("ERROR: no native .so libraries found in APK")
+              apk.extractall(root, libs)
+
+          failures = []
+          for relative in libs:
+              library = root / relative
+              output = subprocess.check_output(
+                  [readelf, "-lW", str(library)], text=True
+              )
+              loads = []
+              for line in output.splitlines():
+                  fields = line.split()
+                  if fields and fields[0] == "LOAD":
+                      try:
+                          loads.append(int(fields[-1], 0))
+                      except ValueError:
+                          failures.append((relative, line.strip()))
+              if not loads:
+                  failures.append((relative, "no ELF LOAD segments found"))
+              elif any(alignment < 0x4000 for alignment in loads):
+                  failures.append((
+                      relative,
+                      "LOAD alignments: " + ", ".join(hex(value) for value in loads)
+                  ))
+              else:
+                  print(f"16 KB ELF aligned: {relative}")
+
+          if failures:
+              for library, detail in failures:
+                  print(f"ERROR: {library}: {detail}", file=sys.stderr)
+              raise SystemExit(
+                  f"{len(failures)} native library/libraries are not 16 KB ELF aligned"
+              )
+          print(f"All {len(libs)} native libraries pass the 16 KB ELF alignment check.")
+          PY
       - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v4
@@ -70,6 +137,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: SOUNWD-Android-APK
-          path: android/bin/*.apk
+          path: ${{ steps.apk.outputs.path }}
           if-no-files-found: error
           retention-days: 14

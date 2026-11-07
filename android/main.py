@@ -236,15 +236,24 @@ class SOUNWDApp(App):
             self.status.text="Pega un enlace válido de YouTube o YouTube Music."; return
         self.downloading=True; self.download.disabled=True; self.download.text="Un momento…"
         self.status.text="Conectando… no cierres SOUNWD."; self.progress.text=""; self.progress_bar.value=0
-        self.save_preferences()
-        advanced={key:field.text.strip() for key,field in self.advanced_fields.items()}
-        advanced["write_subtitles"]=self.write_subtitles.active
-        threading.Thread(target=self.download_worker,args=(link,FORMATS[self.format.text],self.playlist.active,self.destination.text,advanced),daemon=True).start()
+        try:
+            self.save_preferences()
+            advanced={key:field.text.strip() for key,field in self.advanced_fields.items()}
+            advanced["write_subtitles"]=self.write_subtitles.active
+            worker=threading.Thread(target=self.download_worker,args=(link,FORMATS[self.format.text],self.playlist.active,self.destination.text,advanced),daemon=True)
+            worker.start()
+        except Exception as error:
+            self.downloading=False
+            self.download.disabled=False
+            self.download.text="Guardar audio"
+            self.status.text="No se ha podido iniciar la descarga."
+            self.popup(str(error))
     def download_worker(self,link,selector,playlist,destination,advanced):
         """Descarga y publica solo archivos de audio; cualquier fallo vuelve a la UI."""
         try:
             self.private_dir.mkdir(parents=True, exist_ok=True)
             before={p.resolve() for p in self.private_dir.rglob("*") if p.is_file()}
+            downloaded_paths=set()
 
             def hook(data):
                 if data.get("status")=="downloading":
@@ -252,6 +261,8 @@ class SOUNWDApp(App):
                     got=data.get("downloaded_bytes",0)
                     pct=int(max(0,min(100,got/total*100))) if total else 0
                     Clock.schedule_once(lambda _dt,p=pct:self.update_progress(p),0)
+                elif data.get("status")=="finished" and data.get("filename"):
+                    downloaded_paths.add(Path(data["filename"]).expanduser().resolve())
 
             template=advanced["output_template"] or "%(title)s.%(ext)s"
             template_path=Path(template).expanduser()
@@ -274,9 +285,14 @@ class SOUNWDApp(App):
                 raise RuntimeError("La descarga no ha podido terminar.")
 
             audio_extensions={".aac",".flac",".m4a",".mka",".mp3",".ogg",".opus",".wav",".weba",".webm"}
-            files=[p for p in self.private_dir.rglob("*")
+            files=[p for p in downloaded_paths
                    if p.is_file() and p.suffix.lower() in audio_extensions
-                   and p.resolve() not in before and not p.name.endswith((".part",".ytdl"))]
+                   and not p.name.endswith((".part",".ytdl"))]
+            # Fallback for downloader versions that omit the final filename in hooks.
+            if not files:
+                files=[p.resolve() for p in self.private_dir.rglob("*")
+                       if p.is_file() and p.suffix.lower() in audio_extensions
+                       and p.resolve() not in before and not p.name.endswith((".part",".ytdl"))]
             if not files:
                 raise RuntimeError("No se ha encontrado ningún archivo de audio nuevo.")
             saved=[]
@@ -289,11 +305,11 @@ class SOUNWDApp(App):
                 for path in files:
                     uri=shared.copy_to_shared(str(path),collection=collection)
                     if uri:
-                        saved.append(str(path.relative_to(self.private_dir)))
+                        saved.append(str(path.resolve()))
                 if not saved:
                     raise RuntimeError("Android no ha podido guardar el audio en la carpeta compartida.")
             else:
-                saved=[str(path.relative_to(self.private_dir)) for path in files]
+                saved=[str(path.resolve()) for path in files]
             self.events.put(("done",saved))
         except Exception as e:
             self.events.put(("error",str(e)))
@@ -328,7 +344,7 @@ class SOUNWDApp(App):
             collection=Environment.DIRECTORY_DOWNLOADS if self.destination.text.startswith("Descargas") else Environment.DIRECTORY_MUSIC
             uris=[]
             for name in self.last_files:
-                uri=shared.copy_to_shared(str((self.private_dir/name).resolve()),collection=collection)
+                file_path=Path(name).expanduser()\n                if not file_path.is_absolute(): file_path=self.private_dir/file_path\n                uri=shared.copy_to_shared(str(file_path.resolve()),collection=collection)
                 if uri:uris.append(uri)
             if uris:ShareSheet().share_file_list(uris)
             else:self.status.text="No se ha podido preparar el archivo para compartir."

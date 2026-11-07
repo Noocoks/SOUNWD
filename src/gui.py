@@ -73,6 +73,11 @@ class SoundwApp(ctk.CTk):
         self.bind("<Configure>", self._responsive_layout)
         # Ocultamos solo la barra; CTkScrollableFrame conserva su scroll nativo con rueda.
         self.page._scrollbar.grid_remove()
+        # CustomTkinter 5.2.2 does not bind Linux wheel buttons (Button-4/5).
+        # Keep the scrollbar hidden, but preserve scrolling on Linux mice/touchpads.
+        if sys_platform().startswith("linux"):
+            self.page.bind_all("<Button-4>", self._on_linux_mousewheel, add="+")
+            self.page.bind_all("<Button-5>", self._on_linux_mousewheel, add="+")
         self.after(80, self._responsive_layout)
         self.after(120, self._process_events)
 
@@ -299,6 +304,21 @@ class SoundwApp(ctk.CTk):
 
         canvas.configure(scrollregion=canvas.bbox("all"))
 
+    def _on_linux_mousewheel(self, event):
+        """Scroll the page on Linux, where Tk emits Button-4/Button-5 wheel events."""
+        canvas = self.page._parent_canvas
+        widget = getattr(event, "widget", None)
+        while widget is not None and widget is not canvas:
+            widget = getattr(widget, "master", None)
+        if widget is not canvas:
+            return None
+
+        if getattr(event, "num", None) == 4:
+            canvas.yview_scroll(-1, "units")
+        elif getattr(event, "num", None) == 5:
+            canvas.yview_scroll(1, "units")
+        return "break"
+
     def _responsive_layout(self, event=None) -> None:
         if event is not None and event.widget is not self:
             return
@@ -402,16 +422,16 @@ class SoundwApp(ctk.CTk):
 
     def _open_folder(self) -> None:
         folder = Path(self.destination.get()).expanduser()
-        folder.mkdir(parents=True, exist_ok=True)
         try:
+            folder.mkdir(parents=True, exist_ok=True)
             if os.name == "nt":
                 os.startfile(str(folder))
             elif sys_platform() == "darwin":
                 subprocess.Popen(["open", str(folder)])
             else:
                 subprocess.Popen(["xdg-open", str(folder)])
-        except Exception:
-            messagebox.showinfo("Tu carpeta", f"Tu música está guardada aquí:\n{folder}")
+        except Exception as error:
+            messagebox.showerror("No se puede abrir la carpeta", f"No he podido abrir o preparar esta carpeta:\n{folder}\n\nDetalle: {error}")
 
     def _start_download(self) -> None:
         if self.downloading:
@@ -441,24 +461,32 @@ class SoundwApp(ctk.CTk):
         self.open_folder_button.configure(state="disabled")
         self.progress.set(0)
         self.status_label.configure(text="Conectando… no cierres esta ventana.")
-        thread = threading.Thread(
-            target=self._download_worker,
-            args=(url, FORMATS[self.audio_format.get()], destination, self.playlist.get(), self.quality.get(), self.filename_style.get(), {
-                "format": self.ydl_format.get().strip(),
-                "outtmpl": self.output_template.get().strip(),
-                "playlist_items": self.playlist_items.get().strip(),
-                "ratelimit": self.limit_rate.get().strip(),
-                "retries": self.retries.get().strip(),
-                "subtitleslangs": self.subtitle_langs.get().strip(),
-                "embedthumbnail": self.embed_thumbnail.get(),
-                "addmetadata": self.embed_metadata.get(),
-                "writesubtitles": self.write_subtitles.get(),
-            }),
-            daemon=True,
-        )
-        thread.start()
+        try:
+            thread = threading.Thread(
+                target=self._download_worker,
+                args=(url, FORMATS[self.audio_format.get()], destination, self.playlist.get(), self.quality.get(), self.filename_style.get(), {
+                    "format": self.ydl_format.get().strip(),
+                    "outtmpl": self.output_template.get().strip(),
+                    "playlist_items": self.playlist_items.get().strip(),
+                    "ratelimit": self.limit_rate.get().strip(),
+                    "retries": self.retries.get().strip(),
+                    "subtitleslangs": self.subtitle_langs.get().strip(),
+                    "embedthumbnail": self.embed_thumbnail.get(),
+                    "addmetadata": self.embed_metadata.get(),
+                    "writesubtitles": self.write_subtitles.get(),
+                }),
+                daemon=True,
+            )
+            thread.start()
+        except Exception as error:
+            self.downloading = False
+            self.download_button.configure(state="normal", text="Guardar audio")
+            self.open_folder_button.configure(state="normal")
+            self.status_label.configure(text="No se ha podido iniciar la descarga.")
+            messagebox.showerror("No se ha podido iniciar", str(error))
 
     def _download_worker(self, url: str, audio_format: str, destination: Path, playlist: bool, quality_choice: str, filename_choice: str, advanced: dict) -> None:
+        """Prepara y ejecuta la descarga fuera del hilo de Tk, notificando siempre el resultado."""
         def hook(data: dict) -> None:
             if data.get("status") == "downloading":
                 downloaded = data.get("downloaded_bytes", 0)
@@ -468,44 +496,41 @@ class SoundwApp(ctk.CTk):
             elif data.get("status") == "finished":
                 self.events.put(("progress", (0.98, "Preparando el archivo…")))
 
-        quality = {"Máxima": "0", "Alta": "192", "Normal": "128"}.get(quality_choice, "0")
-        filename = "%(title)s" if filename_choice == "Solo título" else "%(title)s - %(uploader)s"
-        output_template = advanced["outtmpl"]
-        if output_template and not Path(output_template).expanduser().is_absolute():
-            output_template = str(destination / output_template)
-        options = {
-            "format": advanced["format"] or "bestaudio/best",
-            "ffmpeg_location": imageio_ffmpeg.get_ffmpeg_exe(),
-            "outtmpl": output_template or str(destination / (filename + ".%(ext)s")),
-            "noplaylist": not playlist,
-            "windowsfilenames": True,
-            "quiet": True,
-            "no_warnings": True,
-            "progress_hooks": [hook],
-            "postprocessors": [
-                {"key": "FFmpegExtractAudio", "preferredcodec": audio_format, "preferredquality": quality},
-            ],
-        }
-        if advanced["playlist_items"]:
-            options["playlist_items"] = advanced["playlist_items"]
-        if advanced["ratelimit"]:
-            options["ratelimit"] = advanced["ratelimit"]
-        if advanced["retries"]:
-            try:
-                options["retries"] = max(0, int(advanced["retries"]))
-            except ValueError:
-                self.events.put(("error", "El número de reintentos debe ser un entero."))
-                return
-        if advanced["subtitleslangs"]:
-            options["subtitleslangs"] = advanced["subtitleslangs"]
-        if advanced["writesubtitles"]:
-            options["writesubtitles"] = True
-        if advanced["embedthumbnail"]:
-            options["writethumbnail"] = True
-            options["postprocessors"].append({"key": "EmbedThumbnail"})
-        if advanced["addmetadata"]:
-            options["addmetadata"] = True
         try:
+            quality = {"Máxima": "0", "Alta": "192", "Normal": "128"}.get(quality_choice, "0")
+            filename = "%(title)s" if filename_choice == "Solo título" else "%(title)s - %(uploader)s"
+            output_template = advanced["outtmpl"]
+            if output_template and not Path(output_template).expanduser().is_absolute():
+                output_template = str(destination / output_template)
+            options = {
+                "format": advanced["format"] or "bestaudio/best",
+                "ffmpeg_location": imageio_ffmpeg.get_ffmpeg_exe(),
+                "outtmpl": output_template or str(destination / (filename + ".%(ext)s")),
+                "noplaylist": not playlist,
+                "windowsfilenames": True,
+                "quiet": True,
+                "no_warnings": True,
+                "progress_hooks": [hook],
+                "postprocessors": [
+                    {"key": "FFmpegExtractAudio", "preferredcodec": audio_format, "preferredquality": quality},
+                ],
+            }
+            if advanced["playlist_items"]:
+                options["playlist_items"] = advanced["playlist_items"]
+            if advanced["ratelimit"]:
+                options["ratelimit"] = advanced["ratelimit"]
+            if advanced["retries"]:
+                options["retries"] = max(0, int(advanced["retries"]))
+            if advanced["subtitleslangs"]:
+                options["subtitleslangs"] = advanced["subtitleslangs"]
+            if advanced["writesubtitles"]:
+                options["writesubtitles"] = True
+            if advanced["embedthumbnail"]:
+                options["writethumbnail"] = True
+                options["postprocessors"].append({"key": "EmbedThumbnail"})
+            if advanced["addmetadata"]:
+                options["addmetadata"] = True
+
             with yt_dlp.YoutubeDL(options) as downloader:
                 result = downloader.download([url])
             if result:
@@ -513,7 +538,9 @@ class SoundwApp(ctk.CTk):
             self.events.put(("done", str(destination)))
         except Exception as error:
             message = str(error).lower()
-            if "private" in message or "members-only" in message:
+            if isinstance(error, ValueError) and "retries" in advanced:
+                friendly = "El número de reintentos debe ser un entero."
+            elif "private" in message or "members-only" in message:
                 friendly = "Este audio es privado o requiere una cuenta especial. Prueba con otro enlace."
             elif "unavailable" in message or "not available" in message:
                 friendly = "Este audio no está disponible. Comprueba el enlace o prueba con otro."

@@ -69,6 +69,14 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
+      - name: Verify vertical centering (Windows)
+        if: runner.os == 'Windows'
+        run: python tests/smoke_gui_layout.py
+
+      - name: Verify vertical centering (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a python tests/smoke_gui_layout.py
+
       - name: Build standalone app (Windows)
         if: runner.os == 'Windows'
         shell: pwsh

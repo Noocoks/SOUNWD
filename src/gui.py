@@ -287,10 +287,8 @@ class SoundwApp(ctk.CTk):
         viewport_height = canvas.winfo_height()
         target_height = max(content_height, viewport_height)
         # CustomTkinter guarda el identificador del frame interno del canvas aquí.
-        window_id = getattr(self.page, "_create_window_id", None)
-        if window_id is not None:
-            canvas.itemconfigure(window_id, height=target_height)
-        inner.configure(height=target_height)
+        canvas.itemconfigure(self.page._parent_canvas_window, height=target_height)
+        self.page.configure(height=target_height)
         canvas.configure(scrollregion=canvas.bbox("all"))
 
     def _on_mousewheel(self, event):

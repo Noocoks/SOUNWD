@@ -335,7 +335,7 @@ class SoundwApp(ctk.CTk):
         # del tkinter.Frame real para que los spacers ponderados se expandan.
         if self.page.winfo_height() != target_height:
             tkinter.Frame.configure(self.page, height=target_height)
-        self.page.grid_propagate(False)
+        tkinter.Frame.grid_propagate(self.page, False)
         if current_height != target_height:
             canvas.itemconfigure(window_id, height=target_height)
         canvas.configure(scrollregion=canvas.bbox("all"))

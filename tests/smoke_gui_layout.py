@@ -15,8 +15,19 @@ try:
     app.update_idletasks()
     app.update()
 
+    app.update()
     top_spacer = app.content.grid_bbox(0, 0)[3]
     bottom_spacer = app.content.grid_bbox(0, 11)[3]
+    print({
+        "canvas_height": app.page._parent_canvas.winfo_height(),
+        "scroll_frame_height": app.page._parent_frame.winfo_height(),
+        "content_height": app.content.winfo_height(),
+        "content_reqheight": app.content.winfo_reqheight(),
+        "window_height": app.page._parent_canvas.itemcget(app.page._create_window_id, "height"),
+        "top_spacer": top_spacer,
+        "bottom_spacer": bottom_spacer,
+        "content_grid_size": app.content.grid_size(),
+    })
     if top_spacer < 1 or bottom_spacer < 1:
         raise AssertionError(
             f"Centering spacers are missing: top={top_spacer}, bottom={bottom_spacer}"
@@ -25,9 +36,5 @@ try:
         raise AssertionError(
             f"Main content is not vertically centered: top={top_spacer}, bottom={bottom_spacer}"
         )
-    print(
-        f"Vertical centering OK: top spacer={top_spacer}px, "
-        f"bottom spacer={bottom_spacer}px"
-    )
 finally:
     app.destroy()

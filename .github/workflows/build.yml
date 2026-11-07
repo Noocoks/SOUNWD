@@ -68,7 +68,7 @@ jobs:
       - name: Build standalone app (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: pyinstaller --noconfirm --clean --onefile --windowed --name SOUNWD --collect-all customtkinter --collect-all imageio_ffmpeg --collect-all yt_dlp --collect-all yt_dlp_ejs --add-binary "$env:DENO_PATH;." src/gui.py
+        run: pyinstaller --noconfirm --clean --onefile --windowed --name SOUNWD --collect-all customtkinter --collect-all imageio_ffmpeg --collect-all yt_dlp --collect-all yt_dlp_ejs --paths src --hidden-import yt_dlp_support --add-binary "$env:DENO_PATH;." src/gui.py
 
       - name: Build standalone app (Linux)
         if: runner.os == 'Linux'

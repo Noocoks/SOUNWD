@@ -96,22 +96,13 @@ class SoundwApp(ctk.CTk):
         scroll_page.grid_columnconfigure(0, weight=1)
         scroll_page.grid_rowconfigure(0, weight=1)
 
-        # El contenido vive en un frame interior que SIEMPRE ocupa el viewport.
-        # Así Tk puede repartir el espacio libre entre las filas superior e inferior.
+        # Un único frame de contenido dentro del scroll nativo de CustomTkinter.
+        # El centrado vertical se calcula moviendo la ventana del Canvas, sin
+        # alterar alturas internas ni desactivar la propagación geométrica.
         page = ctk.CTkFrame(scroll_page, fg_color="transparent", corner_radius=0)
         self.content = page
-        page.grid(row=0, column=0, sticky="nsew")
+        page.grid(row=0, column=0, sticky="ew")
         page.grid_columnconfigure(0, weight=1)
-        page.grid_rowconfigure(0, weight=1)
-        page.grid_rowconfigure(11, weight=1)
-        # Las filas vacías no reciben espacio en Tk si no tienen un widget.
-        # Estos dos spacers transparentes hacen efectivo el reparto simétrico.
-        ctk.CTkFrame(page, fg_color="transparent", height=1).grid(
-            row=0, column=0, sticky="ew"
-        )
-        ctk.CTkFrame(page, fg_color="transparent", height=1).grid(
-            row=11, column=0, sticky="ew"
-        )
 
         scroll_page._parent_canvas.bind(
             "<Configure>", lambda _event: self.after_idle(self._center_content), add="+"
@@ -120,16 +111,40 @@ class SoundwApp(ctk.CTk):
 
         brand = ctk.CTkFrame(page, fg_color="transparent")
         brand.grid(row=1, column=0, sticky="ew", pady=(0, 8))
-        # Emblema propio: escudo industrial + pulso de audio en rojo señal.
-        mark = ctk.CTkCanvas(brand, width=96, height=64, bg="#080808",
-                             highlightthickness=0, bd=0)
+        # Nuevo emblema SOUNWD: calavera angular con auriculares y ojos rojos.
+        # Está dibujado en Canvas para que sea vectorial, nítido y no dependa de
+        # recursos externos ni de rutas especiales dentro del ejecutable.
+        mark = ctk.CTkCanvas(
+            brand, width=112, height=74, bg="#080808",
+            highlightthickness=0, bd=0,
+        )
+        self.brand_mark = mark
         mark.pack(pady=(0, 2))
-        mark.create_polygon(48, 2, 84, 14, 78, 46, 48, 61, 18, 46, 12, 14,
-                            fill="#0D1117", outline="#858B93", width=2)
-        mark.create_line(20, 35, 32, 35, 40, 22, 48, 47, 56, 28, 64, 35, 76, 35,
-                         fill="#D8DADD", width=3, capstyle="round", joinstyle="miter")
-        mark.create_line(48, 9, 48, 17, fill="#790018", width=4)
-        mark.create_line(48, 50, 48, 58, fill="#790018", width=4)
+        mark.create_oval(10, 5, 102, 82, outline="#3D000D", width=2)
+        mark.create_arc(22, 3, 90, 75, start=0, extent=180,
+                        style="arc", outline="#858B93", width=4)
+        mark.create_rectangle(14, 36, 29, 61, fill="#790018", outline="#B5BAC0", width=2)
+        mark.create_rectangle(83, 36, 98, 61, fill="#790018", outline="#B5BAC0", width=2)
+        mark.create_polygon(
+            35, 25, 43, 15, 51, 21, 60, 13, 69, 22, 78, 30,
+            84, 43, 80, 56, 70, 65, 67, 76, 44, 76, 41, 65,
+            31, 56, 27, 42,
+            fill="#D8DADD", outline="#B5BAC0", width=2,
+        )
+        mark.create_polygon(34, 39, 48, 33, 46, 45, 36, 47,
+                            fill="#790018", outline="#3D000D", width=1)
+        mark.create_polygon(63, 33, 78, 39, 76, 47, 65, 45,
+                            fill="#790018", outline="#3D000D", width=1)
+        mark.create_polygon(51, 48, 59, 48, 55, 57,
+                            fill="#3D000D", outline="#3D000D")
+        mark.create_line(42, 62, 70, 62, fill="#3D000D", width=2)
+        for tooth_x in (47, 54, 61, 68):
+            mark.create_line(tooth_x, 62, tooth_x, 70, fill="#3D000D", width=2)
+        mark.create_line(20, 25, 29, 33, fill="#790018", width=3)
+        mark.create_line(92, 25, 83, 33, fill="#790018", width=3)
+        mark.create_line(44, 8, 49, 14, fill="#790018", width=2)
+        mark.create_line(68, 8, 63, 14, fill="#790018", width=2)
+        mark.scale("all", 0, 0, 1, 0.85)
         ctk.CTkLabel(brand, text="SOUNWD //", text_color="#D8DADD",
                      font=ctk.CTkFont(family="Consolas", size=25, weight="bold")).pack(pady=(0, 1))
         ctk.CTkLabel(brand, text="UNDERGROUND AUDIO DIVISION  •  NO COMFORT ZONE",
@@ -308,37 +323,30 @@ class SoundwApp(ctk.CTk):
 
 
     def _center_content(self) -> None:
-        """Centra el contenido si cabe y deja crecer el área desplazable si no cabe."""
+        """Centra el bloque moviendo la ventana del Canvas; conserva el scroll."""
         canvas = self.page._parent_canvas
         if not canvas.winfo_exists() or not self.page.winfo_exists():
             return
 
         canvas.update_idletasks()
-        self.page.update_idletasks()
-
-        content = self.content
+        self.content.update_idletasks()
         viewport_height = canvas.winfo_height()
         if viewport_height <= 1:
             return
 
-        # Medimos el contenido REAL, sin contar el alto que el canvas le haya
-        # asignado en un redimensionado anterior. Luego forzamos el frame interior
-        # a ocupar como mínimo el viewport; sus filas 0 y 11 centran el bloque.
-        content_height = content.winfo_reqheight()
-        target_height = max(content_height, viewport_height)
+        # La ventana del Canvas conserva la altura natural de CTkScrollableFrame.
+        # No forzamos height ni grid_propagate: eso rompe la geometría en Windows.
+        content_height = max(
+            self.page.winfo_reqheight(),
+            self.content.winfo_reqheight(),
+        )
         window_id = self.page._create_window_id
-        current_height = int(float(canvas.itemcget(window_id, "height") or 0))
-
-        # CTkScrollableFrame no ajusta la altura de su frame incrustado en
-        # vertical (solo sincroniza el ancho). En Windows DPI el canvas puede
-        # crecer mientras ese frame conserva su altura natural. Fijamos el alto
-        # del tkinter.Frame real para que los spacers ponderados se expandan.
-        if self.page.winfo_height() != target_height:
-            tkinter.Frame.configure(self.page, height=target_height)
-        tkinter.Frame.grid_propagate(self.page, False)
-        if current_height != target_height:
-            canvas.itemconfigure(window_id, height=target_height)
-        canvas.configure(scrollregion=canvas.bbox("all"))
+        y_offset = max(0, (viewport_height - content_height) // 2)
+        canvas.coords(window_id, 0, y_offset)
+        canvas.configure(
+            scrollregion=(0, 0, max(canvas.winfo_width(), 1),
+                          max(viewport_height, content_height + y_offset))
+        )
 
     def _on_linux_mousewheel(self, event):
         """Scroll the page on Linux, where Tk emits Button-4/Button-5 wheel events."""
@@ -360,7 +368,11 @@ class SoundwApp(ctk.CTk):
             return
         width = max(self.winfo_width(), 520)
         horizontal = 18 if width < 650 else (30 if width < 850 else 46)
-        self.page.grid_configure(padx=horizontal, pady=18 if width < 650 else 26)
+        # CTkScrollableFrame se muestra mediante su _parent_frame (grid).
+        # self.page vive dentro del Canvas y no debe recibir grid_configure().
+        self.page._parent_frame.grid_configure(
+            padx=horizontal, pady=14 if width < 650 else 14
+        )
         if width < 650:
             self.settings.grid_columnconfigure(0, weight=1)
             self.settings.grid_columnconfigure(1, weight=0)

@@ -47,11 +47,13 @@ jobs:
       - name: Set Deno executable path (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: 'DENO_PATH=$((Get-Command deno).Source)' >> $env:GITHUB_ENV
+        run: |
+          "DENO_PATH=$((Get-Command deno).Source)" >> $env:GITHUB_ENV
 
       - name: Set Deno executable path (Linux)
         if: runner.os == 'Linux'
         run: echo "DENO_PATH=$(command -v deno)" >> "$GITHUB_ENV"
+
       - name: Validate desktop Python syntax
         run: |
           python -m py_compile src/gui.py src/cli.py src/yt_dlp_support.py bootstrap.py

@@ -28,9 +28,9 @@ Haz clic derecho sobre **SOUNWD**, abre Propiedades → Permisos y activa «Perm
 *Última comprobación: 3 de noviembre de 2026.*
 
 - **Windows y Linux:** compilación correcta en la ejecución [#35](https://github.com/Noocoks/SOUNWD/actions/runs/41551842978). Los artefactos `SOUNWD-Windows` y `SOUNWD-Linux` están disponibles en esa ejecución.
-- **Android:** se ha actualizado la configuración de compilación para fijar Buildozer 1.6.0, python-for-android y Python/hostpython 3.12.10, evitando que se seleccione automáticamente Python 3.14. También se comprueba explícitamente que exista un APK antes de subirlo como artefacto. La ejecución de validación está disponible en [GitHub Actions](https://github.com/Noocoks/SOUNWD/actions/workflows/android.yml); la APK solo estará disponible cuando esa ejecución termine correctamente.
+- **Android:** la configuración usa Buildozer 1.6.0, Python/hostpython 3.12.10 y Android NDK r28c. La compilación comprueba que las bibliotecas nativas ELF y el empaquetado del APK cumplen la alineación de 16 KB antes de publicar el artefacto. Consulta las ejecuciones en [GitHub Actions](https://github.com/Noocoks/SOUNWD/actions/workflows/android.yml).
 
-El workflow de escritorio se ejecuta al actualizar `main` y compila Windows y Linux en paralelo. El workflow Android se ejecuta cuando cambian los archivos de `android/` o su propio workflow, y publica el artefacto `SOUNWD-Android-APK` únicamente si la compilación termina correctamente. Puedes consultar el [historial completo de Actions](https://github.com/Noocoks/SOUNWD/actions).
+El workflow de escritorio se ejecuta al actualizar `main` y compila Windows y Linux en paralelo. El workflow Android se ejecuta cuando cambian los archivos de `android/` o su propio workflow, y publica el artefacto `SOUNWD-Android-APK` únicamente si la compilación y las comprobaciones de alineación terminan correctamente. Puedes consultar el [historial completo de Actions](https://github.com/Noocoks/SOUNWD/actions).
 
 ## Cómo usarlo
 
@@ -56,7 +56,7 @@ Si ya conoces yt-dlp, abre **Opciones avanzadas (yt-dlp)** para configurar direc
 - Descargas individuales o listas de reproducción.
 - Indicador de progreso y mensajes fáciles de entender.
 - Aplicaciones independientes compiladas para Windows y Linux.
-- Versión Android en desarrollo, con interfaz Kivy inspirada en el escritorio. La compilación automática de la APK está configurada, pero actualmente falla por una incompatibilidad de `pip` en el entorno interno de Python 3.14; consulta el estado de compilaciones más arriba.
+- Versión Android en desarrollo, con interfaz Kivy inspirada en el escritorio. Su compilación verifica de forma explícita la compatibilidad de alineación de 16 KB de las bibliotecas nativas.
 
 ## Desarrollo
 
@@ -68,4 +68,4 @@ Si ya conoces yt-dlp, abre **Opciones avanzadas (yt-dlp)** para configurar direc
 - `android/main.py` y `android/buildozer.spec`: aplicación móvil y configuración de Android.
 - `.github/workflows/android.yml`: compilación automática de la APK.
 
-SOUNWD utiliza yt-dlp para obtener audio. En Android, esta primera versión conserva el formato disponible en origen: la conversión a MP3/FLAC/WAV con FFmpeg todavía no está integrada. Por ese motivo, las opciones de incrustar portada y metadatos no se ofrecen en Android. La APK se publica como artefacto de GitHub Actions cuando la compilación termina correctamente.
+SOUNWD utiliza yt-dlp para obtener audio. En Android, esta primera versión conserva el formato disponible en origen: la conversión a MP3/FLAC/WAV con FFmpeg todavía no está integrada. Por ese motivo, las opciones de incrustar portada y metadatos no se ofrecen en Android. La APK se publica como artefacto de GitHub Actions cuando la compilación y las comprobaciones terminan correctamente.

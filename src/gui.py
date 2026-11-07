@@ -120,16 +120,39 @@ class SoundwApp(ctk.CTk):
 
         brand = ctk.CTkFrame(page, fg_color="transparent")
         brand.grid(row=1, column=0, sticky="ew", pady=(0, 8))
-        # Emblema propio: escudo industrial + pulso de audio en rojo señal.
-        mark = ctk.CTkCanvas(brand, width=96, height=64, bg="#080808",
-                             highlightthickness=0, bd=0)
+        # Nuevo emblema SOUNWD: calavera angular con auriculares y ojos rojos.
+        # Está dibujado en Canvas para que sea vectorial, nítido y no dependa de
+        # recursos externos ni de rutas especiales dentro del ejecutable.
+        mark = ctk.CTkCanvas(
+            brand, width=112, height=86, bg="#080808",
+            highlightthickness=0, bd=0,
+        )
+        self.brand_mark = mark
         mark.pack(pady=(0, 2))
-        mark.create_polygon(48, 2, 84, 14, 78, 46, 48, 61, 18, 46, 12, 14,
-                            fill="#0D1117", outline="#858B93", width=2)
-        mark.create_line(20, 35, 32, 35, 40, 22, 48, 47, 56, 28, 64, 35, 76, 35,
-                         fill="#D8DADD", width=3, capstyle="round", joinstyle="miter")
-        mark.create_line(48, 9, 48, 17, fill="#790018", width=4)
-        mark.create_line(48, 50, 48, 58, fill="#790018", width=4)
+        mark.create_oval(10, 5, 102, 82, outline="#3D000D", width=2)
+        mark.create_arc(22, 3, 90, 75, start=0, extent=180,
+                        style="arc", outline="#858B93", width=4)
+        mark.create_rectangle(14, 36, 29, 61, fill="#790018", outline="#B5BAC0", width=2)
+        mark.create_rectangle(83, 36, 98, 61, fill="#790018", outline="#B5BAC0", width=2)
+        mark.create_polygon(
+            35, 25, 43, 15, 51, 21, 60, 13, 69, 22, 78, 30,
+            84, 43, 80, 56, 70, 65, 67, 76, 44, 76, 41, 65,
+            31, 56, 27, 42,
+            fill="#D8DADD", outline="#B5BAC0", width=2,
+        )
+        mark.create_polygon(34, 39, 48, 33, 46, 45, 36, 47,
+                            fill="#790018", outline="#3D000D", width=1)
+        mark.create_polygon(63, 33, 78, 39, 76, 47, 65, 45,
+                            fill="#790018", outline="#3D000D", width=1)
+        mark.create_polygon(51, 48, 59, 48, 55, 57,
+                            fill="#3D000D", outline="#3D000D")
+        mark.create_line(42, 62, 70, 62, fill="#3D000D", width=2)
+        for tooth_x in (47, 54, 61, 68):
+            mark.create_line(tooth_x, 62, tooth_x, 70, fill="#3D000D", width=2)
+        mark.create_line(20, 25, 29, 33, fill="#790018", width=3)
+        mark.create_line(92, 25, 83, 33, fill="#790018", width=3)
+        mark.create_line(44, 8, 49, 14, fill="#790018", width=2)
+        mark.create_line(68, 8, 63, 14, fill="#790018", width=2)
         ctk.CTkLabel(brand, text="SOUNWD //", text_color="#D8DADD",
                      font=ctk.CTkFont(family="Consolas", size=25, weight="bold")).pack(pady=(0, 1))
         ctk.CTkLabel(brand, text="UNDERGROUND AUDIO DIVISION  •  NO COMFORT ZONE",
@@ -360,7 +383,11 @@ class SoundwApp(ctk.CTk):
             return
         width = max(self.winfo_width(), 520)
         horizontal = 18 if width < 650 else (30 if width < 850 else 46)
-        self.page.grid_configure(padx=horizontal, pady=18 if width < 650 else 26)
+        # CTkScrollableFrame se muestra mediante su _parent_frame (grid).
+        # self.page vive dentro del Canvas y no debe recibir grid_configure().
+        self.page._parent_frame.grid_configure(
+            padx=horizontal, pady=18 if width < 650 else 26
+        )
         if width < 650:
             self.settings.grid_columnconfigure(0, weight=1)
             self.settings.grid_columnconfigure(1, weight=0)

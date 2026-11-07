@@ -340,7 +340,6 @@ class SoundwApp(ctk.CTk):
             self.content.winfo_reqheight(),
         )
         window_id = self.page._create_window_id
-        canvas.itemconfigure(window_id, height="")
         y_offset = max(0, (viewport_height - content_height) // 2)
         canvas.coords(window_id, 0, y_offset)
         canvas.configure(

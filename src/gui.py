@@ -115,12 +115,12 @@ class SoundwApp(ctk.CTk):
         mark = ctk.CTkCanvas(brand, width=96, height=64, bg="#080808",
                              highlightthickness=0, bd=0)
         mark.pack(pady=(0, 2))
-        mark.create_polygon(52, 3, 91, 17, 84, 55, 52, 72, 20, 55, 13, 17,
+        mark.create_polygon(48, 2, 84, 14, 78, 46, 48, 61, 18, 46, 12, 14,
                             fill="#0D1117", outline="#858B93", width=2)
-        mark.create_line(24, 42, 37, 42, 44, 25, 52, 53, 61, 33, 68, 42, 81, 42,
+        mark.create_line(20, 35, 32, 35, 40, 22, 48, 47, 56, 28, 64, 35, 76, 35,
                          fill="#D8DADD", width=3, capstyle="round", joinstyle="miter")
-        mark.create_line(52, 12, 52, 21, fill="#790018", width=4)
-        mark.create_line(52, 55, 52, 64, fill="#790018", width=4)
+        mark.create_line(48, 9, 48, 17, fill="#790018", width=4)
+        mark.create_line(48, 50, 48, 58, fill="#790018", width=4)
         ctk.CTkLabel(brand, text="SOUNWD //", text_color="#D8DADD",
                      font=ctk.CTkFont(family="Consolas", size=29, weight="bold")).pack(pady=(0, 1))
         ctk.CTkLabel(brand, text="UNDERGROUND AUDIO DIVISION  •  NO COMFORT ZONE",

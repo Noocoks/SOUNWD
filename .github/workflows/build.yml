@@ -44,16 +44,6 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Set Deno executable path (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          "DENO_PATH=$((Get-Command deno).Source)" >> $env:GITHUB_ENV
-
-      - name: Set Deno executable path (Linux)
-        if: runner.os == 'Linux'
-        run: echo "DENO_PATH=$(command -v deno)" >> "$GITHUB_ENV"
-
       - name: Validate desktop Python syntax
         run: |
           python -m py_compile src/gui.py src/cli.py src/yt_dlp_support.py bootstrap.py
@@ -65,14 +55,10 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
-      - name: Build standalone app (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: pyinstaller --noconfirm --clean --onefile --windowed --name SOUNWD --collect-all customtkinter --collect-all imageio_ffmpeg --collect-all yt_dlp --collect-all yt_dlp_ejs --add-binary "$env:DENO_PATH;." src/gui.py
-
-      - name: Build standalone app (Linux)
-        if: runner.os == 'Linux'
-        run: pyinstaller --noconfirm --clean --onefile --windowed --name SOUNWD --collect-all customtkinter --collect-all imageio_ffmpeg --collect-all yt_dlp --collect-all yt_dlp_ejs --add-binary "$DENO_PATH:." src/gui.py
+      - name: Build standalone app with bundled Deno
+        shell: bash
+        run: |
+          python -c "import os,shutil,subprocess; deno=shutil.which('deno'); assert deno, 'Deno executable not found'; sep=';' if os.name == 'nt' else ':'; subprocess.check_call(['pyinstaller','--noconfirm','--clean','--onefile','--windowed','--name','SOUNWD','--collect-all','customtkinter','--collect-all','imageio_ffmpeg','--collect-all','yt_dlp','--collect-all','yt_dlp_ejs','--add-binary',deno+sep+'.','src/gui.py'])"
 
       - name: Upload app
         uses: actions/upload-artifact@v4

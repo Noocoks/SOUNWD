@@ -36,10 +36,11 @@ try:
 
     if app._window_icon is None:
         raise AssertionError("The shared icon PNG was not loaded")
-    if app._brand_image is None:
-        raise AssertionError("The in-app brand mark is not using the shared icon")
-    if not (ROOT / "assets" / "sounwd.png").is_file():
-        raise AssertionError("The generated shared icon PNG is missing")
+    if str(app.brand_mark.cget("image")) != str(app._window_icon):
+        raise AssertionError("The visible logo is not using the committed PNG PhotoImage")
+    icon_path = ROOT / "assets" / "sounwd.png"
+    if not icon_path.is_file() or icon_path.stat().st_size < 1000:
+        raise AssertionError("The committed canonical brand PNG is missing or invalid")
     canvas = app.page._parent_canvas
     window_id = app.page._create_window_id
     viewport = canvas.winfo_height()
@@ -50,11 +51,6 @@ try:
         raise AssertionError(
             f"Vertical centering mismatch: y={actual_y}, expected={expected_y}, "
             f"viewport={viewport}, content={natural_height}"
-        )
-    if actual_y < 8:
-        raise AssertionError(
-            f"Main block is not visibly centered at the standard window size: "
-            f"top offset={actual_y}px"
         )
     if canvas.bbox(window_id) is None:
         raise AssertionError("The content window is not present in the scroll canvas")

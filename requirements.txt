@@ -2,4 +2,3 @@ customtkinter>=5.2.2
 imageio-ffmpeg>=0.5.1
 rich>=13.7.0
 yt-dlp[default]>=2025.1.15
-pillow>=10.0

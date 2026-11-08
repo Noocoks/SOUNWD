@@ -6,7 +6,6 @@ mkdir -p "$DESKTOP_DIR"
 SHORTCUT="$DESKTOP_DIR/SOUNWD.desktop"
 ICON_DIR="$HOME/.local/share/icons/hicolor/512x512/apps"
 mkdir -p "$ICON_DIR"
-python3 "$ROOT/assets/generate_icon.py"
 install -m 644 "$ROOT/assets/sounwd.png" "$ICON_DIR/sounwd.png"
 cat > "$SHORTCUT" <<EOF
 [Desktop Entry]

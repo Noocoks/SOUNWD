@@ -2,6 +2,10 @@
 
 **SOUNWD** guarda en tu ordenador el audio de enlaces compatibles de YouTube y YouTube Music. Está pensado para que usarlo sea tan sencillo como copiar, pegar y pulsar un botón.
 
+![Logotipo oficial de SOUNWD](assets/sounwd.png)
+
+El archivo assets/sounwd.png es el recurso de marca canónico del repositorio: la aplicación, los iconos del sistema y este README utilizan la misma imagen.
+
 > Usa SOUNWD solo con contenido que tengas derecho a descargar. Respeta los derechos de autor, las licencias y las condiciones de cada plataforma. No descarga música desde Spotify.
 
 ## Descargar SOUNWD
@@ -47,7 +51,7 @@ Si ya conoces yt-dlp, abre **Opciones avanzadas (yt-dlp)** para configurar direc
 
 ## Qué incluye
 
-- Interfaz sencilla y tranquila, con tonos lavanda.
+- Interfaz de escritorio oscura, con acentos rojos y grises.
 - Formato MP3 predeterminado; también M4A, FLAC, OPUS y WAV.
 - Carpeta de destino personalizable, con Descargas como ubicación inicial.
 - Preferencia de calidad (máxima, alta o normal) y formato del nombre de archivo.

@@ -87,45 +87,21 @@ class SoundwApp(ctk.CTk):
 
     def _set_window_icon(self) -> None:
         """Use the skull artwork for the native title bar and taskbar icon."""
+        # Canonical brand asset committed in assets/ and reused by every surface.
         bundle_root = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
-        assets_dir = bundle_root / "assets"
-        png_path = assets_dir / "sounwd.png"
-        ico_path = assets_dir / "sounwd.ico"
+        png_path = bundle_root / "assets" / "sounwd.png"
+        if not png_path.is_file():
+            raise FileNotFoundError(f"Missing SOUNWD brand asset: {png_path}")
+        self._window_icon = tkinter.PhotoImage(file=str(png_path))
+        self.iconphoto(True, self._window_icon)
 
-        # Windows uses the ICO resource for the title-bar/system-menu icon.
+        # Windows builds additionally embed the ICO generated from this PNG.
+        ico_path = bundle_root / "assets" / "sounwd.ico"
         if os.name == "nt" and ico_path.is_file():
             try:
                 self.iconbitmap(default=str(ico_path))
             except (OSError, tkinter.TclError):
                 pass
-
-        # Generate shared artwork on first source launch if CI assets are absent.
-        if not png_path.is_file():
-            generator = assets_dir / "generate_icon.py"
-            if generator.is_file():
-                try:
-                    subprocess.run([sys.executable, str(generator),], check=True,
-                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                except (OSError, subprocess.CalledProcessError):
-                    pass
-        try:
-            self._window_icon = tkinter.PhotoImage(file=str(png_path))
-            self.iconphoto(True, self._window_icon)
-        except (OSError, tkinter.TclError):
-            self._window_icon = None
-
-    def _make_brand_image(self):
-        """Load the same generated PNG used for the native window icon."""
-        if self._window_icon is None:
-            return None
-        from PIL import Image
-        bundle_root = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
-        png_path = bundle_root / "assets" / "sounwd.png"
-        return ctk.CTkImage(
-            light_image=Image.open(png_path),
-            dark_image=Image.open(png_path),
-            size=(112, 112),
-        )
 
     def _build_ui(self) -> None:
         self.grid_columnconfigure(0, weight=1)
@@ -155,10 +131,9 @@ class SoundwApp(ctk.CTk):
 
         brand = ctk.CTkFrame(page, fg_color="transparent")
         brand.grid(row=1, column=0, sticky="ew", pady=(0, 8))
-        # Use the exact same generated PNG as the native app icon.
-        self._brand_image = self._make_brand_image()
+        # The visible logo is the very same Tk PhotoImage used by the window.
         self.brand_mark = ctk.CTkLabel(
-            brand, text="", image=self._brand_image, fg_color="transparent",
+            brand, text="", image=self._window_icon, fg_color="transparent",
         )
         self.brand_mark.pack(pady=(0, 2))
         ctk.CTkLabel(brand, text="SOUNWD //", text_color="#D8DADD",

@@ -11,9 +11,19 @@ from urllib.parse import urlparse
 import tkinter
 from tkinter import filedialog, messagebox
 
+# PyInstaller's bootloader splash is available only in packaged builds.
+try:
+    import pyi_splash as _boot_splash
+except ImportError:
+    _boot_splash = None
+
+if _boot_splash is not None:
+    try:
+        _boot_splash.update_text("Cargando la interfaz de SOUNWD...")
+    except (ConnectionError, RuntimeError):
+        _boot_splash = None
+
 import customtkinter as ctk
-import imageio_ffmpeg
-import yt_dlp
 from yt_dlp_support import youtube_runtime_options
 
 
@@ -545,6 +555,11 @@ class SoundwApp(ctk.CTk):
                 self.events.put(("error", "El número de reintentos debe ser un entero igual o mayor que cero."))
                 return
         try:
+            # Heavy downloader/post-processing packages are loaded only when needed;
+            # this keeps the first window responsive and reduces perceived startup.
+            import imageio_ffmpeg
+            import yt_dlp
+
             quality = {"Máxima": "0", "Alta": "192", "Normal": "128"}.get(quality_choice, "0")
             filename = "%(title)s" if filename_choice == "Solo título" else "%(title)s - %(uploader)s"
             output_template = advanced["outtmpl"]
@@ -638,6 +653,14 @@ def sys_platform() -> str:
 
 def main() -> None:
     app = SoundwApp()
+    # Force the first frame to be painted before dismissing the bootloader splash.
+    app.update_idletasks()
+    app.update()
+    if _boot_splash is not None:
+        try:
+            _boot_splash.close()
+        except (ConnectionError, RuntimeError):
+            pass
     app.mainloop()
 
 

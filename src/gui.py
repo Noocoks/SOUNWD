@@ -86,14 +86,24 @@ class SoundwApp(ctk.CTk):
         self.after(120, self._process_events)
 
     def _set_window_icon(self) -> None:
-        """Use the shared skull artwork for the native window/taskbar icon."""
+        """Use the skull artwork for the native title bar and taskbar icon."""
         bundle_root = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
-        icon_path = bundle_root / "assets" / "sounwd.png"
+        assets_dir = bundle_root / "assets"
+        png_path = assets_dir / "sounwd.png"
+        ico_path = assets_dir / "sounwd.ico"
+
+        # Windows uses the ICO resource for the title-bar/system-menu icon.
+        if os.name == "nt" and ico_path.is_file():
+            try:
+                self.iconbitmap(default=str(ico_path))
+            except (OSError, tkinter.TclError):
+                pass
+
+        # Keep a retained PhotoImage reference for Tk on Linux and as a fallback.
         try:
-            self._window_icon = tkinter.PhotoImage(file=str(icon_path))
+            self._window_icon = tkinter.PhotoImage(file=str(png_path))
             self.iconphoto(True, self._window_icon)
         except (OSError, tkinter.TclError):
-            # Keep source runs functional if the optional generated raster is absent.
             self._window_icon = None
 
     def _build_ui(self) -> None:

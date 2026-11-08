@@ -99,12 +99,33 @@ class SoundwApp(ctk.CTk):
             except (OSError, tkinter.TclError):
                 pass
 
-        # Keep a retained PhotoImage reference for Tk on Linux and as a fallback.
+        # Generate shared artwork on first source launch if CI assets are absent.
+        if not png_path.is_file():
+            generator = assets_dir / "generate_icon.py"
+            if generator.is_file():
+                try:
+                    subprocess.run([sys.executable, str(generator),], check=True,
+                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                except (OSError, subprocess.CalledProcessError):
+                    pass
         try:
             self._window_icon = tkinter.PhotoImage(file=str(png_path))
             self.iconphoto(True, self._window_icon)
         except (OSError, tkinter.TclError):
             self._window_icon = None
+
+    def _make_brand_image(self):
+        """Load the same generated PNG used for the native window icon."""
+        if self._window_icon is None:
+            return None
+        from PIL import Image
+        bundle_root = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
+        png_path = bundle_root / "assets" / "sounwd.png"
+        return ctk.CTkImage(
+            light_image=Image.open(png_path),
+            dark_image=Image.open(png_path),
+            size=(112, 112),
+        )
 
     def _build_ui(self) -> None:
         self.grid_columnconfigure(0, weight=1)
@@ -134,40 +155,12 @@ class SoundwApp(ctk.CTk):
 
         brand = ctk.CTkFrame(page, fg_color="transparent")
         brand.grid(row=1, column=0, sticky="ew", pady=(0, 8))
-        # Nuevo emblema SOUNWD: calavera angular con auriculares y ojos rojos.
-        # Está dibujado en Canvas para que sea vectorial, nítido y no dependa de
-        # recursos externos ni de rutas especiales dentro del ejecutable.
-        mark = ctk.CTkCanvas(
-            brand, width=112, height=74, bg="#080808",
-            highlightthickness=0, bd=0,
+        # Use the exact same generated PNG as the native app icon.
+        self._brand_image = self._make_brand_image()
+        self.brand_mark = ctk.CTkLabel(
+            brand, text="", image=self._brand_image, fg_color="transparent",
         )
-        self.brand_mark = mark
-        mark.pack(pady=(0, 2))
-        mark.create_oval(10, 5, 102, 82, outline="#3D000D", width=2)
-        mark.create_arc(22, 3, 90, 75, start=0, extent=180,
-                        style="arc", outline="#858B93", width=4)
-        mark.create_rectangle(14, 36, 29, 61, fill="#790018", outline="#B5BAC0", width=2)
-        mark.create_rectangle(83, 36, 98, 61, fill="#790018", outline="#B5BAC0", width=2)
-        mark.create_polygon(
-            35, 25, 43, 15, 51, 21, 60, 13, 69, 22, 78, 30,
-            84, 43, 80, 56, 70, 65, 67, 76, 44, 76, 41, 65,
-            31, 56, 27, 42,
-            fill="#D8DADD", outline="#B5BAC0", width=2,
-        )
-        mark.create_polygon(34, 39, 48, 33, 46, 45, 36, 47,
-                            fill="#790018", outline="#3D000D", width=1)
-        mark.create_polygon(63, 33, 78, 39, 76, 47, 65, 45,
-                            fill="#790018", outline="#3D000D", width=1)
-        mark.create_polygon(51, 48, 59, 48, 55, 57,
-                            fill="#3D000D", outline="#3D000D")
-        mark.create_line(42, 62, 70, 62, fill="#3D000D", width=2)
-        for tooth_x in (47, 54, 61, 68):
-            mark.create_line(tooth_x, 62, tooth_x, 70, fill="#3D000D", width=2)
-        mark.create_line(20, 25, 29, 33, fill="#790018", width=3)
-        mark.create_line(92, 25, 83, 33, fill="#790018", width=3)
-        mark.create_line(44, 8, 49, 14, fill="#790018", width=2)
-        mark.create_line(68, 8, 63, 14, fill="#790018", width=2)
-        mark.scale("all", 0, 0, 1, 0.85)
+        self.brand_mark.pack(pady=(0, 2))
         ctk.CTkLabel(brand, text="SOUNWD //", text_color="#D8DADD",
                      font=ctk.CTkFont(family="Consolas", size=25, weight="bold")).pack(pady=(0, 1))
         ctk.CTkLabel(brand, text="UNDERGROUND AUDIO DIVISION  •  NO COMFORT ZONE",
@@ -567,6 +560,15 @@ class SoundwApp(ctk.CTk):
             elif data.get("status") == "finished":
                 self.events.put(("progress", (0.98, "Preparando el archivo…")))
 
+        retry_count = None
+        if advanced["retries"]:
+            try:
+                retry_count = int(advanced["retries"])
+                if retry_count < 0:
+                    raise ValueError
+            except ValueError:
+                self.events.put(("error", "El número de reintentos debe ser un entero igual o mayor que cero."))
+                return
         try:
             quality = {"Máxima": "0", "Alta": "192", "Normal": "128"}.get(quality_choice, "0")
             filename = "%(title)s" if filename_choice == "Solo título" else "%(title)s - %(uploader)s"
@@ -591,8 +593,8 @@ class SoundwApp(ctk.CTk):
                 options["playlist_items"] = advanced["playlist_items"]
             if advanced["ratelimit"]:
                 options["ratelimit"] = advanced["ratelimit"]
-            if advanced["retries"]:
-                options["retries"] = max(0, int(advanced["retries"]))
+            if retry_count is not None:
+                options["retries"] = retry_count
             if advanced["subtitleslangs"]:
                 options["subtitleslangs"] = advanced["subtitleslangs"]
             if advanced["writesubtitles"]:
@@ -610,9 +612,7 @@ class SoundwApp(ctk.CTk):
             self.events.put(("done", str(destination)))
         except Exception as error:
             message = str(error).lower()
-            if isinstance(error, ValueError) and "retries" in advanced:
-                friendly = "El número de reintentos debe ser un entero."
-            elif "private" in message or "members-only" in message:
+            if "private" in message or "members-only" in message:
                 friendly = "Este audio es privado o requiere una cuenta especial. Prueba con otro enlace."
             elif "unavailable" in message or "not available" in message:
                 friendly = "Este audio no está disponible. Comprueba el enlace o prueba con otro."

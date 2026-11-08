@@ -34,6 +34,12 @@ try:
         if widget.winfo_width() <= 1 or widget.winfo_height() <= 1:
             raise AssertionError(f"{name} has no visible dimensions")
 
+    if app._window_icon is None:
+        raise AssertionError("The shared icon PNG was not loaded")
+    if app._brand_image is None:
+        raise AssertionError("The in-app brand mark is not using the shared icon")
+    if not (ROOT / "assets" / "sounwd.png").is_file():
+        raise AssertionError("The generated shared icon PNG is missing")
     canvas = app.page._parent_canvas
     window_id = app.page._create_window_id
     viewport = canvas.winfo_height()

@@ -10,7 +10,7 @@ if not deno or not os.path.isfile(deno):
 
 datas = [("assets/sounwd.png", "assets")]
 binaries = [(deno, ".")]
-hiddenimports = ["yt_dlp_support"]
+hiddenimports = ["yt_dlp_support", "PIL.ImageTk", "PIL._tkinter_finder"]
 
 for package in ("customtkinter", "imageio_ffmpeg", "yt_dlp", "yt_dlp_ejs"):
     package_datas, package_binaries, package_hiddenimports = collect_all(package)

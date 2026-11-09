@@ -51,13 +51,13 @@ def valid_url(value: str) -> bool:
 class SoundwApp(ctk.CTk):
     def __init__(self) -> None:
         super().__init__()
-        self.title("SOUNWD // UNDERGROUND AUDIO TOOL")
-        self.geometry("900x820")
-        self.minsize(560, 520)
-        self.configure(fg_color="#080808")
-        self._set_window_icon()
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("dark-blue")
+        self.title("SOUNWD — Desktop Audio")
+        self.geometry("880x800")
+        self.minsize(560, 540)
+        self.configure(fg_color="#09090B")
+        self._set_window_icon()
 
         self.events: queue.Queue[tuple[str, object]] = queue.Queue()
         self.downloading = False
@@ -112,7 +112,7 @@ class SoundwApp(ctk.CTk):
         self._brand_image = ctk.CTkImage(
             light_image=brand_image,
             dark_image=brand_image,
-            size=(112, 112),
+            size=(104, 104),
         )
 
         # Windows builds additionally embed the ICO generated from this PNG.
@@ -129,10 +129,10 @@ class SoundwApp(ctk.CTk):
 
         scroll_page = ctk.CTkScrollableFrame(
             self, fg_color="transparent", corner_radius=0,
-            scrollbar_button_color="#790018", scrollbar_button_hover_color="#858B93",
+            scrollbar_button_color="#A30F2D", scrollbar_button_hover_color="#C21C3B",
         )
         self.page = scroll_page
-        scroll_page.grid(row=0, column=0, sticky="nsew", padx=24, pady=22)
+        scroll_page.grid(row=0, column=0, sticky="nsew", padx=24, pady=20)
         scroll_page.grid_columnconfigure(0, weight=1)
         scroll_page.grid_rowconfigure(0, weight=1)
 
@@ -150,36 +150,38 @@ class SoundwApp(ctk.CTk):
         page.bind("<Configure>", lambda _event: self.after_idle(self._center_content), add="+")
 
         brand = ctk.CTkFrame(page, fg_color="transparent")
-        brand.grid(row=1, column=0, sticky="ew", pady=(0, 8))
+        brand.grid(row=1, column=0, sticky="ew", pady=(2, 12))
         # The visible logo is the very same Tk PhotoImage used by the window.
         self.brand_mark = ctk.CTkLabel(
             brand, text="", image=self._brand_image, fg_color="transparent",
         )
         self.brand_mark.pack(pady=(0, 2))
-        ctk.CTkLabel(brand, text="SOUNWD //", text_color="#D8DADD",
-                     font=ctk.CTkFont(family="Consolas", size=25, weight="bold")).pack(pady=(0, 1))
-        ctk.CTkLabel(brand, text="UNDERGROUND AUDIO DIVISION  •  NO COMFORT ZONE",
-                     text_color="#858B93", font=ctk.CTkFont(family="Consolas", size=10, weight="bold")).pack()
+        ctk.CTkLabel(brand, text="S O U N W D  //", text_color="#F0F0F2",
+                     font=ctk.CTkFont(family="Consolas", size=27, weight="bold")).pack(pady=(0, 2))
+        ctk.CTkLabel(brand, text="NOOCOKS  /  DESKTOP AUDIO UTILITY",
+                     text_color="#A30F2D", font=ctk.CTkFont(family="Consolas", size=10, weight="bold")).pack()
+        ctk.CTkLabel(brand, text="DARK MODE  •  LOCAL OUTPUT  •  NO TRACKING",
+                     text_color="#777B84", font=ctk.CTkFont(family="Consolas", size=9)).pack(pady=(3, 0))
 
         ctk.CTkLabel(page, text="TU AUDIO. TUS REGLAS.",
-                     text_color="#E6E7E9", font=ctk.CTkFont(size=21, weight="bold")
-                     ).grid(row=2, column=0, pady=(0, 4))
-        ctk.CTkLabel(page, text="EXTRAE EL AUDIO. CONSERVA EL CONTROL. // YT-DLP ENGINE",
-                     text_color="#B5BAC0", font=ctk.CTkFont(size=11)
-                     ).grid(row=3, column=0, pady=(0, 8))
+                     text_color="#F0F0F2", font=ctk.CTkFont(size=22, weight="bold")
+                     ).grid(row=2, column=0, pady=(0, 5))
+        ctk.CTkLabel(page, text="EXTRAE  ·  CONVIERTE  ·  GUARDA",
+                     text_color="#9297A1", font=ctk.CTkFont(family="Consolas", size=10, weight="bold")
+                     ).grid(row=3, column=0, pady=(0, 16))
 
-        link_card = ctk.CTkFrame(page, fg_color="#101010", corner_radius=18,
-                                 border_width=1, border_color="#3D000D")
+        link_card = ctk.CTkFrame(page, fg_color="#121216", corner_radius=16,
+                                 border_width=1, border_color="#30232A")
         link_card.grid(row=4, column=0, sticky="ew", pady=(0, 10))
         link_card.grid_columnconfigure(0, weight=1)
         ctk.CTkLabel(link_card, text="[ 01 ]  INPUT // YOUTUBE SOURCE",
-                     text_color="#B5BAC0", font=ctk.CTkFont(size=11, weight="bold")
+                     text_color="#C3C5CB", font=ctk.CTkFont(size=11, weight="bold")
                      ).grid(row=0, column=0, sticky="w", padx=16, pady=(10, 4))
         self.url_entry = ctk.CTkEntry(
             link_card, height=40, corner_radius=12,
             placeholder_text="https://www.youtube.com/watch?v=...",
-            border_color="#790018", fg_color="#0D1117",
-            text_color="#E6E7E9", placeholder_text_color="#858B93",
+            border_color="#702037", fg_color="#0C0C10",
+            text_color="#F0F0F2", placeholder_text_color="#686D77",
             font=ctk.CTkFont(size=11),
         )
         self.url_entry.grid(row=1, column=0, sticky="ew", padx=16, pady=(0, 4))
@@ -188,7 +190,7 @@ class SoundwApp(ctk.CTk):
         link_actions.grid(row=2, column=0, sticky="ew", padx=16, pady=(0, 8))
         ctk.CTkButton(
             link_actions, text="Pegar enlace", width=110, height=30,
-            fg_color="#790018", hover_color="#790018",
+            fg_color="#A30F2D", hover_color="#C21C3B",
             command=self._paste_url,
         ).pack(side="left")
         ctk.CTkButton(
@@ -202,8 +204,8 @@ class SoundwApp(ctk.CTk):
         settings.grid(row=5, column=0, sticky="ew", pady=(0, 8))
         settings.grid_columnconfigure((0, 1), weight=1, uniform="settings")
 
-        format_card = ctk.CTkFrame(settings, fg_color="#101010", corner_radius=14,
-                                   border_width=1, border_color="#3D000D")
+        format_card = ctk.CTkFrame(settings, fg_color="#121216", corner_radius=14,
+                                   border_width=1, border_color="#30232A")
         format_card.grid(row=0, column=0, sticky="nsew", padx=(0, 7))
         ctk.CTkLabel(format_card, text="[ 02 ]  OUTPUT FORMAT",
                      text_color="#B5BAC0", font=ctk.CTkFont(size=10, weight="bold")
@@ -211,9 +213,9 @@ class SoundwApp(ctk.CTk):
         ctk.CTkOptionMenu(
             format_card, variable=self.audio_format, values=list(FORMATS),
             command=self._preference_changed,
-            height=34, corner_radius=10, fg_color="#790018",
-            button_color="#858B93", button_hover_color="#B5BAC0",
-            dropdown_fg_color="#101010",
+            height=36, corner_radius=10, fg_color="#A30F2D",
+            button_color="#702037", button_hover_color="#C21C3B",
+            dropdown_fg_color="#17171C",
         ).pack(fill="x", padx=10, pady=(0, 10))
 
         folder_card = ctk.CTkFrame(settings, fg_color="#101010", corner_radius=14,
@@ -227,33 +229,33 @@ class SoundwApp(ctk.CTk):
         folder_row.grid_columnconfigure(0, weight=1)
         self.folder_label = ctk.CTkLabel(
             folder_row, text=self._short_path(str(self.destination.get())),
-            text_color="#D8DADD", font=ctk.CTkFont(size=10), anchor="w",
+            text_color="#E0E1E5", font=ctk.CTkFont(size=10), anchor="w",
         )
         self.folder_label.grid(row=0, column=0, sticky="ew")
         ctk.CTkButton(
             folder_row, text="Elegir", width=66, height=34,
-            fg_color="#790018", hover_color="#790018",
+            fg_color="#702037", hover_color="#A30F2D",
             command=self._choose_folder,
         ).grid(row=0, column=1, padx=(6, 0))
 
         self.playlist_check = ctk.CTkCheckBox(
             page, text="Descargar la lista completa si el enlace contiene una",
             variable=self.playlist, command=self._save_preferences,
-            text_color="#B5BAC0", fg_color="#858B93", hover_color="#B5BAC0",
+            text_color="#C3C5CB", fg_color="#A30F2D", hover_color="#C21C3B",
             font=ctk.CTkFont(size=11),
         )
         self.playlist_check.grid(row=6, column=0, sticky="w", pady=(0, 5))
 
         self.options_toggle = ctk.CTkButton(
             page, text="+  ADVANCED // YT-DLP", height=30, width=145,
-            fg_color="transparent", hover_color="#242424",
-            text_color="#858B93", anchor="w",
+            fg_color="transparent", hover_color="#1D1D23",
+            text_color="#A0A4AD", anchor="w",
             font=ctk.CTkFont(size=11), command=self._toggle_advanced,
         )
         self.options_toggle.grid(row=7, column=0, sticky="w", pady=(0, 4))
 
-        self.advanced = ctk.CTkFrame(page, fg_color="#0D1117", corner_radius=16,
-                                     border_width=1, border_color="#3D000D")
+        self.advanced = ctk.CTkFrame(page, fg_color="#111115", corner_radius=16,
+                                     border_width=1, border_color="#30232A")
         self.advanced.grid_columnconfigure((0, 1), weight=1, uniform="personal")
         ctk.CTkLabel(self.advanced, text="ADVANCED PARAMETERS // YT-DLP",
                      text_color="#B5BAC0", font=ctk.CTkFont(size=11, weight="bold")
@@ -264,8 +266,8 @@ class SoundwApp(ctk.CTk):
                          font=ctk.CTkFont(size=10, weight="bold")
                          ).grid(row=row, column=column, sticky="w", padx=12, pady=(5, 3))
             entry = ctk.CTkEntry(self.advanced, textvariable=variable, height=34,
-                                 placeholder_text=placeholder, fg_color="#0D1117",
-                                 border_color="#790018", text_color="#E6E7E9")
+                                 placeholder_text=placeholder, fg_color="#0C0C10",
+                                 border_color="#702037", text_color="#F0F0F2")
             entry.grid(row=row + 1, column=column, sticky="ew", padx=12, pady=(0, 7))
             entry.bind("<FocusOut>", lambda _e: self._save_preferences())
             return entry
@@ -280,7 +282,7 @@ class SoundwApp(ctk.CTk):
         self.embed_thumbnail_check = ctk.CTkCheckBox(
             self.advanced, text="Incrustar portada (--embed-thumbnail)",
             variable=self.embed_thumbnail, command=self._save_preferences,
-            text_color="#B5BAC0", fg_color="#858B93", hover_color="#B5BAC0",
+            text_color="#B5BAC0", fg_color="#A30F2D", hover_color="#C21C3B",
             font=ctk.CTkFont(size=10))
         self.embed_thumbnail_check.grid(row=7, column=0, sticky="w", padx=12, pady=4)
         self.embed_metadata_check = ctk.CTkCheckBox(
@@ -297,18 +299,18 @@ class SoundwApp(ctk.CTk):
         self.write_subtitles_check.grid(row=8, column=0, sticky="w", padx=12, pady=(4, 12))
 
 
-        self.action_card = ctk.CTkFrame(page, fg_color="#101010", corner_radius=18,
-                                        border_width=1, border_color="#3D000D")
+        self.action_card = ctk.CTkFrame(page, fg_color="#121216", corner_radius=16,
+                                        border_width=1, border_color="#4A1C2B")
         self.action_card.grid(row=9, column=0, sticky="ew", pady=(8, 0))
         self.action_card.grid_columnconfigure(0, weight=1)
         self.status_label = ctk.CTkLabel(
             self.action_card, text="[ SYSTEM READY ]  AWAITING INPUT",
-            text_color="#B5BAC0", font=ctk.CTkFont(size=12),
+            text_color="#C3C5CB", font=ctk.CTkFont(size=12, weight="bold"),
         )
         self.status_label.grid(row=0, column=0, pady=(8, 4))
         self.progress = ctk.CTkProgressBar(
             self.action_card, height=8, corner_radius=8,
-            progress_color="#790018", fg_color="#242424",
+            progress_color="#C21C3B", fg_color="#292930",
         )
         self.progress.grid(row=1, column=0, sticky="ew", padx=16, pady=(0, 8))
         self.progress.set(0)
@@ -329,7 +331,7 @@ class SoundwApp(ctk.CTk):
 
         ctk.CTkLabel(
             page, text="[ USE RESPONSIBLY ]  SOLO CONTENIDO AUTORIZADO.\nNO SPOTIFY // NO TRACKING // LOCAL OUTPUT.",
-            text_color="#858B93", justify="center", font=ctk.CTkFont(size=10),
+            text_color="#777B84", justify="center", font=ctk.CTkFont(family="Consolas", size=9),
         ).grid(row=10, column=0, pady=(6, 0))
 
 
@@ -378,7 +380,7 @@ class SoundwApp(ctk.CTk):
         if event is not None and event.widget is not self:
             return
         width = max(self.winfo_width(), 520)
-        horizontal = 18 if width < 650 else (30 if width < 850 else 46)
+        horizontal = 16 if width < 650 else (28 if width < 850 else 42)
         # CTkScrollableFrame se muestra mediante su _parent_frame (grid).
         # self.page vive dentro del Canvas y no debe recibir grid_configure().
         self.page._parent_frame.grid_configure(

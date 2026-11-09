@@ -35,6 +35,26 @@ jobs:
           gradle-version: '8.9'
       - name: Build debug APK
         run: gradle assembleDebug
+      - name: Verify APK package and launcher activity
+        working-directory: .
+        run: |
+          APK="beta-android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/aapt" dump badging "$APK" | grep -F "package: name='com.sounwd.beta'"
+          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/aapt" dump badging "$APK" | grep -F "launchable-activity: name='com.sounwd.beta.MainActivity'"
+      - name: Install and launch on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          script: |
+            adb install -r beta-android/app/build/outputs/apk/debug/app-debug.apk
+            adb shell am force-stop com.sounwd.beta
+            adb shell monkey -p com.sounwd.beta 1
+            sleep 5
+            adb shell dumpsys activity activities | grep -F 'com.sounwd.beta/.MainActivity'
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:

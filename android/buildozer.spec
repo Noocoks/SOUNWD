@@ -3,7 +3,7 @@ title = SOUNWD
 package.name = sounwd
 package.domain = org.sounwd
 source.dir = .
-source.include_exts = py,png,jpg,kv,atlas,json\nicon.filename = assets/generated/android/icon.png\nandroid.adaptive_icon_foreground.filename = assets/generated/android/foreground.png\nandroid.adaptive_icon_background.filename = assets/generated/android/background.png
+source.include_exts = py,png,jpg,kv,atlas,json\nicon.filename = assets/generated/android/icon.png\nicon.adaptive_foreground.filename = assets/generated/android/foreground.png\nicon.adaptive_background.filename = assets/generated/android/background.png
 version = 0.1.0
 requirements = python3==3.12.10,hostpython3==3.12.10,kivy,yt-dlp,androidstorage4kivy
 orientation = portrait

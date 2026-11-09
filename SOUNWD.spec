@@ -8,7 +8,7 @@ deno = os.environ.get("DENO_PATH")
 if not deno or not os.path.isfile(deno):
     raise RuntimeError("DENO_PATH must point to the Deno executable before building SOUNWD.")
 
-datas = [("assets/sounwd.png", "assets")]
+datas = [("assets/sounwd.png", "assets"), ("assets/sounwd.ico", "assets")]
 binaries = [(deno, ".")]
 hiddenimports = ["yt_dlp_support", "PIL.ImageTk", "PIL._tkinter_finder"]
 

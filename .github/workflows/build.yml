@@ -96,6 +96,10 @@ jobs:
         if: runner.os == 'Linux'
         run: pyinstaller --noconfirm --clean SOUNWD.spec
 
+      - name: Verify embedded Windows taskbar icons
+        if: runner.os == 'Windows'
+        run: python tests/smoke_windows_icon.py dist/SOUNWD.exe
+
       - name: Smoke-test packaged app startup (Windows)
         if: runner.os == 'Windows'
         shell: pwsh

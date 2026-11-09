@@ -1,17 +1,27 @@
 # SOUNWD Android — beta visual
 
-Esta beta parte de la aplicación Android nativa mínima que ya compilaba correctamente. Se ha mantenido esa base Kotlin/Android, sin incorporar Kivy, Buildozer, yt-dlp, permisos de red ni funciones de descarga.
+Aplicación Android nativa Kotlin/Gradle. Esta beta conserva la pantalla funcional ya validada y no incorpora todavía descargas ni funciones de audio.
 
-## Alcance de esta etapa
+## Identidad visual centralizada
 
-- Identidad visual SOUNWD: grafito casi negro, carmesí, blanco y gris metálico.
-- Calavera estilizada dentro de la pantalla y como icono de la aplicación.
-- Icono adaptativo para Android 8.0 o posterior y recurso vectorial de compatibilidad para versiones anteriores.
-- Pantalla inicial estática, desplazable y sin dependencias externas.
-- No hay todavía descargas ni funciones de audio. Primero validamos que la aplicación se instale y abra de forma fiable.
+La imagen maestra vive en la raíz del repositorio: `icon/sounwd-master.png`. No hay que editar iconos Android por separado.
 
-## Compilar
+Al ejecutar `python tools/generate_icons.py`, se generan automáticamente:
+- Logo completo para mostrar dentro de la app.
+- Icono adaptativo para Android 8.0 o posterior.
+- Iconos launcher PNG para densidades mdpi, hdpi, xhdpi, xxhdpi y xxxhdpi.
 
-Abre esta carpeta como proyecto en Android Studio y ejecuta `assembleDebug`.
+El workflow **SOUNWD Android Beta** ejecuta este generador y después compila el APK. Para cambiar la marca, sustituye únicamente la imagen maestra y vuelve a ejecutar el workflow.
 
-El workflow **SOUNWD Android Beta** compila el APK de depuración y lo publica como artefacto de GitHub Actions.
+## Compilar localmente
+
+Desde la raíz del repositorio:
+
+```bash
+python -m pip install Pillow
+python tools/generate_icons.py
+cd beta-android
+gradle assembleDebug
+```
+
+El APK de depuración se genera en `app/build/outputs/apk/debug/app-debug.apk`.

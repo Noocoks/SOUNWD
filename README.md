@@ -1,36 +1,31 @@
-# SOUNWD. — Your sound. Your moments.
+# SOUNWD — Your sound. Your moments.
 
 **SOUNWD** guarda en tu ordenador el audio de enlaces compatibles de YouTube y YouTube Music. Está pensado para que usarlo sea tan sencillo como copiar, pegar y pulsar un botón.
 
 > Usa SOUNWD solo con contenido que tengas derecho a descargar. Respeta los derechos de autor, las licencias y las condiciones de cada plataforma. No descarga música desde Spotify.
 
+## Identidad visual y recursos
+
+SOUNWD utiliza una única imagen maestra para mantener coherentes los iconos en todas las plataformas. La fuente oficial es `icon/sounwd-master.png`.
+
+Para regenerar los recursos de Android, Windows, Linux, macOS y web/PWA tras cambiar esa imagen:
+
+```bash
+python -m pip install Pillow
+python tools/generate_icons.py
+```
+
+Los recursos derivados se guardan en `assets/generated/`. No edites esos archivos a mano: el generador los reemplaza. Consulta [icon/README.md](icon/README.md) para conocer las salidas y el proceso.
+
+**Importante:** reemplaza únicamente `icon/sounwd-master.png`; conserva su nombre y ruta. Los workflows regeneran los formatos correspondientes antes de empaquetar.
+
 ## Descargar SOUNWD
 
-No necesitas instalar Python ni abrir una terminal si descargas la aplicación ya compilada.
+Consulta las compilaciones disponibles en [GitHub Actions](https://github.com/Noocoks/SOUNWD/actions). Abre una ejecución completada correctamente y descarga el artefacto de tu sistema en la sección **Artifacts**.
 
-1. Entra en [Descargas de SOUNWD](https://github.com/Noocoks/music-downloader/actions).
-2. Abre la ejecución más reciente que tenga una marca verde de éxito.
-3. Baja hasta **Artifacts** y descarga el archivo de tu sistema:
-   - **SOUNWD-Windows** para Windows.
-   - **SOUNWD-Linux** para Linux.
-4. Extrae el ZIP en una carpeta de tu elección.
-
-### Windows
-
-Haz doble clic en **SOUNWD.exe**. Si Windows muestra SmartScreen, comprueba que lo has descargado de este repositorio y elige «Más información» → «Ejecutar de todas formas» si confías en el archivo.
-
-### Linux
-
-Haz clic derecho sobre **SOUNWD**, abre Propiedades → Permisos y activa «Permitir ejecutar el archivo como un programa». Después, haz doble clic y selecciona «Ejecutar».
-
-## Estado de las compilaciones
-
-*Última comprobación: 3 de noviembre de 2026.*
-
-- **Windows y Linux:** compilación correcta en la ejecución [#35](https://github.com/Noocoks/SOUNWD/actions/runs/41551842978). Los artefactos `SOUNWD-Windows` y `SOUNWD-Linux` están disponibles en esa ejecución.
-- **Android:** se ha actualizado la configuración de compilación para fijar Buildozer 1.6.0, python-for-android y Python/hostpython 3.12.10, evitando que se seleccione automáticamente Python 3.14. También se comprueba explícitamente que exista un APK antes de subirlo como artefacto. La ejecución de validación está disponible en [GitHub Actions](https://github.com/Noocoks/SOUNWD/actions/workflows/android.yml); la APK solo estará disponible cuando esa ejecución termine correctamente.
-
-El workflow de escritorio se ejecuta al actualizar `main` y compila Windows y Linux en paralelo. El workflow Android se ejecuta cuando cambian los archivos de `android/` o su propio workflow, y publica el artefacto `SOUNWD-Android-APK` únicamente si la compilación termina correctamente. Puedes consultar el [historial completo de Actions](https://github.com/Noocoks/SOUNWD/actions).
+- **Windows:** artefacto SOUNWD-Windows.
+- **Linux:** artefacto SOUNWD-Linux.
+- **Android beta:** artefacto sounwd-beta-debug desde el workflow SOUNWD Android Beta.
 
 ## Cómo usarlo
 
@@ -39,33 +34,27 @@ El workflow de escritorio se ejecuta al actualizar `main` y compila Windows y Li
 3. Pulsa **Guardar audio**.
 4. Cuando termine, pulsa **Abrir mi carpeta de música**.
 
-¡Eso es todo! Por defecto, los archivos se guardan en la carpeta **Descargas** (Downloads) y en formato **MP3**. Puedes cambiar ambas cosas directamente desde la pantalla principal.
-
-La pantalla principal está pensada para todo el mundo: pega el enlace, elige el formato y la carpeta y pulsa **Guardar audio**. La opción **Descargar la lista completa** también está a la vista.
-
-Si ya conoces yt-dlp, abre **Opciones avanzadas (yt-dlp)** para configurar directamente parámetros como el selector de formato (`-f`), la plantilla del nombre (`-o`), los elementos de una lista (`--playlist-items`), el límite de velocidad (`--limit-rate`), los reintentos (`--retries`) y los subtítulos (`--write-subs`, `--sub-langs`). En escritorio también puedes incrustar portada y metadatos; estas funciones requieren FFmpeg. Los campos avanzados son opcionales: si los dejas vacíos, SOUNWD usa sus valores habituales.
+Por defecto, los archivos se guardan en **Descargas** y en formato **MP3**. Puedes cambiar ambas cosas desde la pantalla principal.
 
 ## Qué incluye
 
-- Interfaz sencilla y tranquila, con tonos lavanda.
 - Formato MP3 predeterminado; también M4A, FLAC, OPUS y WAV.
-- Carpeta de destino personalizable, con Descargas como ubicación inicial.
-- Preferencia de calidad (máxima, alta o normal) y formato del nombre de archivo.
-- Interfaz dividida entre opciones básicas visibles y parámetros avanzados de yt-dlp.
-- Preferencias guardadas automáticamente para la próxima vez.
+- Carpeta de destino personalizable.
+- Preferencia de calidad y formato del nombre de archivo.
 - Descargas individuales o listas de reproducción.
 - Indicador de progreso y mensajes fáciles de entender.
-- Aplicaciones independientes compiladas para Windows y Linux.
-- Versión Android en desarrollo, con interfaz Kivy inspirada en el escritorio. La compilación automática de la APK está configurada, pero actualmente falla por una incompatibilidad de `pip` en el entorno interno de Python 3.14; consulta el estado de compilaciones más arriba.
+- Aplicaciones de escritorio para Windows y Linux.
+- Beta Android nativa en Kotlin, actualmente centrada en validar la instalación y la identidad visual.
 
 ## Desarrollo
 
-- `src/gui.py`: interfaz gráfica.
+- `src/gui.py`: interfaz gráfica de escritorio.
 - `src/cli.py`: versión de terminal.
-- `bootstrap.py`: instalador de dependencias para desarrollo.
-- `requirements.txt`: dependencias Python.
-- `.github/workflows/build.yml`: compilación automática de las aplicaciones de escritorio.
-- `android/main.py` y `android/buildozer.spec`: aplicación móvil y configuración de Android.
-- `.github/workflows/android.yml`: compilación automática de la APK.
+- `bootstrap.py`: instalador de dependencias.
+- `android/main.py` y `android/buildozer.spec`: versión Android Kivy heredada.
+- `beta-android/`: beta Android nativa Kotlin/Gradle.
+- `tools/generate_icons.py`: generador multiplataforma de iconos.
+- `.github/workflows/build.yml`: compilación Windows/Linux.
+- `.github/workflows/android-beta.yml`: compilación Android beta.
 
-SOUNWD utiliza yt-dlp para obtener audio. En Android, esta primera versión conserva el formato disponible en origen: la conversión a MP3/FLAC/WAV con FFmpeg todavía no está integrada. Por ese motivo, las opciones de incrustar portada y metadatos no se ofrecen en Android. La APK se publica como artefacto de GitHub Actions cuando la compilación termina correctamente.
+SOUNWD utiliza yt-dlp para obtener audio. Usa la aplicación solo con contenido que tengas derecho a guardar.

@@ -39,7 +39,7 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER_HORIZONTAL
         }
         val emblem = ImageView(this).apply {
-            setImageResource(R.drawable.sounwd_mark)
+            setImageResource(R.drawable.sounwd_master)
             scaleType = ImageView.ScaleType.FIT_CENTER
             contentDescription = "SOUNWD"
         }

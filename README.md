@@ -4,7 +4,7 @@
 
 ![Logotipo oficial de SOUNWD](assets/sounwd.png)
 
-El archivo assets/sounwd.png es el recurso de marca canónico del repositorio: la aplicación, los iconos del sistema y este README utilizan la misma imagen.
+El archivo `assets/sounwd.png` es el único diseño maestro de marca. Los workflows generan automáticamente desde él el ICO de Windows, los tamaños PNG para Linux y los iconos de Android (incluido el adaptativo y el que aparece dentro de la aplicación). La interfaz conserva sus textos y distribución.
 
 > Usa SOUNWD solo con contenido que tengas derecho a descargar. Respeta los derechos de autor, las licencias y las condiciones de cada plataforma. No descarga música desde Spotify.
 
@@ -32,7 +32,7 @@ Haz clic derecho sobre **SOUNWD**, abre Propiedades → Permisos y activa «Perm
 *Última actualización: 7 de noviembre de 2026.*
 
 - **Windows y Linux:** las compilaciones se generan mediante [GitHub Actions](https://github.com/Noocoks/SOUNWD/actions/workflows/build.yml). Descarga los artefactos de la ejecución más reciente que haya terminado correctamente.
-- **Android:** la compilación principal ha terminado correctamente y el workflow verifica que el APK exista antes de publicarlo como artefacto. Consulta [GitHub Actions](https://github.com/Noocoks/SOUNWD/actions/workflows/android.yml) para obtener la ejecución más reciente.
+- **Android:** el workflow genera el icono de lanzamiento/adaptativo y valida los recursos de marca antes de compilar la APK. Consulta [GitHub Actions](https://github.com/Noocoks/SOUNWD/actions/workflows/android.yml) para obtener la ejecución más reciente.
 
 El workflow de escritorio se ejecuta al actualizar `main` y compila Windows y Linux en paralelo. El workflow Android se ejecuta cuando cambian los archivos de `android/` o su propio workflow, y publica el artefacto `SOUNWD-Android-APK` únicamente si la compilación termina correctamente. Puedes consultar el [historial completo de Actions](https://github.com/Noocoks/SOUNWD/actions).
 
@@ -70,6 +70,6 @@ Si ya conoces yt-dlp, abre **Opciones avanzadas (yt-dlp)** para configurar direc
 - `requirements.txt`: dependencias Python.
 - `.github/workflows/build.yml`: compilación automática de las aplicaciones de escritorio.
 - `android/main.py` y `android/buildozer.spec`: aplicación móvil y configuración de Android.
-- `.github/workflows/android.yml`: compilación automática de la APK.
+- `assets/build_brand_assets.py`: generador de iconos multiplataforma a partir del PNG maestro.\n- `tests/test_brand_assets.py`: comprobación de los recursos derivados.\n- `.github/workflows/android.yml`: generación de marca y compilación automática de la APK.
 
 SOUNWD utiliza yt-dlp para obtener audio. La aplicación de escritorio incluye Deno y los componentes EJS de yt-dlp para resolver los retos JavaScript que YouTube exige actualmente; no necesitas instalar ese motor por separado. En Android, esta primera versión conserva el formato disponible en origen: la conversión a MP3/FLAC/WAV con FFmpeg todavía no está integrada. Por ese motivo, las opciones de incrustar portada y metadatos no se ofrecen en Android. La APK se publica como artefacto de GitHub Actions cuando la compilación termina correctamente.

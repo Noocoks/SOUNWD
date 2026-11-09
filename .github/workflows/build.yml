@@ -33,7 +33,7 @@ jobs:
             output: SOUNWD
 
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Checkout

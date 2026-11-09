@@ -195,8 +195,8 @@ class SoundwApp(ctk.CTk):
         ).pack(side="left")
         ctk.CTkButton(
             link_actions, text="Limpiar", width=76, height=30,
-            fg_color="transparent", hover_color="#242424",
-            text_color="#B5BAC0", command=lambda: self.url_entry.delete(0, "end"),
+            fg_color="transparent", hover_color="#1D1D23",
+            text_color="#C3C5CB", command=lambda: self.url_entry.delete(0, "end"),
         ).pack(side="left", padx=(8, 0))
 
         settings = ctk.CTkFrame(page, fg_color="transparent")
@@ -208,7 +208,7 @@ class SoundwApp(ctk.CTk):
                                    border_width=1, border_color="#30232A")
         format_card.grid(row=0, column=0, sticky="nsew", padx=(0, 7))
         ctk.CTkLabel(format_card, text="[ 02 ]  OUTPUT FORMAT",
-                     text_color="#B5BAC0", font=ctk.CTkFont(size=10, weight="bold")
+                     text_color="#C3C5CB", font=ctk.CTkFont(size=10, weight="bold")
                      ).pack(anchor="w", padx=12, pady=(10, 5))
         ctk.CTkOptionMenu(
             format_card, variable=self.audio_format, values=list(FORMATS),
@@ -218,11 +218,11 @@ class SoundwApp(ctk.CTk):
             dropdown_fg_color="#17171C",
         ).pack(fill="x", padx=10, pady=(0, 10))
 
-        folder_card = ctk.CTkFrame(settings, fg_color="#101010", corner_radius=14,
-                                   border_width=1, border_color="#3D000D")
+        folder_card = ctk.CTkFrame(settings, fg_color="#121216", corner_radius=14,
+                                   border_width=1, border_color="#30232A")
         folder_card.grid(row=0, column=1, sticky="nsew", padx=(7, 0))
         ctk.CTkLabel(folder_card, text="[ 03 ]  DESTINATION",
-                     text_color="#B5BAC0", font=ctk.CTkFont(size=10, weight="bold")
+                     text_color="#C3C5CB", font=ctk.CTkFont(size=10, weight="bold")
                      ).pack(anchor="w", padx=12, pady=(10, 5))
         folder_row = ctk.CTkFrame(folder_card, fg_color="transparent")
         folder_row.pack(fill="x", padx=10, pady=(0, 10))
@@ -258,11 +258,11 @@ class SoundwApp(ctk.CTk):
                                      border_width=1, border_color="#30232A")
         self.advanced.grid_columnconfigure((0, 1), weight=1, uniform="personal")
         ctk.CTkLabel(self.advanced, text="ADVANCED PARAMETERS // YT-DLP",
-                     text_color="#B5BAC0", font=ctk.CTkFont(size=11, weight="bold")
+                     text_color="#C3C5CB", font=ctk.CTkFont(size=11, weight="bold")
                      ).grid(row=0, column=0, columnspan=2, sticky="w", padx=14, pady=(13, 8))
 
         def add_option(label, variable, row, column, placeholder=""):
-            ctk.CTkLabel(self.advanced, text=label, text_color="#B5BAC0",
+            ctk.CTkLabel(self.advanced, text=label, text_color="#C3C5CB",
                          font=ctk.CTkFont(size=10, weight="bold")
                          ).grid(row=row, column=column, sticky="w", padx=12, pady=(5, 3))
             entry = ctk.CTkEntry(self.advanced, textvariable=variable, height=34,
@@ -282,19 +282,19 @@ class SoundwApp(ctk.CTk):
         self.embed_thumbnail_check = ctk.CTkCheckBox(
             self.advanced, text="Incrustar portada (--embed-thumbnail)",
             variable=self.embed_thumbnail, command=self._save_preferences,
-            text_color="#B5BAC0", fg_color="#A30F2D", hover_color="#C21C3B",
+            text_color="#C3C5CB", fg_color="#A30F2D", hover_color="#C21C3B",
             font=ctk.CTkFont(size=10))
         self.embed_thumbnail_check.grid(row=7, column=0, sticky="w", padx=12, pady=4)
         self.embed_metadata_check = ctk.CTkCheckBox(
             self.advanced, text="Incrustar metadatos (--embed-metadata)",
             variable=self.embed_metadata, command=self._save_preferences,
-            text_color="#B5BAC0", fg_color="#858B93", hover_color="#B5BAC0",
+            text_color="#C3C5CB", fg_color="#858A94", hover_color="#C3C5CB",
             font=ctk.CTkFont(size=10))
         self.embed_metadata_check.grid(row=7, column=1, sticky="w", padx=12, pady=4)
         self.write_subtitles_check = ctk.CTkCheckBox(
             self.advanced, text="Descargar subtítulos (--write-subs)",
             variable=self.write_subtitles, command=self._save_preferences,
-            text_color="#B5BAC0", fg_color="#858B93", hover_color="#B5BAC0",
+            text_color="#C3C5CB", fg_color="#858A94", hover_color="#C3C5CB",
             font=ctk.CTkFont(size=10))
         self.write_subtitles_check.grid(row=8, column=0, sticky="w", padx=12, pady=(4, 12))
 
@@ -317,14 +317,14 @@ class SoundwApp(ctk.CTk):
         self.download_button = ctk.CTkButton(
             self.action_card, text="▶  EXTRAER AUDIO", height=44, corner_radius=13,
             font=ctk.CTkFont(size=16, weight="bold"),
-            fg_color="#858B93", hover_color="#B5BAC0",
+            fg_color="#858A94", hover_color="#C3C5CB",
             command=self._start_download,
         )
         self.download_button.grid(row=2, column=0, sticky="ew", padx=18, pady=(0, 8))
         self.open_folder_button = ctk.CTkButton(
             self.action_card, text="OPEN OUTPUT DIRECTORY", height=34,
-            fg_color="transparent", hover_color="#242424",
-            text_color="#B5BAC0", font=ctk.CTkFont(size=12),
+            fg_color="transparent", hover_color="#1D1D23",
+            text_color="#C3C5CB", font=ctk.CTkFont(size=12),
             command=self._open_folder, state="disabled",
         )
         self.open_folder_button.grid(row=3, column=0, pady=(0, 8))

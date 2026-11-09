@@ -317,7 +317,7 @@ class SoundwApp(ctk.CTk):
         self.download_button = ctk.CTkButton(
             self.action_card, text="▶  EXTRAER AUDIO", height=44, corner_radius=13,
             font=ctk.CTkFont(size=16, weight="bold"),
-            fg_color="#858A94", hover_color="#C3C5CB",
+            fg_color="#A30F2D", hover_color="#C21C3B",
             command=self._start_download,
         )
         self.download_button.grid(row=2, column=0, sticky="ew", padx=18, pady=(0, 8))

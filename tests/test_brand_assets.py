@@ -12,7 +12,7 @@ for size in (16,24,32,48,64,96,128,192,256,512):
     assert image.size == (size,size), (size,image.size)
     expected = master.resize((size,size), Image.Resampling.LANCZOS)
     assert ImageChops.difference(image, expected).getbbox() is None, size
-ico = Image.open(generated / "sounwd.ico")
+ico = Image.open(ROOT / "assets" / "sounwd.ico")
 assert ico.format == "ICO"
 android = ROOT / "android" / "assets" / "generated" / "android"
 for name in ("icon.png","foreground.png","background.png","brand.png"):
@@ -22,8 +22,8 @@ assert Image.open(android / "icon.png").size == (512,512)
 spec = (ROOT / "android" / "buildozer.spec").read_text(encoding="utf-8")
 for setting in (
     "icon.filename = assets/generated/android/icon.png",
-    "android.adaptive_icon_foreground.filename = assets/generated/android/foreground.png",
-    "android.adaptive_icon_background.filename = assets/generated/android/background.png",
+    "icon.adaptive_foreground.filename = assets/generated/android/foreground.png",
+    "icon.adaptive_background.filename = assets/generated/android/background.png",
 ):
     assert setting in spec, setting
 main = (ROOT / "android" / "main.py").read_text(encoding="utf-8")

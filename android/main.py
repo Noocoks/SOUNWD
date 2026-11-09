@@ -40,9 +40,7 @@ if _STARTUP_LOG is not None:
 def _log_startup(message):
     if _STARTUP_LOG is not None:
         try:
-            _STARTUP_LOG.write("
-[SOUNWD] " + message + "
-")
+            _STARTUP_LOG.write("\n[SOUNWD] " + message + "\n")
             _STARTUP_LOG.flush()
         except Exception:
             pass
@@ -196,8 +194,7 @@ class SOUNWDApp(App):
         self.download=self.button("Guardar audio",dp(52),LAVENDER,17); self.download.bind(on_release=self.start_download); action.add_widget(self.download)
         self.share=self.button("Compartir último audio",dp(36),(55/255,48/255,67/255,1)); self.share.bind(on_release=self.share_last); action.add_widget(self.share)
         body.add_widget(action)
-        body.add_widget(self.label("Descarga solo contenido que tengas permiso para guardar.
-SOUNWD no descarga música desde Spotify.",10,MUTED,False,dp(42)))
+        body.add_widget(self.label("Descarga solo contenido que tengas permiso para guardar.\nSOUNWD no descarga música desde Spotify.",10,MUTED,False,dp(42)))
         scroll.add_widget(body); root.add_widget(scroll)
         _log_startup('main interface constructed')
         Window.bind(on_resize=self.on_resize)

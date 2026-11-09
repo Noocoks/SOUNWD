@@ -70,6 +70,8 @@ Si ya conoces yt-dlp, abre **Opciones avanzadas (yt-dlp)** para configurar direc
 - `requirements.txt`: dependencias Python.
 - `.github/workflows/build.yml`: compilación automática de las aplicaciones de escritorio.
 - `android/main.py` y `android/buildozer.spec`: aplicación móvil y configuración de Android.
-- `assets/build_brand_assets.py`: generador de iconos multiplataforma a partir del PNG maestro.\n- `tests/test_brand_assets.py`: comprobación de los recursos derivados.\n- `.github/workflows/android.yml`: generación de marca y compilación automática de la APK.
+- `assets/build_brand_assets.py`: generador de iconos multiplataforma a partir del PNG maestro.
+- `tests/test_brand_assets.py`: comprobación de los recursos derivados.
+- `.github/workflows/android.yml`: generación de marca y compilación automática de la APK.
 
 SOUNWD utiliza yt-dlp para obtener audio. La aplicación de escritorio incluye Deno y los componentes EJS de yt-dlp para resolver los retos JavaScript que YouTube exige actualmente; no necesitas instalar ese motor por separado. En Android, esta primera versión conserva el formato disponible en origen: la conversión a MP3/FLAC/WAV con FFmpeg todavía no está integrada. Por ese motivo, las opciones de incrustar portada y metadatos no se ofrecen en Android. La APK se publica como artefacto de GitHub Actions cuando la compilación termina correctamente.

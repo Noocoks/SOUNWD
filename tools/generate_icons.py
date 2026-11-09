@@ -17,6 +17,8 @@ ROOT: Final = Path(__file__).resolve().parents[1]
 SOURCE: Final = ROOT / "icon" / "sounwd-master.png"
 OUT: Final = ROOT / "assets" / "generated"
 MIN_SIZE: Final = 256
+MAX_DIMENSION: Final = 8192
+MAX_PIXELS: Final = 25_000_000
 
 
 def square_cover(image: Image.Image, size: int) -> Image.Image:
@@ -89,7 +91,23 @@ def generate(source: Path = SOURCE, output: Path = OUT) -> None:
             "Place the approved image at icon/sounwd-master.png."
         )
 
+    if source.is_symlink():
+        raise ValueError("The master image must not be a symbolic link.")
+
     with Image.open(source) as opened:
+        if opened.format != "PNG":
+            raise ValueError("The master artwork must be a PNG file.")
+        width, height = opened.size
+        if width > MAX_DIMENSION or height > MAX_DIMENSION or width * height > MAX_PIXELS:
+            raise ValueError(
+                f"Master image exceeds the safe limit ({MAX_DIMENSION}px per side "
+                f"and {MAX_PIXELS:,} total pixels): {width}x{height}."
+            )
+        if min(opened.size) < MIN_SIZE:
+            raise ValueError(
+                f"Master image must be at least {MIN_SIZE}x{MIN_SIZE}; "
+                f"received {width}x{height}."
+            )
         opened.load()
         master = opened.convert("RGBA")
 
@@ -99,10 +117,13 @@ def generate(source: Path = SOURCE, output: Path = OUT) -> None:
             f"received {master.width}x{master.height}."
         )
 
-    # Avoid stale files surviving when output formats or sizes change.
-    if output.exists():
+    # Only clean the fixed generated-assets directory. Never recursively delete
+    # an arbitrary caller-supplied path.
+    if output.is_symlink():
+        raise ValueError("The generated-assets output directory must not be a symbolic link.")
+    if output.exists() and output.resolve() == OUT.resolve():
         shutil.rmtree(output)
-    output.mkdir(parents=True)
+    output.mkdir(parents=True, exist_ok=True)
 
     master.save(output / "sounwd-master.png", optimize=True)
 

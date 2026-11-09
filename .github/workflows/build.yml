@@ -3,9 +3,6 @@ name: Build SOUNWD desktop apps
 on:
   push:
     branches: [main]
-    paths:
-      - '**'
-      - '!beta-android/**'
   workflow_dispatch:
 
 permissions:
@@ -29,28 +26,31 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller Pillow
-
-      - name: Generate platform icons from the master image
-        run: python tools/generate_icons.py
-
+      - name: Generate desktop icons when the master artwork is present
+        shell: bash
+        run: |
+          if [ -f icon/sounwd-master.png ]; then
+            python tools/generate_icons.py
+          else
+            echo "::warning::icon/sounwd-master.png is not present yet; building with the default executable icon."
+          fi
       - name: Build standalone app
-        run: >
-          pyinstaller --noconfirm --clean --onefile --windowed --name SOUNWD
-          --icon assets/generated/windows/SOUNWD.ico
-          --collect-all customtkinter --collect-all imageio_ffmpeg
-          --collect-all yt_dlp src/gui.py
-
+        shell: bash
+        run: |
+          if [ -f assets/generated/windows/SOUNWD.ico ]; then
+            pyinstaller --noconfirm --clean --onefile --windowed --name SOUNWD --icon assets/generated/windows/SOUNWD.ico --collect-all customtkinter --collect-all imageio_ffmpeg --collect-all yt_dlp src/gui.py
+          else
+            pyinstaller --noconfirm --clean --onefile --windowed --name SOUNWD --collect-all customtkinter --collect-all imageio_ffmpeg --collect-all yt_dlp src/gui.py
+          fi
       - name: Upload app
         uses: actions/upload-artifact@v4
         with:

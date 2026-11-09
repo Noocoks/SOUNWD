@@ -29,8 +29,22 @@ jobs:
           python-version: '3.11'
       - name: Install icon generator dependency
         run: python -m pip install Pillow
-      - name: Generate all SOUNWD icons from the master image
-        run: python tools/generate_icons.py
+      - name: Generate Android icons when the master artwork is present
+        shell: bash
+        run: |
+          if [ -f icon/sounwd-master.png ]; then
+            python tools/generate_icons.py
+            RES=beta-android/app/src/main/res
+            cp assets/generated/android/drawable-nodpi/sounwd_master.png "$RES/drawable-nodpi/"
+            cp assets/generated/android/drawable/sounwd_launcher_foreground.png "$RES/drawable/"
+            cp assets/generated/android/mipmap-anydpi-v26/ic_launcher.xml "$RES/mipmap-anydpi-v26/"
+            for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+              mkdir -p "$RES/mipmap-$density"
+              cp "assets/generated/android/mipmap-$density/ic_launcher.png" "$RES/mipmap-$density/"
+            done
+          else
+            echo "::warning::icon/sounwd-master.png is not present yet; building with the currently committed Android artwork."
+          fi
       - name: Set up Java
         uses: actions/setup-java@v4
         with:

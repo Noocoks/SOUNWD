@@ -8,12 +8,23 @@ import sys
 import threading
 from pathlib import Path
 from urllib.parse import urlparse
+from PIL import Image
 import tkinter
 from tkinter import filedialog, messagebox
 
+# PyInstaller's bootloader splash is available only in packaged builds.
+try:
+    import pyi_splash as _boot_splash
+except ImportError:
+    _boot_splash = None
+
+if _boot_splash is not None:
+    try:
+        _boot_splash.update_text("Cargando la interfaz de SOUNWD...")
+    except (ConnectionError, RuntimeError):
+        _boot_splash = None
+
 import customtkinter as ctk
-import imageio_ffmpeg
-import yt_dlp
 from yt_dlp_support import youtube_runtime_options
 
 
@@ -37,16 +48,36 @@ def valid_url(value: str) -> bool:
         return False
 
 
+def _set_windows_app_user_model_id() -> None:
+    """Give Windows 10/11 a stable identity for taskbar grouping and icon lookup."""
+    if os.name != "nt":
+        return
+    try:
+        import ctypes
+
+        set_app_id = ctypes.WinDLL("shell32", use_last_error=True).SetCurrentProcessExplicitAppUserModelID
+        set_app_id.argtypes = [ctypes.c_wchar_p]
+        set_app_id.restype = ctypes.c_long
+        result = set_app_id("Noocoks.SOUNWD.Desktop")
+        if result != 0:
+            raise OSError(f"SetCurrentProcessExplicitAppUserModelID failed: HRESULT {result:#x}")
+    except (AttributeError, OSError):
+        # A missing optional shell API must never prevent the app from opening.
+        pass
+
+
 class SoundwApp(ctk.CTk):
     def __init__(self) -> None:
+        _set_windows_app_user_model_id()
         super().__init__()
-        self.title("SOUNWD // UNDERGROUND AUDIO TOOL")
-        self.geometry("900x820")
-        self.minsize(560, 520)
-        self.configure(fg_color="#080808")
-        self._set_window_icon()
+        self._native_icon_handles = []
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("dark-blue")
+        self.title("SOUNWD — Desktop Audio")
+        self.geometry("880x800")
+        self.minsize(560, 540)
+        self.configure(fg_color="#09090B")
+        self._set_window_icon()
 
         self.events: queue.Queue[tuple[str, object]] = queue.Queue()
         self.downloading = False
@@ -87,24 +118,66 @@ class SoundwApp(ctk.CTk):
 
     def _set_window_icon(self) -> None:
         """Use the skull artwork for the native title bar and taskbar icon."""
+        # Canonical brand asset committed in assets/ and reused by every surface.
         bundle_root = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
-        assets_dir = bundle_root / "assets"
-        png_path = assets_dir / "sounwd.png"
-        ico_path = assets_dir / "sounwd.ico"
+        png_path = bundle_root / "assets" / "sounwd.png"
+        if not png_path.is_file():
+            raise FileNotFoundError(f"Missing SOUNWD brand asset: {png_path}")
+        self._window_icon = tkinter.PhotoImage(file=str(png_path))
+        self.iconphoto(True, self._window_icon)
+        # CTkImage preserves crisp scaling on HiDPI screens while the native
+        # Tk PhotoImage remains available for the OS title bar/taskbar icon.
+        with Image.open(png_path) as logo:
+            brand_image = logo.copy()
+        self._brand_image = ctk.CTkImage(
+            light_image=brand_image,
+            dark_image=brand_image,
+            size=(104, 104),
+        )
 
-        # Windows uses the ICO resource for the title-bar/system-menu icon.
+        # Windows builds additionally embed the ICO generated from this PNG.
+        ico_path = bundle_root / "assets" / "sounwd.ico"
         if os.name == "nt" and ico_path.is_file():
             try:
                 self.iconbitmap(default=str(ico_path))
             except (OSError, tkinter.TclError):
                 pass
+            self._set_windows_taskbar_icon(ico_path)
 
-        # Keep a retained PhotoImage reference for Tk on Linux and as a fallback.
+    def _set_windows_taskbar_icon(self, ico_path: Path) -> None:
+        """Set both native HWND icons; Tk's iconphoto alone can be ignored by Win10's taskbar."""
+        if os.name != "nt":
+            return
         try:
-            self._window_icon = tkinter.PhotoImage(file=str(png_path))
-            self.iconphoto(True, self._window_icon)
-        except (OSError, tkinter.TclError):
-            self._window_icon = None
+            import ctypes
+            from ctypes import wintypes
+
+            user32 = ctypes.WinDLL("user32", use_last_error=True)
+            user32.LoadImageW.argtypes = [
+                wintypes.HINSTANCE, wintypes.LPCWSTR, wintypes.UINT,
+                ctypes.c_int, ctypes.c_int, wintypes.UINT,
+            ]
+            user32.LoadImageW.restype = wintypes.HANDLE
+            user32.SendMessageW.argtypes = [
+                wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM,
+            ]
+            user32.SendMessageW.restype = wintypes.LRESULT
+
+            # IMAGE_ICON + LR_LOADFROMFILE + LR_DEFAULTSIZE. Keep the HICON
+            # handles alive for the lifetime of the window so Explorer can use them.
+            icon_handle = user32.LoadImageW(
+                None, str(ico_path), 1, 0, 0, 0x0010 | 0x0040
+            )
+            if not icon_handle:
+                raise ctypes.WinError(ctypes.get_last_error())
+            hwnd = wintypes.HWND(self.winfo_id())
+            user32.SendMessageW(hwnd, 0x0080, 0, icon_handle)  # WM_SETICON / ICON_SMALL
+            user32.SendMessageW(hwnd, 0x0080, 1, icon_handle)  # WM_SETICON / ICON_BIG
+            self._native_icon_handles.append(icon_handle)
+        except (AttributeError, OSError, tkinter.TclError):
+            # The embedded executable icon remains a fallback if the shell API
+            # is unavailable on an unusual Windows installation.
+            pass
 
     def _build_ui(self) -> None:
         self.grid_columnconfigure(0, weight=1)
@@ -112,10 +185,10 @@ class SoundwApp(ctk.CTk):
 
         scroll_page = ctk.CTkScrollableFrame(
             self, fg_color="transparent", corner_radius=0,
-            scrollbar_button_color="#790018", scrollbar_button_hover_color="#858B93",
+            scrollbar_button_color="#A30F2D", scrollbar_button_hover_color="#C21C3B",
         )
         self.page = scroll_page
-        scroll_page.grid(row=0, column=0, sticky="nsew", padx=24, pady=22)
+        scroll_page.grid(row=0, column=0, sticky="nsew", padx=24, pady=20)
         scroll_page.grid_columnconfigure(0, weight=1)
         scroll_page.grid_rowconfigure(0, weight=1)
 
@@ -133,65 +206,38 @@ class SoundwApp(ctk.CTk):
         page.bind("<Configure>", lambda _event: self.after_idle(self._center_content), add="+")
 
         brand = ctk.CTkFrame(page, fg_color="transparent")
-        brand.grid(row=1, column=0, sticky="ew", pady=(0, 8))
-        # Nuevo emblema SOUNWD: calavera angular con auriculares y ojos rojos.
-        # Está dibujado en Canvas para que sea vectorial, nítido y no dependa de
-        # recursos externos ni de rutas especiales dentro del ejecutable.
-        mark = ctk.CTkCanvas(
-            brand, width=112, height=74, bg="#080808",
-            highlightthickness=0, bd=0,
+        brand.grid(row=1, column=0, sticky="ew", pady=(2, 12))
+        # The visible logo is the very same Tk PhotoImage used by the window.
+        self.brand_mark = ctk.CTkLabel(
+            brand, text="", image=self._brand_image, fg_color="transparent",
         )
-        self.brand_mark = mark
-        mark.pack(pady=(0, 2))
-        mark.create_oval(10, 5, 102, 82, outline="#3D000D", width=2)
-        mark.create_arc(22, 3, 90, 75, start=0, extent=180,
-                        style="arc", outline="#858B93", width=4)
-        mark.create_rectangle(14, 36, 29, 61, fill="#790018", outline="#B5BAC0", width=2)
-        mark.create_rectangle(83, 36, 98, 61, fill="#790018", outline="#B5BAC0", width=2)
-        mark.create_polygon(
-            35, 25, 43, 15, 51, 21, 60, 13, 69, 22, 78, 30,
-            84, 43, 80, 56, 70, 65, 67, 76, 44, 76, 41, 65,
-            31, 56, 27, 42,
-            fill="#D8DADD", outline="#B5BAC0", width=2,
-        )
-        mark.create_polygon(34, 39, 48, 33, 46, 45, 36, 47,
-                            fill="#790018", outline="#3D000D", width=1)
-        mark.create_polygon(63, 33, 78, 39, 76, 47, 65, 45,
-                            fill="#790018", outline="#3D000D", width=1)
-        mark.create_polygon(51, 48, 59, 48, 55, 57,
-                            fill="#3D000D", outline="#3D000D")
-        mark.create_line(42, 62, 70, 62, fill="#3D000D", width=2)
-        for tooth_x in (47, 54, 61, 68):
-            mark.create_line(tooth_x, 62, tooth_x, 70, fill="#3D000D", width=2)
-        mark.create_line(20, 25, 29, 33, fill="#790018", width=3)
-        mark.create_line(92, 25, 83, 33, fill="#790018", width=3)
-        mark.create_line(44, 8, 49, 14, fill="#790018", width=2)
-        mark.create_line(68, 8, 63, 14, fill="#790018", width=2)
-        mark.scale("all", 0, 0, 1, 0.85)
-        ctk.CTkLabel(brand, text="SOUNWD //", text_color="#D8DADD",
-                     font=ctk.CTkFont(family="Consolas", size=25, weight="bold")).pack(pady=(0, 1))
-        ctk.CTkLabel(brand, text="UNDERGROUND AUDIO DIVISION  •  NO COMFORT ZONE",
-                     text_color="#858B93", font=ctk.CTkFont(family="Consolas", size=10, weight="bold")).pack()
+        self.brand_mark.pack(pady=(0, 2))
+        ctk.CTkLabel(brand, text="S O U N W D  //", text_color="#F0F0F2",
+                     font=ctk.CTkFont(family="Consolas", size=27, weight="bold")).pack(pady=(0, 2))
+        ctk.CTkLabel(brand, text="NOOCOKS  /  DESKTOP AUDIO UTILITY",
+                     text_color="#A30F2D", font=ctk.CTkFont(family="Consolas", size=10, weight="bold")).pack()
+        ctk.CTkLabel(brand, text="DARK MODE  •  LOCAL OUTPUT  •  NO TRACKING",
+                     text_color="#777B84", font=ctk.CTkFont(family="Consolas", size=9)).pack(pady=(3, 0))
 
         ctk.CTkLabel(page, text="TU AUDIO. TUS REGLAS.",
-                     text_color="#E6E7E9", font=ctk.CTkFont(size=21, weight="bold")
-                     ).grid(row=2, column=0, pady=(0, 4))
-        ctk.CTkLabel(page, text="EXTRAE EL AUDIO. CONSERVA EL CONTROL. // YT-DLP ENGINE",
-                     text_color="#B5BAC0", font=ctk.CTkFont(size=11)
-                     ).grid(row=3, column=0, pady=(0, 8))
+                     text_color="#F0F0F2", font=ctk.CTkFont(size=22, weight="bold")
+                     ).grid(row=2, column=0, pady=(0, 5))
+        ctk.CTkLabel(page, text="EXTRAE  ·  CONVIERTE  ·  GUARDA",
+                     text_color="#9297A1", font=ctk.CTkFont(family="Consolas", size=10, weight="bold")
+                     ).grid(row=3, column=0, pady=(0, 16))
 
-        link_card = ctk.CTkFrame(page, fg_color="#101010", corner_radius=18,
-                                 border_width=1, border_color="#3D000D")
+        link_card = ctk.CTkFrame(page, fg_color="#121216", corner_radius=16,
+                                 border_width=1, border_color="#30232A")
         link_card.grid(row=4, column=0, sticky="ew", pady=(0, 10))
         link_card.grid_columnconfigure(0, weight=1)
         ctk.CTkLabel(link_card, text="[ 01 ]  INPUT // YOUTUBE SOURCE",
-                     text_color="#B5BAC0", font=ctk.CTkFont(size=11, weight="bold")
+                     text_color="#C3C5CB", font=ctk.CTkFont(size=11, weight="bold")
                      ).grid(row=0, column=0, sticky="w", padx=16, pady=(10, 4))
         self.url_entry = ctk.CTkEntry(
             link_card, height=40, corner_radius=12,
             placeholder_text="https://www.youtube.com/watch?v=...",
-            border_color="#790018", fg_color="#0D1117",
-            text_color="#E6E7E9", placeholder_text_color="#858B93",
+            border_color="#702037", fg_color="#0C0C10",
+            text_color="#F0F0F2", placeholder_text_color="#686D77",
             font=ctk.CTkFont(size=11),
         )
         self.url_entry.grid(row=1, column=0, sticky="ew", padx=16, pady=(0, 4))
@@ -200,13 +246,13 @@ class SoundwApp(ctk.CTk):
         link_actions.grid(row=2, column=0, sticky="ew", padx=16, pady=(0, 8))
         ctk.CTkButton(
             link_actions, text="Pegar enlace", width=110, height=30,
-            fg_color="#790018", hover_color="#790018",
+            fg_color="#A30F2D", hover_color="#C21C3B",
             command=self._paste_url,
         ).pack(side="left")
         ctk.CTkButton(
             link_actions, text="Limpiar", width=76, height=30,
-            fg_color="transparent", hover_color="#242424",
-            text_color="#B5BAC0", command=lambda: self.url_entry.delete(0, "end"),
+            fg_color="transparent", hover_color="#1D1D23",
+            text_color="#C3C5CB", command=lambda: self.url_entry.delete(0, "end"),
         ).pack(side="left", padx=(8, 0))
 
         settings = ctk.CTkFrame(page, fg_color="transparent")
@@ -214,70 +260,70 @@ class SoundwApp(ctk.CTk):
         settings.grid(row=5, column=0, sticky="ew", pady=(0, 8))
         settings.grid_columnconfigure((0, 1), weight=1, uniform="settings")
 
-        format_card = ctk.CTkFrame(settings, fg_color="#101010", corner_radius=14,
-                                   border_width=1, border_color="#3D000D")
+        format_card = ctk.CTkFrame(settings, fg_color="#121216", corner_radius=14,
+                                   border_width=1, border_color="#30232A")
         format_card.grid(row=0, column=0, sticky="nsew", padx=(0, 7))
         ctk.CTkLabel(format_card, text="[ 02 ]  OUTPUT FORMAT",
-                     text_color="#B5BAC0", font=ctk.CTkFont(size=10, weight="bold")
+                     text_color="#C3C5CB", font=ctk.CTkFont(size=10, weight="bold")
                      ).pack(anchor="w", padx=12, pady=(10, 5))
         ctk.CTkOptionMenu(
             format_card, variable=self.audio_format, values=list(FORMATS),
             command=self._preference_changed,
-            height=34, corner_radius=10, fg_color="#790018",
-            button_color="#858B93", button_hover_color="#B5BAC0",
-            dropdown_fg_color="#101010",
+            height=36, corner_radius=10, fg_color="#A30F2D",
+            button_color="#702037", button_hover_color="#C21C3B",
+            dropdown_fg_color="#17171C",
         ).pack(fill="x", padx=10, pady=(0, 10))
 
-        folder_card = ctk.CTkFrame(settings, fg_color="#101010", corner_radius=14,
-                                   border_width=1, border_color="#3D000D")
+        folder_card = ctk.CTkFrame(settings, fg_color="#121216", corner_radius=14,
+                                   border_width=1, border_color="#30232A")
         folder_card.grid(row=0, column=1, sticky="nsew", padx=(7, 0))
         ctk.CTkLabel(folder_card, text="[ 03 ]  DESTINATION",
-                     text_color="#B5BAC0", font=ctk.CTkFont(size=10, weight="bold")
+                     text_color="#C3C5CB", font=ctk.CTkFont(size=10, weight="bold")
                      ).pack(anchor="w", padx=12, pady=(10, 5))
         folder_row = ctk.CTkFrame(folder_card, fg_color="transparent")
         folder_row.pack(fill="x", padx=10, pady=(0, 10))
         folder_row.grid_columnconfigure(0, weight=1)
         self.folder_label = ctk.CTkLabel(
             folder_row, text=self._short_path(str(self.destination.get())),
-            text_color="#D8DADD", font=ctk.CTkFont(size=10), anchor="w",
+            text_color="#E0E1E5", font=ctk.CTkFont(size=10), anchor="w",
         )
         self.folder_label.grid(row=0, column=0, sticky="ew")
         ctk.CTkButton(
             folder_row, text="Elegir", width=66, height=34,
-            fg_color="#790018", hover_color="#790018",
+            fg_color="#702037", hover_color="#A30F2D",
             command=self._choose_folder,
         ).grid(row=0, column=1, padx=(6, 0))
 
         self.playlist_check = ctk.CTkCheckBox(
             page, text="Descargar la lista completa si el enlace contiene una",
             variable=self.playlist, command=self._save_preferences,
-            text_color="#B5BAC0", fg_color="#858B93", hover_color="#B5BAC0",
+            text_color="#C3C5CB", fg_color="#A30F2D", hover_color="#C21C3B",
             font=ctk.CTkFont(size=11),
         )
         self.playlist_check.grid(row=6, column=0, sticky="w", pady=(0, 5))
 
         self.options_toggle = ctk.CTkButton(
             page, text="+  ADVANCED // YT-DLP", height=30, width=145,
-            fg_color="transparent", hover_color="#242424",
-            text_color="#858B93", anchor="w",
+            fg_color="transparent", hover_color="#1D1D23",
+            text_color="#A0A4AD", anchor="w",
             font=ctk.CTkFont(size=11), command=self._toggle_advanced,
         )
         self.options_toggle.grid(row=7, column=0, sticky="w", pady=(0, 4))
 
-        self.advanced = ctk.CTkFrame(page, fg_color="#0D1117", corner_radius=16,
-                                     border_width=1, border_color="#3D000D")
+        self.advanced = ctk.CTkFrame(page, fg_color="#111115", corner_radius=16,
+                                     border_width=1, border_color="#30232A")
         self.advanced.grid_columnconfigure((0, 1), weight=1, uniform="personal")
         ctk.CTkLabel(self.advanced, text="ADVANCED PARAMETERS // YT-DLP",
-                     text_color="#B5BAC0", font=ctk.CTkFont(size=11, weight="bold")
+                     text_color="#C3C5CB", font=ctk.CTkFont(size=11, weight="bold")
                      ).grid(row=0, column=0, columnspan=2, sticky="w", padx=14, pady=(13, 8))
 
         def add_option(label, variable, row, column, placeholder=""):
-            ctk.CTkLabel(self.advanced, text=label, text_color="#B5BAC0",
+            ctk.CTkLabel(self.advanced, text=label, text_color="#C3C5CB",
                          font=ctk.CTkFont(size=10, weight="bold")
                          ).grid(row=row, column=column, sticky="w", padx=12, pady=(5, 3))
             entry = ctk.CTkEntry(self.advanced, textvariable=variable, height=34,
-                                 placeholder_text=placeholder, fg_color="#0D1117",
-                                 border_color="#790018", text_color="#E6E7E9")
+                                 placeholder_text=placeholder, fg_color="#0C0C10",
+                                 border_color="#702037", text_color="#F0F0F2")
             entry.grid(row=row + 1, column=column, sticky="ew", padx=12, pady=(0, 7))
             entry.bind("<FocusOut>", lambda _e: self._save_preferences())
             return entry
@@ -292,56 +338,56 @@ class SoundwApp(ctk.CTk):
         self.embed_thumbnail_check = ctk.CTkCheckBox(
             self.advanced, text="Incrustar portada (--embed-thumbnail)",
             variable=self.embed_thumbnail, command=self._save_preferences,
-            text_color="#B5BAC0", fg_color="#858B93", hover_color="#B5BAC0",
+            text_color="#C3C5CB", fg_color="#A30F2D", hover_color="#C21C3B",
             font=ctk.CTkFont(size=10))
         self.embed_thumbnail_check.grid(row=7, column=0, sticky="w", padx=12, pady=4)
         self.embed_metadata_check = ctk.CTkCheckBox(
             self.advanced, text="Incrustar metadatos (--embed-metadata)",
             variable=self.embed_metadata, command=self._save_preferences,
-            text_color="#B5BAC0", fg_color="#858B93", hover_color="#B5BAC0",
+            text_color="#C3C5CB", fg_color="#858A94", hover_color="#C3C5CB",
             font=ctk.CTkFont(size=10))
         self.embed_metadata_check.grid(row=7, column=1, sticky="w", padx=12, pady=4)
         self.write_subtitles_check = ctk.CTkCheckBox(
             self.advanced, text="Descargar subtítulos (--write-subs)",
             variable=self.write_subtitles, command=self._save_preferences,
-            text_color="#B5BAC0", fg_color="#858B93", hover_color="#B5BAC0",
+            text_color="#C3C5CB", fg_color="#858A94", hover_color="#C3C5CB",
             font=ctk.CTkFont(size=10))
         self.write_subtitles_check.grid(row=8, column=0, sticky="w", padx=12, pady=(4, 12))
 
 
-        self.action_card = ctk.CTkFrame(page, fg_color="#101010", corner_radius=18,
-                                        border_width=1, border_color="#3D000D")
+        self.action_card = ctk.CTkFrame(page, fg_color="#121216", corner_radius=16,
+                                        border_width=1, border_color="#4A1C2B")
         self.action_card.grid(row=9, column=0, sticky="ew", pady=(8, 0))
         self.action_card.grid_columnconfigure(0, weight=1)
         self.status_label = ctk.CTkLabel(
             self.action_card, text="[ SYSTEM READY ]  AWAITING INPUT",
-            text_color="#B5BAC0", font=ctk.CTkFont(size=12),
+            text_color="#C3C5CB", font=ctk.CTkFont(size=12, weight="bold"),
         )
         self.status_label.grid(row=0, column=0, pady=(8, 4))
         self.progress = ctk.CTkProgressBar(
             self.action_card, height=8, corner_radius=8,
-            progress_color="#790018", fg_color="#242424",
+            progress_color="#C21C3B", fg_color="#292930",
         )
         self.progress.grid(row=1, column=0, sticky="ew", padx=16, pady=(0, 8))
         self.progress.set(0)
         self.download_button = ctk.CTkButton(
             self.action_card, text="▶  EXTRAER AUDIO", height=44, corner_radius=13,
             font=ctk.CTkFont(size=16, weight="bold"),
-            fg_color="#858B93", hover_color="#B5BAC0",
+            fg_color="#A30F2D", hover_color="#C21C3B",
             command=self._start_download,
         )
         self.download_button.grid(row=2, column=0, sticky="ew", padx=18, pady=(0, 8))
         self.open_folder_button = ctk.CTkButton(
             self.action_card, text="OPEN OUTPUT DIRECTORY", height=34,
-            fg_color="transparent", hover_color="#242424",
-            text_color="#B5BAC0", font=ctk.CTkFont(size=12),
+            fg_color="transparent", hover_color="#1D1D23",
+            text_color="#C3C5CB", font=ctk.CTkFont(size=12),
             command=self._open_folder, state="disabled",
         )
         self.open_folder_button.grid(row=3, column=0, pady=(0, 8))
 
         ctk.CTkLabel(
             page, text="[ USE RESPONSIBLY ]  SOLO CONTENIDO AUTORIZADO.\nNO SPOTIFY // NO TRACKING // LOCAL OUTPUT.",
-            text_color="#858B93", justify="center", font=ctk.CTkFont(size=10),
+            text_color="#777B84", justify="center", font=ctk.CTkFont(family="Consolas", size=9),
         ).grid(row=10, column=0, pady=(6, 0))
 
 
@@ -390,7 +436,7 @@ class SoundwApp(ctk.CTk):
         if event is not None and event.widget is not self:
             return
         width = max(self.winfo_width(), 520)
-        horizontal = 18 if width < 650 else (30 if width < 850 else 46)
+        horizontal = 16 if width < 650 else (28 if width < 850 else 42)
         # CTkScrollableFrame se muestra mediante su _parent_frame (grid).
         # self.page vive dentro del Canvas y no debe recibir grid_configure().
         self.page._parent_frame.grid_configure(
@@ -567,7 +613,21 @@ class SoundwApp(ctk.CTk):
             elif data.get("status") == "finished":
                 self.events.put(("progress", (0.98, "Preparando el archivo…")))
 
+        retry_count = None
+        if advanced["retries"]:
+            try:
+                retry_count = int(advanced["retries"])
+                if retry_count < 0:
+                    raise ValueError
+            except ValueError:
+                self.events.put(("error", "El número de reintentos debe ser un entero igual o mayor que cero."))
+                return
         try:
+            # Heavy downloader/post-processing packages are loaded only when needed;
+            # this keeps the first window responsive and reduces perceived startup.
+            import imageio_ffmpeg
+            import yt_dlp
+
             quality = {"Máxima": "0", "Alta": "192", "Normal": "128"}.get(quality_choice, "0")
             filename = "%(title)s" if filename_choice == "Solo título" else "%(title)s - %(uploader)s"
             output_template = advanced["outtmpl"]
@@ -591,8 +651,8 @@ class SoundwApp(ctk.CTk):
                 options["playlist_items"] = advanced["playlist_items"]
             if advanced["ratelimit"]:
                 options["ratelimit"] = advanced["ratelimit"]
-            if advanced["retries"]:
-                options["retries"] = max(0, int(advanced["retries"]))
+            if retry_count is not None:
+                options["retries"] = retry_count
             if advanced["subtitleslangs"]:
                 options["subtitleslangs"] = advanced["subtitleslangs"]
             if advanced["writesubtitles"]:
@@ -610,9 +670,7 @@ class SoundwApp(ctk.CTk):
             self.events.put(("done", str(destination)))
         except Exception as error:
             message = str(error).lower()
-            if isinstance(error, ValueError) and "retries" in advanced:
-                friendly = "El número de reintentos debe ser un entero."
-            elif "private" in message or "members-only" in message:
+            if "private" in message or "members-only" in message:
                 friendly = "Este audio es privado o requiere una cuenta especial. Prueba con otro enlace."
             elif "unavailable" in message or "not available" in message:
                 friendly = "Este audio no está disponible. Comprueba el enlace o prueba con otro."
@@ -663,6 +721,23 @@ def sys_platform() -> str:
 
 def main() -> None:
     app = SoundwApp()
+    # Force the first frame to be painted before dismissing the bootloader splash.
+    app.update_idletasks()
+    app.update()
+    if _boot_splash is not None:
+        try:
+            _boot_splash.close()
+        except (ConnectionError, RuntimeError):
+            pass
+
+    # Optional readiness marker used only by the packaged-startup CI smoke test.
+    # It is written after the main window has been rendered and the boot splash closed.
+    ready_file = os.environ.get("SOUNWD_SMOKE_READY_FILE")
+    if ready_file:
+        try:
+            Path(ready_file).write_text("ready", encoding="utf-8")
+        except OSError:
+            pass
     app.mainloop()
 
 

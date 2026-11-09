@@ -4,9 +4,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DESKTOP_DIR="${XDG_DESKTOP_DIR:-$HOME/Desktop}"
 mkdir -p "$DESKTOP_DIR"
 SHORTCUT="$DESKTOP_DIR/SOUNWD.desktop"
-ICON_DIR="$HOME/.local/share/icons/hicolor/scalable/apps"
+ICON_DIR="$HOME/.local/share/icons/hicolor/512x512/apps"
 mkdir -p "$ICON_DIR"
-install -m 644 "$ROOT/assets/sounwd.svg" "$ICON_DIR/sounwd.svg"
+install -m 644 "$ROOT/assets/sounwd.png" "$ICON_DIR/sounwd.png"
 cat > "$SHORTCUT" <<EOF
 [Desktop Entry]
 Version=1.0

@@ -73,6 +73,8 @@ from kivy.uix.button import Button
 from kivy.uix.checkbox import CheckBox
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
+from kivy.uix.image import Image as KivyImage
+from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.popup import Popup
 from kivy.uix.progressbar import ProgressBar
 from kivy.core.clipboard import Clipboard
@@ -84,10 +86,10 @@ from kivy.graphics import Color, RoundedRectangle
 
 _log_startup('Kivy imports completed successfully')
 
-BG=(18/255,17/255,26/255,1); CARD=(33/255,30/255,43/255,1)
-LAVENDER=(136/255,114/255,174/255,1); BRAND_LAVENDER=(200/255,182/255,232/255,1)
-TEXT=(244/255,239/255,250/255,1); MUTED=(182/255,173/255,191/255,1)
-BRAND_MUTED=(166/255,156/255,175/255,1)
+BG=(9/255,9/255,11/255,1); CARD=(17/255,17/255,21/255,1)
+LAVENDER=(178/255,15/255,50/255,1); BRAND_LAVENDER=(178/255,15/255,50/255,1)
+TEXT=(240/255,240/255,242/255,1); MUTED=(181/255,186/255,192/255,1)
+BRAND_MUTED=(133/255,139/255,147/255,1)
 FORMATS={"Mejor disponible":"bestaudio/best","M4A (si existe)":"bestaudio[ext=m4a]/bestaudio/best","OPUS (si existe)":"bestaudio[acodec=opus]/bestaudio/best"}
 DESTINATIONS={"Música / SOUNWD":"Music","Descargas / SOUNWD":"Downloads"}
 HOSTS={"youtube.com","www.youtube.com","music.youtube.com","m.youtube.com","youtu.be"}
@@ -116,11 +118,13 @@ class SOUNWDApp(App):
         saved=self.store.get("preferences") if self.store.exists("preferences") else {}
         Window.clearcolor=BG; Window.softinput_mode="below_target"
         root=BoxLayout(orientation="vertical",padding=[dp(17),dp(12),dp(17),dp(12)])
-        scroll=ScrollView(do_scroll_x=False,do_scroll_y=True,scroll_y=1.0,scroll_type=["bars","content"],bar_width=dp(5),bar_color=BRAND_LAVENDER,bar_inactive_color=(200/255,182/255,232/255,0.28),scroll_wheel_distance=dp(40))
+        scroll=ScrollView(do_scroll_x=False,do_scroll_y=True,scroll_y=1.0,scroll_type=["bars","content"],bar_width=dp(5),bar_color=BRAND_LAVENDER,bar_inactive_color=(178/255,15/255,50/255,0.28),scroll_wheel_distance=dp(40))
         body=BoxLayout(orientation="vertical",size_hint_y=None,spacing=dp(11),padding=[0,0,0,dp(12)])
         body.bind(minimum_height=body.setter("height"))
-        brand=BoxLayout(orientation="vertical",size_hint_y=None,height=dp(100),spacing=0)
-        brand.add_widget(self.label("◖♪",30,BRAND_LAVENDER,True,dp(34)))
+        brand=BoxLayout(orientation="vertical",size_hint_y=None,height=dp(104),spacing=0)
+        logo_slot=AnchorLayout(anchor_x="center", anchor_y="center", size_hint_y=None, height=dp(44))
+        logo_slot.add_widget(KivyImage(source=str(Path(__file__).resolve().parent / "assets" / "generated" / "android" / "brand.png"), size_hint=(None,None), size=(dp(42),dp(42)), allow_stretch=True, keep_ratio=True))
+        brand.add_widget(logo_slot)
         brand.add_widget(self.label("SOUNWD.",27,TEXT,True,dp(38)))
         brand.add_widget(self.label("YOUR SOUND. YOUR MOMENTS.",10,BRAND_MUTED,True,dp(22)))
         body.add_widget(brand)
@@ -129,14 +133,14 @@ class SOUNWDApp(App):
         link=Panel(orientation="vertical",size_hint_y=None,height=dp(132))
         link.add_widget(self.label("1.  PEGA AQUÍ EL ENLACE",11,LAVENDER,True,dp(22)))
         self.url=TextInput(hint_text="Copia el enlace de YouTube y pégalo aquí",multiline=False,size_hint_y=None,height=dp(52),
-            background_normal="",background_active="",background_color=(23/255,21/255,31/255,1),
-            foreground_color=TEXT,hint_text_color=(142/255,132/255,153/255,1),cursor_color=LAVENDER,
+            background_normal="",background_active="",background_color=(23/255,23/255,27/255,1),
+            foreground_color=TEXT,hint_text_color=(133/255,139/255,147/255,1),cursor_color=LAVENDER,
             padding=[dp(11),dp(15)],font_size="14sp")
         link.add_widget(self.url)
         link_actions=BoxLayout(orientation="horizontal",size_hint_y=None,height=dp(34),spacing=dp(8))
-        paste=self.button("Pegar enlace",dp(32),(64/255,54/255,79/255,1),11)
+        paste=self.button("Pegar enlace",dp(32),(74/255,8/255,24/255,1),11)
         paste.bind(on_release=self.paste_url)
-        clear=self.button("Limpiar",dp(32),(55/255,48/255,67/255,1),11)
+        clear=self.button("Limpiar",dp(32),(42/255,42/255,47/255,1),11)
         clear.bind(on_release=lambda *_:setattr(self.url,"text",""))
         link_actions.add_widget(paste); link_actions.add_widget(clear); link.add_widget(link_actions)
         body.add_widget(link)

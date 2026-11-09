@@ -6,6 +6,8 @@ on:
   pull_request:
     paths:
       - "src/**"
+      - "tests/**"
+      - "SOUNWD.spec"
       - "assets/**"
       - "Linux/**"
       - "android/**"
@@ -31,6 +33,7 @@ jobs:
             output: SOUNWD
 
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
@@ -71,9 +74,11 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller pillow
 
-      - name: Generate desktop icon formats
+      - name: Generate desktop icon and startup splash
         run: |
-          python assets/generate_icon.py
+          python assets/build_brand_assets.py
+          python tests/test_brand_assets.py
+          python assets/generate_splash.py
 
       - name: Verify vertical centering (Windows)
         if: runner.os == 'Windows'
@@ -86,35 +91,27 @@ jobs:
       - name: Build standalone app (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: pyinstaller --noconfirm --clean --onefile --windowed --name SOUNWD --icon assets/sounwd.ico --add-data "assets/sounwd.png;assets" --add-data "assets/sounwd.ico;assets" --collect-all customtkinter --collect-all imageio_ffmpeg --collect-all yt_dlp --collect-all yt_dlp_ejs --paths src --hidden-import yt_dlp_support --add-binary "$env:DENO_PATH;." src/gui.py
+        run: pyinstaller --noconfirm --clean SOUNWD.spec
 
       - name: Build standalone app (Linux)
         if: runner.os == 'Linux'
-        run: pyinstaller --noconfirm --clean --onefile --windowed --name SOUNWD --add-data "assets/sounwd.png:assets" --collect-all customtkinter --collect-all imageio_ffmpeg --collect-all yt_dlp --collect-all yt_dlp_ejs --paths src --hidden-import yt_dlp_support --add-binary "$DENO_PATH:." src/gui.py
+        run: pyinstaller --noconfirm --clean SOUNWD.spec
+
+      - name: Verify embedded Windows taskbar icons
+        if: runner.os == 'Windows'
+        run: python tests/smoke_windows_icon.py dist/SOUNWD.exe
 
       - name: Smoke-test packaged app startup (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $app = Start-Process -FilePath "dist/SOUNWD.exe" -PassThru
-          Start-Sleep -Seconds 10
-          if ($app.HasExited) {
-            throw "SOUNWD.exe exited during startup (exit code $($app.ExitCode))."
-          }
-          Stop-Process -Id $app.Id -Force
+          python tests/smoke_packaged_startup.py dist/SOUNWD.exe
 
       - name: Smoke-test packaged app startup (Linux)
         if: runner.os == 'Linux'
         shell: bash
         run: |
-          set +e
-          timeout 12s xvfb-run -a ./dist/SOUNWD
-          status=$?
-          set -e
-          if [ "$status" -ne 124 ]; then
-            echo "SOUNWD exited during startup with status $status"
-            exit 1
-          fi
+          xvfb-run -a python tests/smoke_packaged_startup.py dist/SOUNWD
 
       - name: Upload app
         uses: actions/upload-artifact@v4
@@ -122,3 +119,63 @@ jobs:
           name: ${{ matrix.artifact }}
           path: dist/${{ matrix.output }}
           if-no-files-found: error
+
+  build-android-pr:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install Android build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip build-essential autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev automake
+          python -m pip install --upgrade pip
+          python -m pip install buildozer==1.6.0 cython==0.29.34 pillow
+      - name: Generate and verify Android brand resources
+        run: |
+          python assets/build_brand_assets.py
+          python tests/test_brand_assets.py
+      - name: Validate Android Python and toolchain
+        working-directory: android
+        run: |
+          python -m compileall -q .
+          grep -E '^(requirements|p4a.branch|p4a.commit|p4a.local_recipes) *=' buildozer.spec
+          test -f p4a-recipes/python3/__init__.py
+          python -m py_compile p4a-recipes/python3/__init__.py sitecustomize.py main.py
+      - name: Build Android debug APK
+        working-directory: android
+        env:
+          BUILDOZER_WARN_ON_ROOT: "0"
+        run: |
+          set -o pipefail
+          buildozer -v android debug 2>&1 | tee ../android-build.log
+      - name: Verify Android APK
+        run: |
+          test -n "$(find android/bin -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          ls -lh android/bin/*.apk
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SOUNWD-Android-PR
+          path: android/bin/*.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload Android build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SOUNWD-Android-PR-Build-Log
+          path: android-build.log
+          if-no-files-found: ignore
+          retention-days: 14

@@ -72,7 +72,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.checkbox import CheckBox
 from kivy.uix.gridlayout import GridLayout
-from kivy.uix.label import Label\nfrom kivy.uix.image import Image as KivyImage
+from kivy.uix.label import Label\nfrom kivy.uix.image import Image as KivyImage\nfrom kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.popup import Popup
 from kivy.uix.progressbar import ProgressBar
 from kivy.core.clipboard import Clipboard
@@ -120,7 +120,7 @@ class SOUNWDApp(App):
         body=BoxLayout(orientation="vertical",size_hint_y=None,spacing=dp(11),padding=[0,0,0,dp(12)])
         body.bind(minimum_height=body.setter("height"))
         brand=BoxLayout(orientation="vertical",size_hint_y=None,height=dp(100),spacing=0)
-        brand.add_widget(KivyImage(source=str(Path(__file__).resolve().parent / "assets" / "generated" / "android" / "brand.png"), size_hint=(None,None), size=(dp(58),dp(58)), allow_stretch=True, keep_ratio=True))
+        logo_slot=AnchorLayout(anchor_x="center", anchor_y="center", size_hint_y=None, height=dp(58))\n        logo_slot.add_widget(KivyImage(source=str(Path(__file__).resolve().parent / "assets" / "generated" / "android" / "brand.png"), size_hint=(None,None), size=(dp(58),dp(58),), allow_stretch=True, keep_ratio=True))\n        brand.add_widget(logo_slot)
         brand.add_widget(self.label("SOUNWD.",27,TEXT,True,dp(38)))
         brand.add_widget(self.label("YOUR SOUND. YOUR MOMENTS.",10,BRAND_MUTED,True,dp(22)))
         body.add_widget(brand)

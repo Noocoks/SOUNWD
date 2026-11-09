@@ -26,7 +26,7 @@ draw.rounded_rectangle((17, 17, WIDTH - 18, HEIGHT - 18), radius=16,
                        outline=LINE, width=1)
 draw.rounded_rectangle((30, 31, 35, HEIGHT - 31), radius=2, fill=RED)
 draw.line((56, 62, WIDTH - 56, 62), fill=LINE, width=1)
-draw.line((56, 310, WIDTH - 56, 310), fill=LINE, width=1)
+draw.line((56, 300, WIDTH - 56, 300), fill=LINE, width=1)
 
 
 def load_font(size: int, bold: bool = False):
@@ -68,7 +68,7 @@ centered("S O U N W D  //", 224, large, WHITE)
 centered("UNDERGROUND AUDIO DIVISION", 270, medium, MUTED)
 
 # Static segmented motif; PyInstaller overlays its live startup status text below.
-bar_left, bar_top, bar_right = 112, 322, 508
+bar_left, bar_top, bar_right = 112, 350, 508
 draw.rounded_rectangle((bar_left, bar_top, bar_right, bar_top + 5),
                        radius=2, fill=LINE)
 for index in range(12):

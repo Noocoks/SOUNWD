@@ -48,9 +48,29 @@ def valid_url(value: str) -> bool:
         return False
 
 
+def _set_windows_app_user_model_id() -> None:
+    """Give Windows 10/11 a stable identity for taskbar grouping and icon lookup."""
+    if os.name != "nt":
+        return
+    try:
+        import ctypes
+
+        set_app_id = ctypes.WinDLL("shell32", use_last_error=True).SetCurrentProcessExplicitAppUserModelID
+        set_app_id.argtypes = [ctypes.c_wchar_p]
+        set_app_id.restype = ctypes.c_long
+        result = set_app_id("Noocoks.SOUNWD.Desktop")
+        if result != 0:
+            raise OSError(f"SetCurrentProcessExplicitAppUserModelID failed: HRESULT {result:#x}")
+    except (AttributeError, OSError):
+        # A missing optional shell API must never prevent the app from opening.
+        pass
+
+
 class SoundwApp(ctk.CTk):
     def __init__(self) -> None:
+        _set_windows_app_user_model_id()
         super().__init__()
+        self._native_icon_handles = []
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("dark-blue")
         self.title("SOUNWD — Desktop Audio")
@@ -122,6 +142,41 @@ class SoundwApp(ctk.CTk):
                 self.iconbitmap(default=str(ico_path))
             except (OSError, tkinter.TclError):
                 pass
+            self._set_windows_taskbar_icon(ico_path)
+
+    def _set_windows_taskbar_icon(self, ico_path: Path) -> None:
+        """Set both native HWND icons; Tk's iconphoto alone can be ignored by Win10's taskbar."""
+        if os.name != "nt":
+            return
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            user32 = ctypes.WinDLL("user32", use_last_error=True)
+            user32.LoadImageW.argtypes = [
+                wintypes.HINSTANCE, wintypes.LPCWSTR, wintypes.UINT,
+                ctypes.c_int, ctypes.c_int, wintypes.UINT,
+            ]
+            user32.LoadImageW.restype = wintypes.HANDLE
+            user32.SendMessageW.argtypes = [
+                wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM,
+            ]
+            user32.SendMessageW.restype = wintypes.LRESULT
+
+            # IMAGE_ICON + LR_LOADFROMFILE + LR_DEFAULTSIZE. Keep the HICON
+            # handles alive for the lifetime of the window so Explorer can use them.
+            icon_handle = user32.LoadImageW(
+                None, str(ico_path), 1, 0, 0, 0x0010 | 0x0040
+            )
+            if not icon_handle:
+                raise ctypes.WinError(ctypes.get_last_error())
+            hwnd = wintypes.HWND(self.winfo_id())
+            user32.SendMessageW(hwnd, 0x0080, 0, icon_handle)  # WM_SETICON / ICON_SMALL
+            user32.SendMessageW(hwnd, 0x0080, 1, icon_handle)  # WM_SETICON / ICON_BIG
+            self._native_icon_handles.append(icon_handle)
+        except (AttributeError, OSError, tkinter.TclError):
+            # The embedded executable icon remains a fallback if the shell API
+            # is unavailable on an unusual Windows installation.
 
     def _build_ui(self) -> None:
         self.grid_columnconfigure(0, weight=1)

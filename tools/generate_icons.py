@@ -45,10 +45,10 @@ def save_android(master: Image.Image) -> None:
         root / "drawable" / "sounwd_launcher_foreground.png", optimize=True
     )
     (root / "mipmap-anydpi-v26" / "ic_launcher.xml").write_text(
-        '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\\n'
-        '    <background android:drawable="@color/sounwd_icon_background" />\\n'
-        '    <foreground android:drawable="@drawable/sounwd_launcher_foreground" />\\n'
-        '</adaptive-icon>\\n',
+        '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
+        '    <background android:drawable="@color/sounwd_icon_background" />\n'
+        '    <foreground android:drawable="@drawable/sounwd_launcher_foreground" />\n'
+        '</adaptive-icon>\n',
         encoding="utf-8",
     )
 

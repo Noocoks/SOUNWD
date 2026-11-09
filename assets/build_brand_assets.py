@@ -6,7 +6,7 @@ intentionally not committed; each desktop/Android workflow recreates them.
 from __future__ import annotations
 
 from pathlib import Path
-from PIL import Image, ImageOps, ImageDraw
+from PIL import Image, ImageOps
 
 ROOT = Path(__file__).resolve().parents[1]
 MASTER = ROOT / "assets" / "sounwd.png"

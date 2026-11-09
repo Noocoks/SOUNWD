@@ -119,3 +119,63 @@ jobs:
           name: ${{ matrix.artifact }}
           path: dist/${{ matrix.output }}
           if-no-files-found: error
+
+  build-android-pr:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install Android build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip build-essential autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev automake
+          python -m pip install --upgrade pip
+          python -m pip install buildozer==1.6.0 cython==0.29.34 pillow
+      - name: Generate and verify Android brand resources
+        run: |
+          python assets/build_brand_assets.py
+          python tests/test_brand_assets.py
+      - name: Validate Android Python and toolchain
+        working-directory: android
+        run: |
+          python -m compileall -q .
+          grep -E '^(requirements|p4a.branch|p4a.commit|p4a.local_recipes) *=' buildozer.spec
+          test -f p4a-recipes/python3/__init__.py
+          python -m py_compile p4a-recipes/python3/__init__.py sitecustomize.py main.py
+      - name: Build Android debug APK
+        working-directory: android
+        env:
+          BUILDOZER_WARN_ON_ROOT: "0"
+        run: |
+          set -o pipefail
+          buildozer -v android debug 2>&1 | tee ../android-build.log
+      - name: Verify Android APK
+        run: |
+          test -n "$(find android/bin -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          ls -lh android/bin/*.apk
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SOUNWD-Android-PR
+          path: android/bin/*.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload Android build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SOUNWD-Android-PR-Build-Log
+          path: android-build.log
+          if-no-files-found: ignore
+          retention-days: 14

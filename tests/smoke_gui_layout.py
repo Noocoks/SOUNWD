@@ -41,6 +41,10 @@ try:
     icon_path = ROOT / "assets" / "sounwd.png"
     if not icon_path.is_file() or icon_path.stat().st_size < 1000:
         raise AssertionError("The committed canonical brand PNG is missing or invalid")
+    if app.cget("fg_color") != "#09090B":
+        raise AssertionError("The dark SOUNWD visual theme was not applied")
+    if app.download_button.cget("fg_color") != "#A30F2D":
+        raise AssertionError("The primary action is missing the crimson brand accent")
     canvas = app.page._parent_canvas
     window_id = app.page._create_window_id
     viewport = canvas.winfo_height()

@@ -8,6 +8,7 @@ import sys
 import threading
 from pathlib import Path
 from urllib.parse import urlparse
+from PIL import Image
 import tkinter
 from tkinter import filedialog, messagebox
 
@@ -104,6 +105,15 @@ class SoundwApp(ctk.CTk):
             raise FileNotFoundError(f"Missing SOUNWD brand asset: {png_path}")
         self._window_icon = tkinter.PhotoImage(file=str(png_path))
         self.iconphoto(True, self._window_icon)
+        # CTkImage preserves crisp scaling on HiDPI screens while the native
+        # Tk PhotoImage remains available for the OS title bar/taskbar icon.
+        with Image.open(png_path) as logo:
+            brand_image = logo.copy()
+        self._brand_image = ctk.CTkImage(
+            light_image=brand_image,
+            dark_image=brand_image,
+            size=(112, 112),
+        )
 
         # Windows builds additionally embed the ICO generated from this PNG.
         ico_path = bundle_root / "assets" / "sounwd.ico"
@@ -143,7 +153,7 @@ class SoundwApp(ctk.CTk):
         brand.grid(row=1, column=0, sticky="ew", pady=(0, 8))
         # The visible logo is the very same Tk PhotoImage used by the window.
         self.brand_mark = ctk.CTkLabel(
-            brand, text="", image=self._window_icon, fg_color="transparent",
+            brand, text="", image=self._brand_image, fg_color="transparent",
         )
         self.brand_mark.pack(pady=(0, 2))
         ctk.CTkLabel(brand, text="SOUNWD //", text_color="#D8DADD",
@@ -660,6 +670,15 @@ def main() -> None:
         try:
             _boot_splash.close()
         except (ConnectionError, RuntimeError):
+            pass
+
+    # Optional readiness marker used only by the packaged-startup CI smoke test.
+    # It is written after the main window has been rendered and the boot splash closed.
+    ready_file = os.environ.get("SOUNWD_SMOKE_READY_FILE")
+    if ready_file:
+        try:
+            Path(ready_file).write_text("ready", encoding="utf-8")
+        except OSError:
             pass
     app.mainloop()
 

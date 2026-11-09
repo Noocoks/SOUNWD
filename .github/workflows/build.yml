@@ -76,7 +76,8 @@ jobs:
 
       - name: Generate desktop icon and startup splash
         run: |
-          python assets/generate_icon.py
+          python assets/build_brand_assets.py
+          python tests/test_brand_assets.py
           python assets/generate_splash.py
 
       - name: Verify vertical centering (Windows)

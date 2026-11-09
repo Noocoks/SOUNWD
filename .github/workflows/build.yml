@@ -6,6 +6,8 @@ on:
   pull_request:
     paths:
       - "src/**"
+      - "tests/**"
+      - "SOUNWD.spec"
       - "assets/**"
       - "Linux/**"
       - "android/**"
@@ -97,25 +99,13 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $app = Start-Process -FilePath "dist/SOUNWD.exe" -PassThru
-          Start-Sleep -Seconds 10
-          if ($app.HasExited) {
-            throw "SOUNWD.exe exited during startup (exit code $($app.ExitCode))."
-          }
-          Stop-Process -Id $app.Id -Force
+          python tests/smoke_packaged_startup.py dist/SOUNWD.exe
 
       - name: Smoke-test packaged app startup (Linux)
         if: runner.os == 'Linux'
         shell: bash
         run: |
-          set +e
-          timeout 12s xvfb-run -a ./dist/SOUNWD
-          status=$?
-          set -e
-          if [ "$status" -ne 124 ]; then
-            echo "SOUNWD exited during startup with status $status"
-            exit 1
-          fi
+          xvfb-run -a python tests/smoke_packaged_startup.py dist/SOUNWD
 
       - name: Upload app
         uses: actions/upload-artifact@v4

@@ -6,56 +6,87 @@ on:
     paths:
       - 'app/**'
       - 'icon/**'
-      - 'tools/generate_icons.py'
+      - 'tools/**'
       - '.github/workflows/android-beta.yml'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
   pull_request:
     paths:
       - 'app/**'
       - 'icon/**'
-      - 'tools/generate_icons.py'
+      - 'tools/**'
       - '.github/workflows/android-beta.yml'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: android-beta-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: pip
+
       - name: Install icon generator dependency
-        run: python -m pip install Pillow
+        run: python -m pip install --upgrade Pillow
+
+      - name: Test icon generator
+        run: python -m unittest discover -s tools -p 'test_*.py' -v
+
       - name: Generate and install Android icons
         shell: bash
         run: |
+          set -euo pipefail
           python tools/generate_icons.py
           RES=app/src/main/res
-          mkdir -p "$RES/drawable" "$RES/drawable-nodpi" "$RES/mipmap-anydpi-v26"
+          mkdir -p "$RES/drawable" "$RES/drawable-nodpi" "$RES/mipmap-anydpi-v26" "$RES/values"
           cp assets/generated/android/drawable-nodpi/sounwd_master.png "$RES/drawable-nodpi/"
           cp assets/generated/android/drawable/sounwd_mark.png "$RES/drawable/"
           cp assets/generated/android/drawable/sounwd_launcher_foreground.png "$RES/drawable/"
           cp assets/generated/android/mipmap-anydpi-v26/ic_launcher.xml "$RES/mipmap-anydpi-v26/"
+          # Do not let the old anydpi vector override density-specific PNGs on legacy Android.
+          rm -f "$RES/mipmap-anydpi/ic_launcher.xml"
           rm -f "$RES/drawable/sounwd_mark.xml"
           for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
             mkdir -p "$RES/mipmap-$density"
             cp "assets/generated/android/mipmap-$density/ic_launcher.png" "$RES/mipmap-$density/"
           done
+          test -s "$RES/drawable/sounwd_mark.png"
+          test -s "$RES/mipmap-mdpi/ic_launcher.png"
+          test -s "$RES/mipmap-xxxhdpi/ic_launcher.png"
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+
       - name: Build Android debug APK
-        run: gradle assembleDebug
+        run: gradle --no-daemon assembleDebug
+
       - name: Verify APK was generated
         run: test -s app/build/outputs/apk/debug/app-debug.apk
+
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:

@@ -1,26 +1,29 @@
 # Identidad visual SOUNWD
 
-## Única fuente maestra
+## Imagen maestra única
 
-La única imagen que debes sustituir para renovar toda la iconografía es:
+La fuente oficial es `icon/sounwd-master.png`. Para actualizar la identidad visual, sustituye ese archivo conservando su nombre y ruta. Se recomienda PNG cuadrado de al menos 1024 × 1024 píxeles.
 
-`icon/sounwd-master.png`
-
-La imagen maestra oficial ya está incorporada al repositorio. Para futuras actualizaciones, reemplaza ese PNG manteniendo el mismo nombre y ruta. Se recomienda una resolución mínima de 1024 × 1024.
-
-## Regenerar todos los formatos
+## Regeneración
 
 Desde la raíz del repositorio:
 
 ```bash
 python -m pip install Pillow
 python tools/generate_icons.py
+python -m unittest discover -s tools -p 'test_*.py' -v
 ```
 
-El generador produce recursos para Android (logo dentro de la app, adaptive icon y densidades mdpi–xxxhdpi), Windows (.ico multirresolución), Linux (PNG), macOS (.icns) y web/PWA (favicons y tamaños de instalación) dentro de `assets/generated/`.
+El generador crea recursos en `assets/generated/` para:
 
-No edites manualmente los archivos generados: se sobrescriben en cada ejecución. Edita o reemplaza solo `icon/sounwd-master.png`.
+- Android: logo dentro de la app, adaptive launcher icon y PNG de respaldo para mdpi, hdpi, xhdpi, xxhdpi y xxxhdpi.
+- Windows: ICO multirresolución.
+- Linux: PNG de 512 × 512.
+- macOS: ICNS.
+- Web/PWA: favicon y PNG de 16, 32, 48, 180, 192 y 512 píxeles.
 
-## Integración
+Los recursos generados se eliminan y reconstruyen en cada ejecución para evitar restos de versiones anteriores. No los edites manualmente.
 
-El workflow de Android ejecuta el generador desde la raíz del repositorio e instala los recursos en `app/src/main/res/` antes de compilar. El icono de la pantalla principal y el icono del launcher proceden del mismo PNG maestro.
+## Integración actual
+
+El workflow **SOUNWD Android Beta** ejecuta pruebas del generador, instala los recursos Android y compila el APK. Los formatos de escritorio y web se generan, pero su empaquetado debe integrarse en los workflows de publicación de cada plataforma; generar un archivo no significa que ya esté incluido en un instalador.

@@ -1,18 +1,26 @@
 #!/usr/bin/env python3
-"""Generate every SOUNWD platform icon from icon/sounwd-master.png.
+"""Generate SOUNWD platform icons from the single master PNG.
 
-Install: python -m pip install Pillow
-Run:     python tools/generate_icons.py
+Usage:
+    python -m pip install Pillow
+    python tools/generate_icons.py
 """
+from __future__ import annotations
+
+import shutil
 from pathlib import Path
+from typing import Final
+
 from PIL import Image, ImageOps
 
-ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "icon" / "sounwd-master.png"
-OUT = ROOT / "assets" / "generated"
+ROOT: Final = Path(__file__).resolve().parents[1]
+SOURCE: Final = ROOT / "icon" / "sounwd-master.png"
+OUT: Final = ROOT / "assets" / "generated"
+MIN_SIZE: Final = 256
 
 
 def square_cover(image: Image.Image, size: int) -> Image.Image:
+    """Fill a square canvas, cropping equally around the center."""
     return ImageOps.fit(
         image.convert("RGBA"),
         (size, size),
@@ -21,34 +29,43 @@ def square_cover(image: Image.Image, size: int) -> Image.Image:
     )
 
 
-def square_contain(image: Image.Image, size: int, safe: float = 1.0) -> Image.Image:
+def square_contain(image: Image.Image, size: int, safe_area: float = 1.0) -> Image.Image:
+    """Fit the full artwork inside a transparent square canvas."""
+    if not 0 < safe_area <= 1:
+        raise ValueError("safe_area must be greater than 0 and at most 1")
+
     canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    max_side = int(size * safe)
-    art = image.copy()
-    art.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
-    canvas.alpha_composite(art, ((size - art.width) // 2, (size - art.height) // 2))
+    max_side = round(size * safe_area)
+    artwork = image.convert("RGBA").copy()
+    artwork.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+    canvas.alpha_composite(
+        artwork,
+        ((size - artwork.width) // 2, (size - artwork.height) // 2),
+    )
     return canvas
 
 
-def save_android(master: Image.Image) -> None:
-    root = OUT / "android"
-    (root / "drawable-nodpi").mkdir(parents=True, exist_ok=True)
-    (root / "drawable").mkdir(parents=True, exist_ok=True)
-    (root / "mipmap-anydpi-v26").mkdir(parents=True, exist_ok=True)
+def save_android(master: Image.Image, output: Path) -> None:
+    """Write Android in-app, adaptive launcher and legacy density assets."""
+    root = output / "android"
+    nodpi = root / "drawable-nodpi"
+    drawable = root / "drawable"
+    adaptive = root / "mipmap-anydpi-v26"
+    for directory in (nodpi, drawable, adaptive):
+        directory.mkdir(parents=True, exist_ok=True)
 
-    # The same un-cropped master is used by the in-app logo.
-    master.save(root / "drawable-nodpi" / "sounwd_master.png", optimize=True)
-    master.save(root / "drawable" / "sounwd_mark.png", optimize=True)
-
-    # Adaptive launcher icon keeps the artwork inside Android's safe area.
-    square_contain(master, 432, 0.64).save(
-        root / "drawable" / "sounwd_launcher_foreground.png", optimize=True
+    master.save(nodpi / "sounwd_master.png", optimize=True)
+    master.save(drawable / "sounwd_mark.png", optimize=True)
+    square_contain(master, 432, safe_area=0.64).save(
+        drawable / "sounwd_launcher_foreground.png", optimize=True
     )
-    (root / "mipmap-anydpi-v26" / "ic_launcher.xml").write_text(
-        '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
-        '    <background android:drawable="@color/sounwd_icon_background" />\n'
-        '    <foreground android:drawable="@drawable/sounwd_launcher_foreground" />\n'
-        '</adaptive-icon>\n',
+
+    (adaptive / "ic_launcher.xml").write_text(
+        '<?xml version="1.0" encoding="utf-8"?>\\n'
+        '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\\n'
+        '    <background android:drawable="@color/sounwd_icon_background" />\\n'
+        '    <foreground android:drawable="@drawable/sounwd_launcher_foreground" />\\n'
+        '</adaptive-icon>\\n',
         encoding="utf-8",
     )
 
@@ -64,44 +81,61 @@ def save_android(master: Image.Image) -> None:
         square_cover(master, pixels).save(folder / "ic_launcher.png", optimize=True)
 
 
-def main() -> None:
-    if not SOURCE.is_file():
-        raise SystemExit(
-            f"Missing master image: {SOURCE.relative_to(ROOT)}. "
-            "Put the approved master artwork at that exact path and rerun."
+def generate(source: Path = SOURCE, output: Path = OUT) -> None:
+    """Validate the master artwork and regenerate all platform assets."""
+    if not source.is_file():
+        raise FileNotFoundError(
+            f"Master image not found: {source}. "
+            "Place the approved image at icon/sounwd-master.png."
         )
 
-    with Image.open(SOURCE) as opened:
+    with Image.open(source) as opened:
+        opened.load()
         master = opened.convert("RGBA")
-    if master.width < 256 or master.height < 256:
-        raise SystemExit("Master image must be at least 256 x 256 pixels.")
 
-    OUT.mkdir(parents=True, exist_ok=True)
-    master.save(OUT / "sounwd-master.png", optimize=True)
+    if min(master.size) < MIN_SIZE:
+        raise ValueError(
+            f"Master image must be at least {MIN_SIZE}x{MIN_SIZE}; "
+            f"received {master.width}x{master.height}."
+        )
 
-    windows = OUT / "windows"
-    windows.mkdir(parents=True, exist_ok=True)
+    # Avoid stale files surviving when output formats or sizes change.
+    if output.exists():
+        shutil.rmtree(output)
+    output.mkdir(parents=True)
+
+    master.save(output / "sounwd-master.png", optimize=True)
+
+    windows = output / "windows"
+    windows.mkdir()
     square_cover(master, 256).save(
         windows / "SOUNWD.ico",
         format="ICO",
-        sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)],
+        sizes=[(16, 16), (24, 24), (32, 32), (48, 48),
+               (64, 64), (128, 128), (256, 256)],
     )
 
-    linux = OUT / "linux"
-    linux.mkdir(parents=True, exist_ok=True)
+    linux = output / "linux"
+    linux.mkdir()
     square_cover(master, 512).save(linux / "sounwd.png", optimize=True)
 
-    macos = OUT / "macos"
-    macos.mkdir(parents=True, exist_ok=True)
+    macos = output / "macos"
+    macos.mkdir()
     square_cover(master, 1024).save(macos / "SOUNWD.icns", format="ICNS")
 
-    web = OUT / "web"
-    web.mkdir(parents=True, exist_ok=True)
+    web = output / "web"
+    web.mkdir()
     for pixels in (16, 32, 48, 180, 192, 512):
-        square_cover(master, pixels).save(web / f"icon-{pixels}.png", optimize=True)
+        square_cover(master, pixels).save(
+            web / f"icon-{pixels}.png", optimize=True
+        )
     square_cover(master, 32).save(web / "favicon.ico", format="ICO")
 
-    save_android(master)
+    save_android(master, output)
+
+
+def main() -> None:
+    generate()
     print(f"Generated SOUNWD icons from {SOURCE.relative_to(ROOT)} into {OUT.relative_to(ROOT)}")
 
 

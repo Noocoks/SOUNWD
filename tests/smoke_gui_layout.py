@@ -37,7 +37,7 @@ try:
     if app._window_icon is None:
         raise AssertionError("The shared icon PNG was not loaded")
     if str(app.brand_mark.cget("image")) != str(app._brand_image):
-        raise AssertionError("The visible logo is not using the committed PNG PhotoImage")
+        raise AssertionError("The visible logo is not using the HiDPI-aware image derived from the committed PNG")
     icon_path = ROOT / "assets" / "sounwd.png"
     if not icon_path.is_file() or icon_path.stat().st_size < 1000:
         raise AssertionError("The committed canonical brand PNG is missing or invalid")

@@ -10,6 +10,7 @@ on:
   pull_request:
     paths:
       - "android/**"
+      - "assets/**"
       - ".github/workflows/android.yml"
   workflow_dispatch:
 

@@ -177,6 +177,7 @@ class SoundwApp(ctk.CTk):
         except (AttributeError, OSError, tkinter.TclError):
             # The embedded executable icon remains a fallback if the shell API
             # is unavailable on an unusual Windows installation.
+            pass
 
     def _build_ui(self) -> None:
         self.grid_columnconfigure(0, weight=1)

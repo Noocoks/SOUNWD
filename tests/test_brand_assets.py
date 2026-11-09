@@ -19,6 +19,8 @@ for name in ("icon.png","foreground.png","background.png","brand.png"):
     assert (android / name).is_file(), name
 assert Image.open(android / "brand.png").convert("RGBA").size == master.size
 assert Image.open(android / "icon.png").size == (512,512)
+desktop_spec = (ROOT / "SOUNWD.spec").read_text(encoding="utf-8")
+assert '("assets/sounwd.ico", "assets")' in desktop_spec, "Windows runtime ICO must be bundled for WM_SETICON"
 spec = (ROOT / "android" / "buildozer.spec").read_text(encoding="utf-8")
 for setting in (
     "icon.filename = assets/generated/android/icon.png",

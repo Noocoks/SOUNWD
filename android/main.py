@@ -40,7 +40,9 @@ if _STARTUP_LOG is not None:
 def _log_startup(message):
     if _STARTUP_LOG is not None:
         try:
-            _STARTUP_LOG.write("\n[SOUNWD] " + message + "\n")
+            _STARTUP_LOG.write("
+[SOUNWD] " + message + "
+")
             _STARTUP_LOG.flush()
         except Exception:
             pass
@@ -72,7 +74,9 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.checkbox import CheckBox
 from kivy.uix.gridlayout import GridLayout
-from kivy.uix.label import Label\nfrom kivy.uix.image import Image as KivyImage\nfrom kivy.uix.anchorlayout import AnchorLayout
+from kivy.uix.label import Label
+from kivy.uix.image import Image as KivyImage
+from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.popup import Popup
 from kivy.uix.progressbar import ProgressBar
 from kivy.core.clipboard import Clipboard
@@ -120,7 +124,9 @@ class SOUNWDApp(App):
         body=BoxLayout(orientation="vertical",size_hint_y=None,spacing=dp(11),padding=[0,0,0,dp(12)])
         body.bind(minimum_height=body.setter("height"))
         brand=BoxLayout(orientation="vertical",size_hint_y=None,height=dp(100),spacing=0)
-        logo_slot=AnchorLayout(anchor_x="center", anchor_y="center", size_hint_y=None, height=dp(58))\n        logo_slot.add_widget(KivyImage(source=str(Path(__file__).resolve().parent / "assets" / "generated" / "android" / "brand.png"), size_hint=(None,None), size=(dp(58),dp(58),), allow_stretch=True, keep_ratio=True))\n        brand.add_widget(logo_slot)
+        logo_slot=AnchorLayout(anchor_x="center", anchor_y="center", size_hint_y=None, height=dp(58))
+        logo_slot.add_widget(KivyImage(source=str(Path(__file__).resolve().parent / "assets" / "generated" / "android" / "brand.png"), size_hint=(None,None), size=(dp(58),dp(58),), allow_stretch=True, keep_ratio=True))
+        brand.add_widget(logo_slot)
         brand.add_widget(self.label("SOUNWD.",27,TEXT,True,dp(38)))
         brand.add_widget(self.label("YOUR SOUND. YOUR MOMENTS.",10,BRAND_MUTED,True,dp(22)))
         body.add_widget(brand)
@@ -190,7 +196,8 @@ class SOUNWDApp(App):
         self.download=self.button("Guardar audio",dp(52),LAVENDER,17); self.download.bind(on_release=self.start_download); action.add_widget(self.download)
         self.share=self.button("Compartir último audio",dp(36),(55/255,48/255,67/255,1)); self.share.bind(on_release=self.share_last); action.add_widget(self.share)
         body.add_widget(action)
-        body.add_widget(self.label("Descarga solo contenido que tengas permiso para guardar.\nSOUNWD no descarga música desde Spotify.",10,MUTED,False,dp(42)))
+        body.add_widget(self.label("Descarga solo contenido que tengas permiso para guardar.
+SOUNWD no descarga música desde Spotify.",10,MUTED,False,dp(42)))
         scroll.add_widget(body); root.add_widget(scroll)
         _log_startup('main interface constructed')
         Window.bind(on_resize=self.on_resize)

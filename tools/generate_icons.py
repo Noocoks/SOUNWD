@@ -61,11 +61,11 @@ def save_android(master: Image.Image, output: Path) -> None:
     )
 
     (adaptive / "ic_launcher.xml").write_text(
-        '<?xml version="1.0" encoding="utf-8"?>\\n'
-        '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\\n'
-        '    <background android:drawable="@color/sounwd_icon_background" />\\n'
-        '    <foreground android:drawable="@drawable/sounwd_launcher_foreground" />\\n'
-        '</adaptive-icon>\\n',
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
+        '    <background android:drawable="@color/sounwd_icon_background" />\n'
+        '    <foreground android:drawable="@drawable/sounwd_launcher_foreground" />\n'
+        '</adaptive-icon>\n',
         encoding="utf-8",
     )
 

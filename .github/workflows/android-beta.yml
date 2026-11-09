@@ -4,13 +4,13 @@ on:
   push:
     branches: [beta/android-minimal-screen]
     paths:
-      - 'beta-android/**'
+      - 'app/**'
       - 'icon/**'
       - 'tools/generate_icons.py'
       - '.github/workflows/android-beta.yml'
   pull_request:
     paths:
-      - 'beta-android/**'
+      - 'app/**'
       - 'icon/**'
       - 'tools/generate_icons.py'
       - '.github/workflows/android-beta.yml'
@@ -29,22 +29,21 @@ jobs:
           python-version: '3.11'
       - name: Install icon generator dependency
         run: python -m pip install Pillow
-      - name: Generate Android icons when the master artwork is present
+      - name: Generate and install Android icons
         shell: bash
         run: |
-          if [ -f icon/sounwd-master.png ]; then
-            python tools/generate_icons.py
-            RES=beta-android/app/src/main/res
-            cp assets/generated/android/drawable-nodpi/sounwd_master.png "$RES/drawable-nodpi/"
-            cp assets/generated/android/drawable/sounwd_launcher_foreground.png "$RES/drawable/"
-            cp assets/generated/android/mipmap-anydpi-v26/ic_launcher.xml "$RES/mipmap-anydpi-v26/"
-            for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
-              mkdir -p "$RES/mipmap-$density"
-              cp "assets/generated/android/mipmap-$density/ic_launcher.png" "$RES/mipmap-$density/"
-            done
-          else
-            echo "::warning::icon/sounwd-master.png is not present yet; building with the currently committed Android artwork."
-          fi
+          python tools/generate_icons.py
+          RES=app/src/main/res
+          mkdir -p "$RES/drawable" "$RES/drawable-nodpi" "$RES/mipmap-anydpi-v26"
+          cp assets/generated/android/drawable-nodpi/sounwd_master.png "$RES/drawable-nodpi/"
+          cp assets/generated/android/drawable/sounwd_mark.png "$RES/drawable/"
+          cp assets/generated/android/drawable/sounwd_launcher_foreground.png "$RES/drawable/"
+          cp assets/generated/android/mipmap-anydpi-v26/ic_launcher.xml "$RES/mipmap-anydpi-v26/"
+          rm -f "$RES/drawable/sounwd_mark.xml"
+          for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            mkdir -p "$RES/mipmap-$density"
+            cp "assets/generated/android/mipmap-$density/ic_launcher.png" "$RES/mipmap-$density/"
+          done
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -54,13 +53,12 @@ jobs:
         with:
           gradle-version: '8.9'
       - name: Build Android debug APK
-        working-directory: beta-android
         run: gradle assembleDebug
       - name: Verify APK was generated
-        run: test -s beta-android/app/build/outputs/apk/debug/app-debug.apk
+        run: test -s app/build/outputs/apk/debug/app-debug.apk
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
           name: sounwd-beta-debug
-          path: beta-android/app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error

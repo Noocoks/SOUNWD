@@ -52,7 +52,8 @@ Por defecto, los archivos se guardan en **Descargas** y en formato **MP3**. Pued
 - `src/cli.py`: versión de terminal.
 - `bootstrap.py`: instalador de dependencias.
 - `android/main.py` y `android/buildozer.spec`: versión Android Kivy heredada.
-- `beta-android/`: beta Android nativa Kotlin/Gradle.
+- `app/`: aplicación Android beta nativa Kotlin/Gradle.
+- `build.gradle.kts` y `settings.gradle.kts`: configuración Gradle de la beta Android.
 - `tools/generate_icons.py`: generador multiplataforma de iconos.
 - `.github/workflows/build.yml`: compilación Windows/Linux.
 - `.github/workflows/android-beta.yml`: compilación Android beta.

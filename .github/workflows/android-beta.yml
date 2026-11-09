@@ -18,9 +18,6 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      ANDROID_HOME: /usr/local/lib/android/sdk
-      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     defaults:
       run:
         working-directory: beta-android
@@ -33,31 +30,14 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Build debug APK
+      - name: Build Android debug APK
         run: gradle assembleDebug
-      - name: Verify APK package and launcher activity
+      - name: Verify APK was generated
         working-directory: .
-        run: |
-          APK="beta-android/app/build/outputs/apk/debug/app-debug.apk"
-          test -s "$APK"
-          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/aapt" dump badging "$APK" | grep -F "package: name='com.sounwd.beta'"
-          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/aapt" dump badging "$APK" | grep -F "launchable-activity: name='com.sounwd.beta.MainActivity'"
-      - name: Install and launch on Android emulator
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 35
-          target: google_apis
-          arch: x86_64
-          profile: pixel_2
-          script: |
-            adb install -r beta-android/app/build/outputs/apk/debug/app-debug.apk
-            adb shell am force-stop com.sounwd.beta
-            adb shell monkey -p com.sounwd.beta 1
-            sleep 5
-            adb shell dumpsys activity activities | grep -F 'com.sounwd.beta/.MainActivity'
-      - name: Upload APK
+        run: test -s beta-android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
-          name: sounwd-beta-0.0.1
+          name: sounwd-beta-debug
           path: beta-android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error

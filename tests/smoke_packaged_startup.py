@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import signal
 from pathlib import Path
 import subprocess
 import sys
@@ -21,11 +22,18 @@ def main() -> int:
         ready_file = Path(temp_dir) / "ready"
         env = os.environ.copy()
         env["SOUNWD_SMOKE_READY_FILE"] = str(ready_file)
+        popen_options = {}
+        if os.name == "nt":
+            popen_options["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+        else:
+            popen_options["start_new_session"] = True
+
         process = subprocess.Popen(
             [str(executable)],
             env=env,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
+            **popen_options,
         )
         try:
             deadline = time.monotonic() + 25
@@ -45,11 +53,35 @@ def main() -> int:
             raise AssertionError("SOUNWD did not finish startup within 25 seconds")
         finally:
             if process.poll() is None:
-                process.terminate()
+                if os.name == "nt":
+                    # PyInstaller one-file starts a child process; terminate the
+                    # complete process tree, not only the bootloader parent.
+                    subprocess.run(
+                        ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        check=False,
+                    )
+                else:
+                    try:
+                        os.killpg(process.pid, signal.SIGTERM)
+                    except ProcessLookupError:
+                        pass
                 try:
                     process.wait(timeout=5)
                 except subprocess.TimeoutExpired:
-                    process.kill()
+                    if os.name == "nt":
+                        subprocess.run(
+                            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL,
+                            check=False,
+                        )
+                    else:
+                        try:
+                            os.killpg(process.pid, signal.SIGKILL)
+                        except ProcessLookupError:
+                            pass
                     process.wait(timeout=5)
 
 

@@ -69,6 +69,7 @@ def _save_atomic(image: Image.Image, path: Path, image_format: str, **kwargs) ->
     temporary = Path(temporary_name)
     try:
         image.save(temporary, format=image_format, **kwargs)
+        os.chmod(temporary, 0o644)
         temporary.replace(path)
     finally:
         temporary.unlink(missing_ok=True)

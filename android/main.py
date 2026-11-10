@@ -1,6 +1,7 @@
 from __future__ import annotations
 import faulthandler
 import os
+import re
 import queue
 import sys
 import threading
@@ -96,9 +97,35 @@ HOSTS={"youtube.com","www.youtube.com","music.youtube.com","m.youtube.com","yout
 
 def valid_url(value):
     try:
-        p=urlparse(value.strip()); host=(p.hostname or "").lower()
-        return p.scheme in {"http","https"} and (host in HOSTS or any(host.endswith("."+h) for h in HOSTS))
-    except ValueError: return False
+        if not isinstance(value, str) or len(value) > 2048 or any(ord(c) < 32 for c in value):
+            return False
+        p = urlparse(value.strip())
+        host = (p.hostname or "").lower()
+        return (
+            p.scheme == "https"
+            and host in HOSTS
+            and p.username is None
+            and p.password is None
+            and p.port in (None, 443)
+        )
+    except (ValueError, AttributeError):
+        return False
+
+
+def safe_output_template(value):
+    value = (value or "").strip() or "%(title)s.%(ext)s"
+    if len(value) > 200 or "/" in value or "\\" in value or ".." in value:
+        raise ValueError("La plantilla solo puede definir un nombre de archivo, no una ruta.")
+    allowed_fields = {"title", "id", "uploader", "channel", "playlist", "playlist_index", "ext"}
+    tokens = re.findall(r"%\\(([^)]+)\\)s", value)
+    if any(token not in allowed_fields for token in tokens):
+        raise ValueError("La plantilla contiene campos no permitidos.")
+    remainder = re.sub(r"%\\([^)]+\\)s", "", value)
+    if "%" in remainder or re.search(r'[<>:"|?*\\x00-\\x1f]', remainder):
+        raise ValueError("La plantilla contiene caracteres no permitidos.")
+    if remainder.endswith((".", " ")):
+        raise ValueError("El nombre no puede terminar en punto o espacio.")
+    return value
 
 class Panel(BoxLayout):
     def __init__(self, **kwargs):
@@ -268,14 +295,19 @@ class SOUNWDApp(App):
                 elif data.get("status")=="finished" and data.get("filename"):
                     downloaded_paths.add(Path(data["filename"]).expanduser().resolve())
 
-            template=advanced["output_template"] or "%(title)s.%(ext)s"
-            template_path=Path(template).expanduser()
-            if not template_path.is_absolute():
-                template_path=self.private_dir/template_path
+            template = safe_output_template(advanced["output_template"])
+            if advanced["retries"]:
+                if not advanced["retries"].isdigit() or int(advanced["retries"]) > 20:
+                    raise ValueError("Los reintentos deben estar entre 0 y 20.")
+            if advanced["limit_rate"] and not re.fullmatch(r"\\d+(?:\\.\\d+)?[KMG]?", advanced["limit_rate"], re.I):
+                raise ValueError("El límite de velocidad debe ser un valor como 500K o 2M.")
+            if advanced["playlist_items"] and not re.fullmatch(r"\\d+(?:-\\d+)?(?:,\\d+(?:-\\d+)?)*", advanced["playlist_items"]):
+                raise ValueError("La selección de elementos de lista no tiene un formato válido.")
             options={"format":advanced["ydl_format"] or selector,
-                     "outtmpl":str(template_path),
+                     "outtmpl":str(self.private_dir/template),
                      "noplaylist":not playlist,"quiet":True,"no_warnings":True,
-                     "progress_hooks":[hook],"overwrites":False}
+                     "progress_hooks":[hook],"overwrites":False,
+                     "restrictfilenames":True,"windowsfilenames":True}
             if advanced["playlist_items"]: options["playlist_items"]=advanced["playlist_items"]
             if advanced["limit_rate"]: options["ratelimit"]=advanced["limit_rate"]
             if advanced["retries"]: options["retries"]=max(0,int(advanced["retries"]))

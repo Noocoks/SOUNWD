@@ -39,12 +39,13 @@ jobs:
         run: |
           python -m unittest discover -s tests -p 'test_security.py' -v
           python -m unittest discover -s tests -p 'test_android_security.py' -v
+          python tests/test_brand_assets.py
       - name: Audit Python dependencies
         run: |
           pip-audit --strict
           pip-audit -r android/requirements-audit.txt --strict
       - name: Static security analysis
-        run: bandit -r src android bootstrap.py -ll -s B404,B603,B607
+        run: bandit -r src android assets/build_brand_assets.py bootstrap.py -ll -s B404,B603,B607
       - name: Compile every Python source
         run: |
           python -m compileall -q src android bootstrap.py tests

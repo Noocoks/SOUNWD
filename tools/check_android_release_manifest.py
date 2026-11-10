@@ -22,6 +22,8 @@ for path in release_manifests:
     assert application is not None, f"Missing application in {path}"
     assert application.get(ANDROID + "debuggable", "false").lower() != "true", f"Release manifest is debuggable: {path}"
     assert application.get(ANDROID + "allowBackup", "true").lower() == "false", f"Release manifest enables backup: {path}"
+    assert application.get(ANDROID + "fullBackupContent") == "@xml/backup_rules", f"Missing legacy backup rules: {path}"
+    assert application.get(ANDROID + "dataExtractionRules") == "@xml/data_extraction_rules", f"Missing Android 12+ backup rules: {path}"
     assert application.get(ANDROID + "usesCleartextTraffic", "true").lower() == "false", f"Release manifest allows cleartext: {path}"
     assert application.get(ANDROID + "networkSecurityConfig") == "@xml/network_security_config", f"Missing network security config: {path}"
 

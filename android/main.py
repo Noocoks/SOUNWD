@@ -318,10 +318,14 @@ class SOUNWDApp(App):
                 if len(files) > 500:
                     raise RuntimeError("Puedes exportar un máximo de 500 archivos por descarga.")
                 MediaStoreBridge.beginExportBatch()
-                for path in files:
-                    uri=MediaStoreBridge.exportAudio(str(self.private_dir),str(path),collection)
-                    if uri:
-                        saved.append(str(uri))
+                try:
+                    for path in files:
+                        uri=MediaStoreBridge.exportAudio(str(self.private_dir),str(path),collection)
+                        if uri:
+                            saved.append(str(uri))
+                except Exception:
+                    MediaStoreBridge.abortExportBatch()
+                    raise
                 if not saved:
                     raise RuntimeError("Android no ha podido exportar el audio a MediaStore.")
             else:

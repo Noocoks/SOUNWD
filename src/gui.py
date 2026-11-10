@@ -26,7 +26,13 @@ if _boot_splash is not None:
 
 import customtkinter as ctk
 from yt_dlp_support import youtube_runtime_options
-from security import (\n    MAX_PREFERENCES_BYTES,\n    copy_downloaded_files,\n    sanitize_preferences,\n    validate_advanced_options,\n    validate_youtube_url,\n)
+from security import (
+    MAX_PREFERENCES_BYTES,
+    copy_downloaded_files,
+    sanitize_preferences,
+    validate_advanced_options,
+    validate_youtube_url,
+)
 
 
 APP_NAME = "SOUNWD"

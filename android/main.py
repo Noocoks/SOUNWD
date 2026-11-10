@@ -338,6 +338,13 @@ class SOUNWDApp(App):
                     raise
                 if not saved:
                     raise RuntimeError("Android no ha podido exportar el audio a MediaStore.")
+                # Once safely published, remove the duplicate private copy.
+                for path in files:
+                    if is_path_within(path,self.private_dir):
+                        try:
+                            path.unlink(missing_ok=True)
+                        except OSError:
+                            pass
             else:
                 saved=[str(path.resolve()) for path in files]
             self.events.put(("done",saved))

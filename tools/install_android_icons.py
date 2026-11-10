@@ -16,10 +16,17 @@ def copy_resource(source: Path, destination_dir: Path) -> None:
     if destination_dir.is_symlink():
         raise ValueError(f"Android resource directory must not be a symbolic link: {destination_dir}")
     destination_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(source, destination_dir / source.name)
+    destination = destination_dir / source.name
+    if destination.is_symlink():
+        destination.unlink()
+    elif destination.exists() and not destination.is_file():
+        raise ValueError(f"Android resource destination is not a regular file: {destination}")
+    shutil.copy2(source, destination)
 
 
 def install() -> None:
+    if RES.is_symlink():
+        raise ValueError(f"Android resources root must not be a symbolic link: {RES}")
     generate()
     generated = OUT / "android"
 

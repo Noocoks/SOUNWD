@@ -42,17 +42,27 @@ def is_supported_youtube_url(value: str) -> bool:
 
 
 def safe_output_template(value: str) -> str:
-    value = (value or "").strip() or "%(title)s.%(ext)s"
-    if len(value) > 200 or "/" in value or "\\" in value or ".." in value:
+    if not isinstance(value, str) or len(value) > 180:
+        raise ValueError("La plantilla de nombre es demasiado larga.")
+    value = value.strip() or "%(title)s.%(ext)s"
+    if value.startswith(("/", "\\")) or "/" in value or "\\" in value or ":" in value or ".." in value:
         raise ValueError("La plantilla solo puede definir un nombre de archivo, no una ruta.")
+    if any(ord(char) < 32 or ord(char) == 127 or unicodedata.category(char) in {"Cc", "Cf"}
+           for char in value):
+        raise ValueError("La plantilla contiene caracteres de control.")
     tokens = _TEMPLATE_TOKEN.findall(value)
     if any(token not in _ALLOWED_TEMPLATE_FIELDS for token in tokens):
         raise ValueError("La plantilla contiene campos de yt-dlp no permitidos.")
     remainder = _TEMPLATE_TOKEN.sub("", value)
-    if "%" in remainder or re.search(r'[<>:"|?*\x00-\x1f]', remainder):
+    if "%" in remainder or any(not (char.isalnum() or char in " _().-") for char in remainder):
         raise ValueError("La plantilla contiene caracteres no permitidos.")
     if value.endswith((".", " ")):
         raise ValueError("El nombre no puede terminar en punto o espacio.")
+    stem = value.split(".", 1)[0].upper()
+    reserved = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)),
+                *(f"LPT{i}" for i in range(1, 10))}
+    if stem in reserved:
+        raise ValueError("La plantilla utiliza un nombre reservado.")
     return value
 
 

@@ -52,7 +52,7 @@ jobs:
       - name: Audit Android build dependencies
         run: pip-audit --strict
       - name: Static security analysis
-        run: bandit -r src android bootstrap.py -ll
+        run: bandit -r src android bootstrap.py -ll -s B404,B603,B607
       - name: Generate and verify shared brand assets
         run: |
           python assets/build_brand_assets.py

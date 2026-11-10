@@ -59,12 +59,13 @@ jobs:
           set -euo pipefail
           python tools/generate_icons.py
           RES=app/src/main/res
-          mkdir -p "$RES/drawable" "$RES/drawable-nodpi" "$RES/mipmap-anydpi-v26" "$RES/values"
+          mkdir -p "$RES/drawable" "$RES/drawable-nodpi" "$RES/mipmap-anydpi" "$RES/values"
           cp assets/generated/android/drawable-nodpi/sounwd_master.png "$RES/drawable-nodpi/"
           cp assets/generated/android/drawable/sounwd_mark.png "$RES/drawable/"
           cp assets/generated/android/drawable/sounwd_launcher_foreground.png "$RES/drawable/"
-          cp assets/generated/android/mipmap-anydpi-v26/ic_launcher.xml "$RES/mipmap-anydpi-v26/"
-          # Do not let the old anydpi vector override density-specific PNGs on legacy Android.
+          cp assets/generated/android/mipmap-anydpi/ic_launcher.xml "$RES/mipmap-anydpi-v26/"
+          # The app targets Android 10+, so the adaptive icon needs no v26 qualifier.
+          rm -f "$RES/mipmap-anydpi-v26/ic_launcher.xml"
           rm -f "$RES/mipmap-anydpi/ic_launcher.xml"
           rm -f "$RES/drawable/sounwd_mark.xml"
           for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do

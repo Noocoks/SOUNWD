@@ -11,6 +11,7 @@ on:
   pull_request:
     paths:
       - "android/**"
+      - "beta-android/app/src/main/java/**"
       - "assets/**"
       - ".github/workflows/android.yml"
   workflow_dispatch:

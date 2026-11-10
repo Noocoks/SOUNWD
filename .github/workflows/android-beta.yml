@@ -2,7 +2,7 @@ name: SOUNWD Android Beta
 
 on:
   push:
-    branches: [beta/android-minimal-screen, review/icon-pipeline-hardening]
+    branches: [beta/android-minimal-screen]
     paths:
       - 'app/**'
       - 'icon/**'

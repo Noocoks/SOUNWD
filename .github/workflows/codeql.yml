@@ -2,7 +2,7 @@ name: SOUNWD CodeQL Security Analysis
 
 on:
   push:
-    branches: [beta/android-minimal-screen, review/icon-pipeline-hardening]
+    branches: [beta/android-minimal-screen]
   pull_request:
     branches: [beta/android-minimal-screen]
   schedule:

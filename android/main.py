@@ -275,7 +275,7 @@ class SOUNWDApp(App):
             def hook(data):
                 if data.get("status")=="downloading":
                     info = data.get("info_dict") or {}
-                    key = str(info.get("id") or data.get("filename") or "unknown")
+                    key = str(data.get("filename") or info.get("id") or "unknown")
                     got = int(data.get("downloaded_bytes") or 0)
                     downloaded_sizes[key] = max(downloaded_sizes.get(key, 0), got)
                     if sum(downloaded_sizes.values()) > batch_limit_bytes:

@@ -5,6 +5,8 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.os.Build
+import android.view.WindowInsetsController
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -24,9 +26,23 @@ private object Brand {
 class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = Brand.BG
-        window.navigationBarColor = Brand.BG
-        window.decorView.systemUiVisibility = 0
+        if (Build.VERSION.SDK_INT < 35) {
+            @Suppress("DEPRECATION")
+            run {
+                window.statusBarColor = Brand.BG
+                window.navigationBarColor = Brand.BG
+            }
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.insetsController?.setSystemBarsAppearance(
+                0,
+                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
+                    WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            run { window.decorView.systemUiVisibility = 0 }
+        }
 
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(Brand.BG) }
         val scroll = ScrollView(this).apply {

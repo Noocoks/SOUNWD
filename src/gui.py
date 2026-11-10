@@ -610,29 +610,26 @@ class SoundwApp(ctk.CTk):
             elif data.get("status") == "finished":
                 self.events.put(("progress", (0.98, "Preparando el archivo…")))
 
-        retry_count = None
-        if advanced["retries"]:
-            try:
-                retry_count = int(advanced["retries"])
-                if retry_count < 0:
-                    raise ValueError
-            except ValueError:
-                self.events.put(("error", "El número de reintentos debe ser un entero igual o mayor que cero."))
-                return
         try:
+            # Validate all user-controlled values before loading or invoking yt-dlp.
             validate_youtube_url(url)
+            safe_advanced = validate_advanced_options(advanced)
+            filename = "%(title)s" if filename_choice == "Solo título" else "%(title)s - %(uploader)s"
+            output_template = safe_advanced["outtmpl"]
+            if not advanced["outtmpl"]:
+                output_template = filename + ".%(ext)s"
+            safe_output_path = build_output_path(destination, output_template)
+        except ValueError as error:
+            self.events.put(("error", str(error)))
+            return
+
+        try:
             # Heavy downloader/post-processing packages are loaded only when needed;
             # this keeps the first window responsive and reduces perceived startup.
             import imageio_ffmpeg
             import yt_dlp
 
             quality = {"Máxima": "0", "Alta": "192", "Normal": "128"}.get(quality_choice, "0")
-            filename = "%(title)s" if filename_choice == "Solo título" else "%(title)s - %(uploader)s"
-            safe_advanced = validate_advanced_options(advanced)
-            output_template = safe_advanced["outtmpl"]
-            if not advanced["outtmpl"]:
-                output_template = filename + ".%(ext)s"
-            safe_output_path = build_output_path(destination, output_template)
             options = {
                 **youtube_runtime_options(),
                 "format": safe_advanced["format"] or "bestaudio/best",

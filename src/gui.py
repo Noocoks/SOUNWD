@@ -475,7 +475,7 @@ class SoundwApp(ctk.CTk):
 
     def _load_preferences(self) -> dict:
         try:
-            if PREFERENCES_FILE.is_symlink() or not PREFERENCES_FILE.is_file():
+            if CONFIG_DIR.is_symlink() or PREFERENCES_FILE.is_symlink() or not PREFERENCES_FILE.is_file():
                 return {}
             if PREFERENCES_FILE.stat().st_size > MAX_PREFERENCES_BYTES:
                 return {}

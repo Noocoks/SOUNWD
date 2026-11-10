@@ -620,6 +620,7 @@ class SoundwApp(ctk.CTk):
                 self.events.put(("error", "El número de reintentos debe ser un entero igual o mayor que cero."))
                 return
         try:
+            validate_youtube_url(url)
             # Heavy downloader/post-processing packages are loaded only when needed;
             # this keeps the first window responsive and reduces perceived startup.
             import imageio_ffmpeg

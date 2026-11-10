@@ -48,7 +48,7 @@ def square_contain(image: Image.Image, size: int, safe_area: float = 1.0) -> Ima
 
 
 def save_android(master: Image.Image, output: Path) -> None:
-    """Write Android in-app, adaptive launcher, monochrome and density assets."""
+    """Write Android in-app, adaptive launcher and monochrome resources."""
     root = output / "android"
     nodpi = root / "drawable-nodpi"
     adaptive = root / "mipmap-anydpi"

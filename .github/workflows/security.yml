@@ -12,10 +12,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: security-\${{ github.workflow }}-\${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   python-security:
     name: Python regression tests and dependency audit

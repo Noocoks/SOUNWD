@@ -91,50 +91,53 @@ def validate_advanced_options(options: dict) -> None:
 
 
 def copy_downloaded_files(source_dir: Path, destination_dir: Path) -> list[Path]:
-    """Publish only regular audio files using exclusive, no-follow file creation."""
+    """Publish regular audio files exclusively, without following source/destination symlinks."""
     source_dir = Path(source_dir)
     destination_dir = Path(destination_dir).expanduser()
+    if source_dir.is_symlink() or not source_dir.is_dir():
+        raise ValueError("La carpeta temporal de descargas no es segura.")
     if destination_dir.is_symlink():
         raise ValueError("La carpeta de destino no puede ser un enlace simbólico.")
     destination_dir.mkdir(parents=True, exist_ok=True)
     if not destination_dir.is_dir():
         raise ValueError("La carpeta de destino no es un directorio.")
-    saved: list[Path] = []
 
+    saved: list[Path] = []
     for source in sorted(source_dir.iterdir()):
         if source.is_symlink() or not source.is_file() or source.suffix.lower() not in AUDIO_EXTENSIONS:
             continue
         if source.name.endswith((".part", ".ytdl")):
             continue
-        stem, suffix = source.stem, source.suffix
-        for index in range(1000):
-            name = f"{stem}{suffix}" if index == 0 else f"{stem} ({index}){suffix}"
-            target = destination_dir / name
-            flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
-            flags |= getattr(os, "O_NOFOLLOW", 0)
-            try:
-                descriptor = os.open(target, flags, 0o600)
-            except FileExistsError:
-                continue
-            except OSError:
-                raise
-            try:
-                source_flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
-                source_descriptor = os.open(source, source_flags)
-                source_info = os.fstat(source_descriptor)
-                if not stat.S_ISREG(source_info.st_mode):
-                    os.close(source_descriptor)
-                    raise ValueError("El origen de descarga no es un archivo regular.")
-                with os.fdopen(descriptor, "wb") as output, os.fdopen(source_descriptor, "rb") as incoming:
-                    shutil.copyfileobj(incoming, output, length=1024 * 1024)
-                    output.flush()
-                    os.fsync(output.fileno())
-            except Exception:
-                # Do not unlink by pathname after a failed write: another local
-                # process could have replaced that name between the open and cleanup.
-                raise
-            saved.append(target)
-            break
-        else:
-            raise RuntimeError("No se ha encontrado un nombre de archivo libre.")
+
+        source_flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+        source_descriptor = os.open(source, source_flags)
+        try:
+            if not stat.S_ISREG(os.fstat(source_descriptor).st_mode):
+                raise ValueError("El origen de descarga no es un archivo regular.")
+            stem, suffix = source.stem, source.suffix
+            for index in range(1000):
+                name = f"{stem}{suffix}" if index == 0 else f"{stem} ({index}){suffix}"
+                target = destination_dir / name
+                flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+                try:
+                    descriptor = os.open(target, flags, 0o600)
+                except FileExistsError:
+                    continue
+                try:
+                    with os.fdopen(descriptor, "wb") as output, os.fdopen(source_descriptor, "rb") as incoming:
+                        source_descriptor = -1
+                        shutil.copyfileobj(incoming, output, length=1024 * 1024)
+                        output.flush()
+                        os.fsync(output.fileno())
+                except Exception:
+                    # Keep the exclusive target in place rather than unlinking a
+                    # pathname that another local process might have replaced.
+                    raise
+                saved.append(target)
+                break
+            else:
+                raise RuntimeError("No se ha encontrado un nombre de archivo libre.")
+        finally:
+            if source_descriptor >= 0:
+                os.close(source_descriptor)
     return saved

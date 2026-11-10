@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [beta/android-minimal-screen]
   push:
-    branches: [beta/android-minimal-screen, review/icon-pipeline-hardening]
+    branches: [beta/android-minimal-screen]
   schedule:
     - cron: '41 4 * * 1'
   workflow_dispatch:

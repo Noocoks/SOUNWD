@@ -72,8 +72,12 @@ class UnsafeExecutionTests(unittest.TestCase):
                 for node in ast.walk(tree):
                     if isinstance(node, ast.Call):
                         name = node.func.id if isinstance(node.func, ast.Name) else ""
-                        if name in {"eval", "exec"}:
-                            self.fail(f"Dynamic {name} call in {path}:{node.lineno}")
+                        attr = node.func.attr if isinstance(node.func, ast.Attribute) else ""
+                        if name in {"eval", "exec"} or (attr in {"eval", "exec"}):
+                            self.fail(f"Dynamic {name or attr} call in {path}:{node.lineno}")
+                        if isinstance(node.func, ast.Attribute) and node.func.attr in {"system", "popen"}:
+                            if isinstance(node.func.value, ast.Name) and node.func.value.id == "os":
+                                self.fail(f"OS shell API {node.func.attr} in {path}:{node.lineno}")
                         if any(isinstance(arg, ast.keyword) and arg.arg == "shell"
                                and isinstance(arg.value, ast.Constant) and arg.value.value is True
                                for arg in node.keywords):

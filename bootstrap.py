@@ -56,8 +56,8 @@ class SetupWindow:
 
 def worker(window: SetupWindow) -> None:
     try:
-        if sys.version_info < (3, 10):
-            raise RuntimeError("SOUNWD necesita Python 3.10 o superior. Instala una versión reciente de Python y vuelve a abrir SOUNWD.")
+        if sys.version_info < (3, 11):
+            raise RuntimeError("SOUNWD necesita Python 3.11 o superior. Instala una versión reciente de Python y vuelve a abrir SOUNWD.")
 
         if os.name == "nt":
             python = VENV / "Scripts" / "python.exe"

@@ -50,13 +50,11 @@ def square_contain(image: Image.Image, size: int, safe_area: float = 1.0) -> Ima
 def save_android(master: Image.Image, output: Path) -> None:
     """Write Android in-app, adaptive launcher and legacy density assets."""
     root = output / "android"
-    nodpi = root / "drawable-nodpi"
     drawable = root / "drawable"
     adaptive = root / "mipmap-anydpi"
-    for directory in (nodpi, drawable, adaptive):
+    for directory in (drawable, adaptive):
         directory.mkdir(parents=True, exist_ok=True)
 
-    master.save(nodpi / "sounwd_master.png", optimize=True)
     master.save(drawable / "sounwd_mark.png", optimize=True)
     square_contain(master, 432, safe_area=0.64).save(
         drawable / "sounwd_launcher_foreground.png", optimize=True

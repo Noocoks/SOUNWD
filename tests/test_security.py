@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 import sys
 import tempfile
 import unittest
@@ -57,15 +58,17 @@ class OutputTemplateTests(unittest.TestCase):
             result = build_output_path(root, "%(title)s.%(ext)s")
             self.assertEqual(result.parent, root.resolve())
 
-    def test_symlink_directory_cannot_escape_root(self):
+    def test_symlink_destination_is_rejected(self):
+        if os.name == "nt":
+            self.skipTest("Creating directory symlinks may require Windows Developer Mode.")
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
-            root, outside = base / "root", base / "outside"
-            root.mkdir()
+            outside = base / "outside"
             outside.mkdir()
-            (root / "link").symlink_to(outside, target_is_directory=True)
+            link = base / "downloads"
+            link.symlink_to(outside, target_is_directory=True)
             with self.assertRaises(ValueError):
-                build_output_path(root, "link/evil.mp3")
+                build_output_path(link, "%(title)s.%(ext)s")
 
 
 class AdvancedOptionTests(unittest.TestCase):

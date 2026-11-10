@@ -92,6 +92,9 @@ jobs:
       - name: Run Android Lint and unit tests
         run: gradle --no-daemon lintDebug testDebugUnitTest
 
+      - name: Enforce Android Lint report
+        run: python tools/check_android_lint.py
+
       - name: Build Android debug and release APKs
         run: gradle --no-daemon assembleDebug assembleRelease
 

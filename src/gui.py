@@ -4,6 +4,7 @@ import json
 import os
 import queue
 import subprocess
+import tempfile
 import sys
 import threading
 from pathlib import Path
@@ -36,7 +37,12 @@ else:
     CONFIG_DIR = Path.home() / ".config" / "SOUNWD"
 PREFERENCES_FILE = CONFIG_DIR / "preferences.json"
 FORMATS = {"MP3 (recomendado)": "mp3", "M4A": "m4a", "FLAC": "flac", "OPUS": "opus", "WAV": "wav"}
-SUPPORTED_HOSTS = {"youtube.com", "www.youtube.com", "music.youtube.com", "m.youtube.com", "youtu.be"}
+MAX_PREFERENCES_BYTES = 1024 * 1024
+PREFERENCE_STRING_KEYS = {
+    "destination", "audio_format", "quality", "filename_style", "ydl_format",
+    "output_template", "playlist_items", "limit_rate", "retries", "subtitle_langs",
+}
+PREFERENCE_BOOL_KEYS = {"playlist", "embed_thumbnail", "embed_metadata", "write_subtitles"}
 def valid_url(value: str) -> bool:
     try:
         validate_youtube_url(value)
@@ -52,7 +58,8 @@ def _set_windows_app_user_model_id() -> None:
     try:
         import ctypes
 
-        set_app_id = ctypes.WinDLL("shell32", use_last_error=True).SetCurrentProcessExplicitAppUserModelID
+        shell32 = ctypes.WinDLL("shell32", use_last_error=True, winmode=0x00000800)
+        set_app_id = shell32.SetCurrentProcessExplicitAppUserModelID
         set_app_id.argtypes = [ctypes.c_wchar_p]
         set_app_id.restype = ctypes.c_long
         result = set_app_id("Noocoks.SOUNWD.Desktop")
@@ -468,13 +475,23 @@ class SoundwApp(ctk.CTk):
 
     def _load_preferences(self) -> dict:
         try:
-            if PREFERENCES_FILE.exists():
-                with PREFERENCES_FILE.open("r", encoding="utf-8") as handle:
-                    data = json.load(handle)
-                return data if isinstance(data, dict) else {}
-        except (OSError, json.JSONDecodeError):
-            pass
-        return {}
+            if PREFERENCES_FILE.is_symlink() or not PREFERENCES_FILE.is_file():
+                return {}
+            if PREFERENCES_FILE.stat().st_size > MAX_PREFERENCES_BYTES:
+                return {}
+            with PREFERENCES_FILE.open("r", encoding="utf-8") as handle:
+                data = json.load(handle)
+            if not isinstance(data, dict):
+                return {}
+            clean = {}
+            for key, value in data.items():
+                if key in PREFERENCE_STRING_KEYS and isinstance(value, str) and len(value) <= 4096:
+                    clean[key] = value
+                elif key in PREFERENCE_BOOL_KEYS and isinstance(value, bool):
+                    clean[key] = value
+            return clean
+        except (OSError, json.JSONDecodeError, RecursionError):
+            return {}
 
     def _save_preferences(self) -> None:
         data = {
@@ -493,12 +510,28 @@ class SoundwApp(ctk.CTk):
             "embed_metadata": self.embed_metadata.get(),
             "write_subtitles": self.write_subtitles.get(),
         }
+        temporary = None
         try:
             CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-            with PREFERENCES_FILE.open("w", encoding="utf-8") as handle:
+            if CONFIG_DIR.is_symlink() or PREFERENCES_FILE.is_symlink():
+                raise OSError("Preferences path must not be a symbolic link.")
+            with tempfile.NamedTemporaryFile(
+                mode="w", encoding="utf-8", dir=CONFIG_DIR,
+                prefix=".preferences.", suffix=".tmp", delete=False,
+            ) as handle:
+                temporary = Path(handle.name)
                 json.dump(data, handle, ensure_ascii=False, indent=2)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temporary, PREFERENCES_FILE)
         except OSError:
             pass
+        finally:
+            if temporary is not None:
+                try:
+                    temporary.unlink(missing_ok=True)
+                except OSError:
+                    pass
 
     def _preference_changed(self, _value: str = "") -> None:
         self._save_preferences()

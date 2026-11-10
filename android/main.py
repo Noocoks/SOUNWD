@@ -121,7 +121,7 @@ def safe_output_template(value):
     if any(token not in allowed_fields for token in tokens):
         raise ValueError("La plantilla contiene campos no permitidos.")
     remainder = re.sub(r"%\([^)]+\)s", "", value)
-    if "%" in remainder or re.search(r'[<>:"|?*\\x00-\\x1f]', remainder):
+    if "%" in remainder or re.search(r'[<>:"|?*\x00-\x1f]', remainder):
         raise ValueError("La plantilla contiene caracteres no permitidos.")
     if remainder.endswith((".", " ")):
         raise ValueError("El nombre no puede terminar en punto o espacio.")

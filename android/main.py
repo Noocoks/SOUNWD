@@ -1,6 +1,7 @@
 from __future__ import annotations
 import faulthandler
 import os
+import shutil
 import queue
 import sys
 import threading
@@ -70,6 +71,7 @@ from kivy.utils import platform
 
 from android_security import (
     is_supported_youtube_url,
+    is_safe_private_file,
     safe_output_template,
     validate_advanced_options,
 )
@@ -95,6 +97,10 @@ BG=(9/255,9/255,11/255,1); CARD=(17/255,17/255,21/255,1)
 LAVENDER=(178/255,15/255,50/255,1); BRAND_LAVENDER=(178/255,15/255,50/255,1)
 TEXT=(240/255,240/255,242/255,1); MUTED=(181/255,186/255,192/255,1)
 BRAND_MUTED=(133/255,139/255,147/255,1)
+MAX_ANDROID_FILE_BYTES = 2 * 1024 * 1024 * 1024
+MAX_ANDROID_BATCH_BYTES = 5 * 1024 * 1024 * 1024
+ANDROID_DISK_RESERVE_BYTES = 512 * 1024 * 1024
+ANDROID_MIN_RESERVE_BYTES = 64 * 1024 * 1024
 FORMATS={"Mejor disponible":"bestaudio/best","M4A (si existe)":"bestaudio[ext=m4a]/bestaudio/best","OPUS (si existe)":"bestaudio[acodec=opus]/bestaudio/best"}
 DESTINATIONS={"Música / SOUNWD":"Music","Descargas / SOUNWD":"Downloads"}
 def valid_url(value):
@@ -258,12 +264,23 @@ class SOUNWDApp(App):
         try:
             self.private_dir.mkdir(parents=True, exist_ok=True)
             before={p.resolve() for p in self.private_dir.rglob("*") if p.is_file()}
+            free_bytes = shutil.disk_usage(self.private_dir).free
+            reserve_bytes = min(ANDROID_DISK_RESERVE_BYTES, max(ANDROID_MIN_RESERVE_BYTES, free_bytes // 10))
+            batch_limit_bytes = min(MAX_ANDROID_BATCH_BYTES, max(0, free_bytes - reserve_bytes))
+            if batch_limit_bytes <= 0:
+                raise RuntimeError("No hay espacio libre suficiente para descargar de forma segura.")
+            downloaded_sizes = {}
             downloaded_paths=set()
 
             def hook(data):
                 if data.get("status")=="downloading":
+                    info = data.get("info_dict") or {}
+                    key = str(info.get("id") or data.get("filename") or "unknown")
+                    got = int(data.get("downloaded_bytes") or 0)
+                    downloaded_sizes[key] = max(downloaded_sizes.get(key, 0), got)
+                    if sum(downloaded_sizes.values()) > batch_limit_bytes:
+                        raise RuntimeError("La descarga supera el límite seguro de 5 GiB por lote.")
                     total=data.get("total_bytes") or data.get("total_bytes_estimate")
-                    got=data.get("downloaded_bytes",0)
                     pct=int(max(0,min(100,got/total*100))) if total else 0
                     Clock.schedule_once(lambda _dt,p=pct:self.update_progress(p),0)
                 elif data.get("status")=="finished" and data.get("filename"):
@@ -275,7 +292,9 @@ class SOUNWDApp(App):
                      "outtmpl":str(self.private_dir/template),
                      "noplaylist":not playlist,"quiet":True,"no_warnings":True,
                      "progress_hooks":[hook],"overwrites":False,
-                     "restrictfilenames":True,"windowsfilenames":True}
+                     "restrictfilenames":True,"windowsfilenames":True,
+                     "max_filesize":min(MAX_ANDROID_FILE_BYTES,batch_limit_bytes),
+                     "max_downloads":500}
             if advanced["playlist_items"]: options["playlist_items"]=advanced["playlist_items"]
             if advanced["limit_rate"]: options["ratelimit"]=advanced["limit_rate"]
             if advanced["retries"]: options["retries"]=max(0,int(advanced["retries"]))
@@ -283,19 +302,29 @@ class SOUNWDApp(App):
             if advanced["write_subtitles"]: options["writesubtitles"]=True
 
             import yt_dlp
-            with yt_dlp.YoutubeDL(options) as ydl:
-                code=ydl.download([link])
-            if code:
-                raise RuntimeError("La descarga no ha podido terminar.")
+            try:
+                with yt_dlp.YoutubeDL(options) as ydl:
+                    code=ydl.download([link])
+                if code:
+                    raise RuntimeError("La descarga no ha podido terminar.")
+            except Exception:
+                # Remove only new, regular files still contained in private storage.
+                for candidate in self.private_dir.rglob("*"):
+                    if is_safe_private_file(candidate, self.private_dir) and candidate.resolve() not in before:
+                        try:
+                            candidate.unlink(missing_ok=True)
+                        except OSError:
+                            pass
+                raise
 
             audio_extensions={".aac",".flac",".m4a",".mka",".mp3",".ogg",".opus",".wav",".weba",".webm"}
             files=[p for p in downloaded_paths
-                   if p.is_file() and p.suffix.lower() in audio_extensions
+                   if is_safe_private_file(p,self.private_dir) and p.suffix.lower() in audio_extensions
                    and not p.name.endswith((".part",".ytdl"))]
             # Fallback for downloader versions that omit the final filename in hooks.
             if not files:
                 files=[p.resolve() for p in self.private_dir.rglob("*")
-                       if p.is_file() and p.suffix.lower() in audio_extensions
+                       if is_safe_private_file(p,self.private_dir) and p.suffix.lower() in audio_extensions
                        and p.resolve() not in before and not p.name.endswith((".part",".ytdl"))]
             if not files:
                 raise RuntimeError("No se ha encontrado ningún archivo de audio nuevo.")

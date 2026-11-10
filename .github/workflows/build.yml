@@ -9,6 +9,7 @@ on:
       - "tests/**"
       - "SOUNWD.spec"
       - "assets/**"
+      - "icon/**"
       - "Linux/**"
       - "android/**"
       - "requirements.txt"

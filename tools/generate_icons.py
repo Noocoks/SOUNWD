@@ -48,24 +48,38 @@ def square_contain(image: Image.Image, size: int, safe_area: float = 1.0) -> Ima
 
 
 def save_android(master: Image.Image, output: Path) -> None:
-    """Write Android in-app, adaptive launcher and legacy density assets."""
+    """Write Android in-app, adaptive launcher, monochrome and density assets."""
     root = output / "android"
-    drawable = root / "drawable"
+    nodpi = root / "drawable-nodpi"
     adaptive = root / "mipmap-anydpi"
-    for directory in (drawable, adaptive):
+    for directory in (nodpi, adaptive):
         directory.mkdir(parents=True, exist_ok=True)
 
-    master.save(drawable / "sounwd_mark.png", optimize=True)
+    master.save(nodpi / "sounwd_mark.png", optimize=True)
     square_contain(master, 432, safe_area=0.64).save(
-        drawable / "sounwd_launcher_foreground.png", optimize=True
+        nodpi / "sounwd_launcher_foreground.png", optimize=True
     )
 
+    # Android themed icons use alpha as a tint mask. The approved master has
+    # a black background, so derive the mask from visible non-black artwork.
+    monochrome = Image.new("RGBA", master.size, (255, 255, 255, 0))
+    source_pixels = master.convert("RGB").load()
+    mask_pixels = []
+    for y in range(master.height):
+        for x in range(master.width):
+            red, green, blue = source_pixels[x, y]
+            alpha = max(red, green, blue)
+            mask_pixels.append((255, 255, 255, alpha if alpha > 8 else 0))
+    monochrome.putdata(mask_pixels)
+    monochrome.save(nodpi / "sounwd_launcher_monochrome.png", optimize=True)
+
     (adaptive / "ic_launcher.xml").write_text(
-        '<?xml version="1.0" encoding="utf-8"?>\n'
-        '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
-        '    <background android:drawable="@color/sounwd_icon_background" />\n'
-        '    <foreground android:drawable="@drawable/sounwd_launcher_foreground" />\n'
-        '</adaptive-icon>\n',
+        '<?xml version="1.0" encoding="utf-8"?>\\n'
+        '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\\n'
+        '    <background android:drawable="@color/sounwd_icon_background" />\\n'
+        '    <foreground android:drawable="@drawable/sounwd_launcher_foreground" />\\n'
+        '    <monochrome android:drawable="@drawable/sounwd_launcher_monochrome" />\\n'
+        '</adaptive-icon>\\n',
         encoding="utf-8",
     )
 

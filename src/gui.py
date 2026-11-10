@@ -55,7 +55,8 @@ def _set_windows_app_user_model_id() -> None:
     try:
         import ctypes
 
-        shell32 = ctypes.WinDLL("shell32", use_last_error=True, winmode=0x00000800)\n        set_app_id = shell32.SetCurrentProcessExplicitAppUserModelID
+        shell32 = ctypes.WinDLL("shell32", use_last_error=True, winmode=0x00000800)
+        set_app_id = shell32.SetCurrentProcessExplicitAppUserModelID
         set_app_id.argtypes = [ctypes.c_wchar_p]
         set_app_id.restype = ctypes.c_long
         result = set_app_id("Noocoks.SOUNWD.Desktop")

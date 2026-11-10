@@ -21,7 +21,10 @@ class SetupWindow:
         self.root.geometry("470x245")
         self.root.resizable(False, False)
         self.root.configure(bg="#191824")
-        self.root.eval("tk::PlaceWindow . center")
+        self.root.update_idletasks()
+        x = (self.root.winfo_screenwidth() - 470) // 2
+        y = (self.root.winfo_screenheight() - 245) // 2
+        self.root.geometry(f"470x245+{x}+{y}")
 
         tk.Label(self.root, text="◖♪  SOUNWD", bg="#191824", fg="#C6B5E8",
                  font=("Segoe UI", 23, "bold")).pack(pady=(24, 5))

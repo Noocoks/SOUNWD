@@ -7,7 +7,7 @@ ANDROID = "{http://schemas.android.com/apk/res/android}"
 candidates = list((ROOT / "app" / "build" / "intermediates").rglob("AndroidManifest.xml"))
 release_manifests = [
     path for path in candidates
-    if "release" in path.parts and "merged" in path.parts
+    if "release" in path.parts and any(part.startswith("merged") for part in path.parts)
 ]
 assert release_manifests, "No merged release manifest found; release manifest processing must run"
 

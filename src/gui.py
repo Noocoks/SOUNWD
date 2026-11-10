@@ -7,7 +7,6 @@ import subprocess
 import sys
 import threading
 from pathlib import Path
-from urllib.parse import urlparse
 from PIL import Image
 import tkinter
 from tkinter import filedialog, messagebox
@@ -26,6 +25,7 @@ if _boot_splash is not None:
 
 import customtkinter as ctk
 from yt_dlp_support import youtube_runtime_options
+from security import build_output_path, validate_advanced_options, validate_youtube_url
 
 
 APP_NAME = "SOUNWD"
@@ -39,11 +39,8 @@ FORMATS = {"MP3 (recomendado)": "mp3", "M4A": "m4a", "FLAC": "flac", "OPUS": "op
 SUPPORTED_HOSTS = {"youtube.com", "www.youtube.com", "music.youtube.com", "m.youtube.com", "youtu.be"}
 def valid_url(value: str) -> bool:
     try:
-        parsed = urlparse(value.strip())
-        host = (parsed.hostname or "").lower()
-        return parsed.scheme in {"http", "https"} and (
-            host in SUPPORTED_HOSTS or any(host.endswith("." + item) for item in SUPPORTED_HOSTS)
-        )
+        validate_youtube_url(value)
+        return True
     except ValueError:
         return False
 
@@ -630,14 +627,16 @@ class SoundwApp(ctk.CTk):
 
             quality = {"Máxima": "0", "Alta": "192", "Normal": "128"}.get(quality_choice, "0")
             filename = "%(title)s" if filename_choice == "Solo título" else "%(title)s - %(uploader)s"
-            output_template = advanced["outtmpl"]
-            if output_template and not Path(output_template).expanduser().is_absolute():
-                output_template = str(destination / output_template)
+            safe_advanced = validate_advanced_options(advanced)
+            output_template = safe_advanced["outtmpl"]
+            if not advanced["outtmpl"]:
+                output_template = filename + ".%(ext)s"
+            safe_output_path = build_output_path(destination, output_template)
             options = {
                 **youtube_runtime_options(),
-                "format": advanced["format"] or "bestaudio/best",
+                "format": safe_advanced["format"] or "bestaudio/best",
                 "ffmpeg_location": imageio_ffmpeg.get_ffmpeg_exe(),
-                "outtmpl": output_template or str(destination / (filename + ".%(ext)s")),
+                "outtmpl": str(safe_output_path),
                 "noplaylist": not playlist,
                 "windowsfilenames": True,
                 "quiet": True,
@@ -647,14 +646,14 @@ class SoundwApp(ctk.CTk):
                     {"key": "FFmpegExtractAudio", "preferredcodec": audio_format, "preferredquality": quality},
                 ],
             }
-            if advanced["playlist_items"]:
-                options["playlist_items"] = advanced["playlist_items"]
-            if advanced["ratelimit"]:
-                options["ratelimit"] = advanced["ratelimit"]
-            if retry_count is not None:
-                options["retries"] = retry_count
-            if advanced["subtitleslangs"]:
-                options["subtitleslangs"] = advanced["subtitleslangs"]
+            if safe_advanced["playlist_items"]:
+                options["playlist_items"] = safe_advanced["playlist_items"]
+            if safe_advanced["ratelimit"]:
+                options["ratelimit"] = safe_advanced["ratelimit"]
+            if safe_advanced["retries"] is not None:
+                options["retries"] = safe_advanced["retries"]
+            if safe_advanced["subtitleslangs"]:
+                options["subtitleslangs"] = safe_advanced["subtitleslangs"]
             if advanced["writesubtitles"]:
                 options["writesubtitles"] = True
             if advanced["embedthumbnail"]:

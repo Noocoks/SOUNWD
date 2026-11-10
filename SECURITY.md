@@ -14,7 +14,7 @@ This policy covers the desktop Python downloader, legacy Kivy Android app, nativ
 - Android file sharing revalidates that the file is a regular file inside SOUNWD's private download directory.
 - Android requests only the INTERNET permission in the legacy downloader. Do not add broad storage permissions; use MediaStore/Storage Access Framework.
 - Android exports and shares files through a small reviewed Java MediaStore bridge compiled into the Kivy app. It validates app-private path containment, rejects symbolic links, enforces a 2 GiB export limit, publishes pending MediaStore entries atomically, and only shares URIs created by the bridge in the current process.
-- Python CI runs unit/regression checks, Bandit, pip-audit and CodeQL. The Android build also inspects the compiled APK manifest and network-security resource, not just source configuration. Dependency Review and Dependabot monitor supported dependency ecosystems.
+- CI runs unit/regression checks, Bandit, pip-audit, CodeQL and a pinned TruffleHog scan of repository history for accidentally committed credentials. The Android build also inspects the compiled APK manifest and network-security resource, not just source configuration. Dependency Review and Dependabot monitor supported dependency ecosystems.
 - Bandit suppresses B404/B603/B607 only for reviewed fixed-executable process launches that use argument arrays and no shell; a separate AST regression check rejects shell=True, eval/exec and os.system/os.popen.
 - GitHub Actions are pinned to immutable commit SHAs and use least-privilege token permissions where possible. Deno is pinned to 2.9.8 for packaged desktop builds; the Python runtime dependencies and Android Kivy/yt-dlp dependencies are pinned and separately audited.
 

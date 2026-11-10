@@ -117,10 +117,10 @@ def safe_output_template(value):
     if len(value) > 200 or "/" in value or "\\" in value or ".." in value:
         raise ValueError("La plantilla solo puede definir un nombre de archivo, no una ruta.")
     allowed_fields = {"title", "id", "uploader", "channel", "playlist", "playlist_index", "ext"}
-    tokens = re.findall(r"%\\(([^)]+)\\)s", value)
+    tokens = re.findall(r"%\(([^)]+)\)s", value)
     if any(token not in allowed_fields for token in tokens):
         raise ValueError("La plantilla contiene campos no permitidos.")
-    remainder = re.sub(r"%\\([^)]+\\)s", "", value)
+    remainder = re.sub(r"%\([^)]+\)s", "", value)
     if "%" in remainder or re.search(r'[<>:"|?*\\x00-\\x1f]', remainder):
         raise ValueError("La plantilla contiene caracteres no permitidos.")
     if remainder.endswith((".", " ")):
@@ -299,10 +299,17 @@ class SOUNWDApp(App):
             if advanced["retries"]:
                 if not advanced["retries"].isdigit() or int(advanced["retries"]) > 20:
                     raise ValueError("Los reintentos deben estar entre 0 y 20.")
-            if advanced["limit_rate"] and not re.fullmatch(r"\\d+(?:\\.\\d+)?[KMG]?", advanced["limit_rate"], re.I):
+            if advanced["limit_rate"] and not re.fullmatch(r"\d+(?:\.\d+)?[KMG]?", advanced["limit_rate"], re.I):
                 raise ValueError("El límite de velocidad debe ser un valor como 500K o 2M.")
-            if advanced["playlist_items"] and not re.fullmatch(r"\\d+(?:-\\d+)?(?:,\\d+(?:-\\d+)?)*", advanced["playlist_items"]):
+            if advanced["playlist_items"] and not re.fullmatch(r"\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*", advanced["playlist_items"]):
                 raise ValueError("La selección de elementos de lista no tiene un formato válido.")
+            if advanced["ydl_format"] and (
+                len(advanced["ydl_format"]) > 128
+                or not re.fullmatch(r"[A-Za-z0-9._,+/\[\](){}=<>!&|^-]+", advanced["ydl_format"])
+            ):
+                raise ValueError("El selector de formato contiene caracteres no permitidos.")
+            if advanced["subtitle_langs"] and not re.fullmatch(r"[A-Za-z0-9,_-]{1,64}", advanced["subtitle_langs"]):
+                raise ValueError("La lista de idiomas de subtítulos no tiene un formato válido.")
             options={"format":advanced["ydl_format"] or selector,
                      "outtmpl":str(self.private_dir/template),
                      "noplaylist":not playlist,"quiet":True,"no_warnings":True,

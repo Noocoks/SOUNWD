@@ -12,8 +12,8 @@ Please report suspected vulnerabilities privately through **GitHub Security Advi
 - No exported component exists except the launcher activity, which has only the MAIN/LAUNCHER intent filter.
 - Android app backup is disabled.
 - Cleartext HTTP traffic is disabled.
-- CI runs CodeQL for Kotlin/Java and Python, blocking dependency review, Python dependency vulnerability auditing, and manifest regression checks.
-- Dependency Review requires GitHub's repository Dependency Graph feature. If that feature is disabled, the check intentionally fails closed; enable it under Settings → Security & analysis → Dependency graph before merging.
+- CI runs CodeQL for Kotlin/Java and Python, OSV-Scanner dependency vulnerability auditing, Python dependency auditing, Android Lint, and manifest regression checks.
+- Dependency Review requires OSV-Scanner checks known vulnerabilities without depending on GitHub Dependency Graph. GitHub Dependency Review can additionally be enabled in Settings → Security & analysis → Dependency graph for a second independent check.
 - CI uses read-only repository permissions except the CodeQL job's narrowly scoped security-events permission and dependency-review's PR-comment permission.
 
 These checks are guardrails, not a proof that software is invulnerable. Any future feature that adds network access, file access, services, receivers, providers, WebViews, native code, or third-party SDKs must include a threat review and tests before merging.

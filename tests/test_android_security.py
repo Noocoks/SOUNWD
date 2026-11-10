@@ -48,7 +48,7 @@ class AndroidPermissionTests(unittest.TestCase):
         source = (ROOT / "beta-android" / "app" / "src" / "main" / "java" / "org" / "sounwd" / "sounwd" / "SounwdMediaStore.java").read_text(encoding="utf-8")
         for invariant in (
             "Files.isSymbolicLink", "getCanonicalFile", "IS_PENDING",
-            "MAX_AUDIO_BYTES", "MAX_EXPORTED_FILES", "EXPORTED_URIS.contains(value)", "beginExportBatch",
+            "MAX_AUDIO_BYTES", "MAX_EXPORTED_FILES", "EXPORTED_URIS.contains(value)", "beginExportBatch", "abortExportBatch",
             "FLAG_GRANT_READ_URI_PERMISSION", "MediaStore.Audio.Media.EXTERNAL_CONTENT_URI",
         ):
             self.assertIn(invariant, source)

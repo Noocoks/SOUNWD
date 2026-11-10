@@ -103,13 +103,13 @@ class AndroidPermissionTests(unittest.TestCase):
 
 class UnsafeExecutionTests(unittest.TestCase):
     def test_application_python_has_no_dynamic_eval_or_shell_true(self):
-        roots = (ROOT / "src", ROOT / "android")
-        for folder in roots:
-            for path in folder.rglob("*.py"):
-                if "__pycache__" in path.parts:
-                    continue
-                tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-                for node in ast.walk(tree):
+        paths = list((ROOT / "src").rglob("*.py")) + list((ROOT / "android").rglob("*.py"))
+        paths.append(ROOT / "bootstrap.py")
+        for path in paths:
+            if "__pycache__" in path.parts:
+                continue
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            for node in ast.walk(tree):
                     if isinstance(node, ast.Call):
                         name = node.func.id if isinstance(node.func, ast.Name) else ""
                         attr = node.func.attr if isinstance(node.func, ast.Attribute) else ""

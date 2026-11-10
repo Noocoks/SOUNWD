@@ -12,8 +12,8 @@ from pythonforandroid.toolchain import shprint
 
 
 class QuickJSRecipe(Recipe):
-    version = "v0.18.0"
-    url = "https://github.com/quickjs-ng/quickjs/archive/refs/tags/{version}.tar.gz"
+    version = "d7215b0ad3fc2c562e8317fd9bca058fd4863804"
+    url = "https://github.com/quickjs-ng/quickjs/archive/{version}.tar.gz"
     depends = ["python3"]
     archs = ["arm64-v8a"]
 
@@ -40,6 +40,7 @@ class QuickJSRecipe(Recipe):
             "-DQJS_BUILD_CLI_STATIC=OFF",
             "-DQJS_BUILD_CLI_WITH_MIMALLOC=OFF",
             "-DBUILD_SHARED_LIBS=OFF",
+            "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384",
             _env=env,
         )
         shprint(
@@ -63,6 +64,8 @@ class QuickJSRecipe(Recipe):
 
         runtime_dir = site_packages[0] / "sounwd_runtime"
         runtime_dir.mkdir(parents=True, exist_ok=True)
+        init_file = runtime_dir / "__init__.py"
+        init_file.write_text('"""Bundled SOUNWD JavaScript runtime."""\\n', encoding="utf-8")
         target = runtime_dir / "qjs"
         shutil.copy2(executable, target)
         target.chmod(0o755)

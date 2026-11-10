@@ -4,7 +4,7 @@ from pathlib import Path
 from PIL import Image, ImageOps
 
 ROOT = Path(__file__).resolve().parents[1]
-MASTER = ROOT / "assets" / "sounwd.png"
+MASTER = ROOT / "icon" / "sounwd-master.png"
 GENERATED = ROOT / "assets" / "generated"
 ANDROID_GENERATED = ROOT / "android" / "assets" / "generated" / "android"
 SIZES = (16, 24, 32, 48, 64, 96, 128, 192, 256, 512)
@@ -15,8 +15,8 @@ def main():
     if not MASTER.is_file():
         raise FileNotFoundError(f"Canonical SOUNWD image missing: {MASTER}")
     with Image.open(MASTER) as source:
-        if source.width != source.height or source.width < 128:
-            raise ValueError(f"Canonical brand master must be square and >=128px, got {source.size}")
+        if source.width != source.height or source.width < 256:
+            raise ValueError(f"Canonical brand master must be square and >=256px, got {source.size}")
         master = source.convert("RGBA")
 
     for size in SIZES:

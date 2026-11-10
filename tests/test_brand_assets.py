@@ -5,7 +5,7 @@ import runpy
 
 ROOT = Path(__file__).resolve().parents[1]
 runpy.run_path(str(ROOT / "assets" / "build_brand_assets.py"), run_name="__main__")
-master = Image.open(ROOT / "assets" / "sounwd.png").convert("RGBA")
+master = Image.open(ROOT / "icon" / "sounwd-master.png").convert("RGBA")
 generated = ROOT / "assets" / "generated"
 for size in (16,24,32,48,64,96,128,192,256,512):
     image = Image.open(generated / "linux" / f"{size}x{size}" / "sounwd.png").convert("RGBA")

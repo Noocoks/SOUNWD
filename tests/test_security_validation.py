@@ -52,6 +52,21 @@ class OutputTemplateTests(unittest.TestCase):
 
 
 class SafePublicationTests(unittest.TestCase):
+    def test_rejects_symlinked_destination_directory(self):
+        if __import__("os").name == "nt":
+            self.skipTest("Directory symlinks may require Developer Mode.")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            staging = root / "staging"
+            outside = root / "outside"
+            staging.mkdir()
+            outside.mkdir()
+            (staging / "song.mp3").write_bytes(b"audio")
+            link = root / "destination"
+            link.symlink_to(outside, target_is_directory=True)
+            with self.assertRaises(ValueError):
+                copy_downloaded_files(staging, link)
+
     def test_never_overwrites_existing_file_and_ignores_symlinks(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

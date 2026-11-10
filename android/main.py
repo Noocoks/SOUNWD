@@ -62,7 +62,7 @@ def _log_thread_exception(args):
 
 threading.excepthook = _log_thread_exception
 _log_startup('main.py module entered; Python standard-library setup complete')
-from urllib.parse import urlparse
+from security import build_output_path, is_path_within, validate_advanced_options, validate_youtube_url
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.window import Window
@@ -96,9 +96,10 @@ HOSTS={"youtube.com","www.youtube.com","music.youtube.com","m.youtube.com","yout
 
 def valid_url(value):
     try:
-        p=urlparse(value.strip()); host=(p.hostname or "").lower()
-        return p.scheme in {"http","https"} and (host in HOSTS or any(host.endswith("."+h) for h in HOSTS))
-    except ValueError: return False
+        validate_youtube_url(value)
+        return True
+    except ValueError:
+        return False
 
 class Panel(BoxLayout):
     def __init__(self, **kwargs):
@@ -268,18 +269,24 @@ class SOUNWDApp(App):
                 elif data.get("status")=="finished" and data.get("filename"):
                     downloaded_paths.add(Path(data["filename"]).expanduser().resolve())
 
-            template=advanced["output_template"] or "%(title)s.%(ext)s"
-            template_path=Path(template).expanduser()
-            if not template_path.is_absolute():
-                template_path=self.private_dir/template_path
-            options={"format":advanced["ydl_format"] or selector,
+            safe_advanced=validate_advanced_options({
+                "format":advanced["ydl_format"],
+                "outtmpl":advanced["output_template"],
+                "playlist_items":advanced["playlist_items"],
+                "ratelimit":advanced["limit_rate"],
+                "retries":advanced["retries"],
+                "subtitleslangs":advanced["subtitle_langs"],
+            })
+            template_path=build_output_path(self.private_dir,safe_advanced["outtmpl"])
+            options={"format":safe_advanced["format"] or selector,
                      "outtmpl":str(template_path),
                      "noplaylist":not playlist,"quiet":True,"no_warnings":True,
-                     "progress_hooks":[hook],"overwrites":False}
-            if advanced["playlist_items"]: options["playlist_items"]=advanced["playlist_items"]
-            if advanced["limit_rate"]: options["ratelimit"]=advanced["limit_rate"]
-            if advanced["retries"]: options["retries"]=max(0,int(advanced["retries"]))
-            if advanced["subtitle_langs"]: options["subtitleslangs"]=advanced["subtitle_langs"]
+                     "progress_hooks":[hook],"overwrites":False,
+                     "continuedl":False,"nopart":False}
+            if safe_advanced["playlist_items"]: options["playlist_items"]=safe_advanced["playlist_items"]
+            if safe_advanced["ratelimit"]: options["ratelimit"]=safe_advanced["ratelimit"]
+            if safe_advanced["retries"] is not None: options["retries"]=safe_advanced["retries"]
+            if safe_advanced["subtitleslangs"]: options["subtitleslangs"]=safe_advanced["subtitleslangs"]
             if advanced["write_subtitles"]: options["writesubtitles"]=True
 
             import yt_dlp
@@ -290,12 +297,14 @@ class SOUNWDApp(App):
 
             audio_extensions={".aac",".flac",".m4a",".mka",".mp3",".ogg",".opus",".wav",".weba",".webm"}
             files=[p for p in downloaded_paths
-                   if p.is_file() and p.suffix.lower() in audio_extensions
+                   if is_path_within(p,self.private_dir)
+                   and p.suffix.lower() in audio_extensions
                    and not p.name.endswith((".part",".ytdl"))]
             # Fallback for downloader versions that omit the final filename in hooks.
             if not files:
                 files=[p.resolve() for p in self.private_dir.rglob("*")
-                       if p.is_file() and p.suffix.lower() in audio_extensions
+                       if is_path_within(p,self.private_dir)
+                       and p.suffix.lower() in audio_extensions
                        and p.resolve() not in before and not p.name.endswith((".part",".ytdl"))]
             if not files:
                 raise RuntimeError("No se ha encontrado ningún archivo de audio nuevo.")
@@ -349,7 +358,8 @@ class SOUNWDApp(App):
             uris=[]
             for name in self.last_files:
                 file_path=Path(name).expanduser()
-                if not file_path.is_absolute(): file_path=self.private_dir/file_path
+                if not is_path_within(file_path,self.private_dir):
+                    raise ValueError("El archivo no pertenece al almacenamiento privado de SOUNWD.")
                 uri=shared.copy_to_shared(str(file_path.resolve()),collection=collection)
                 if uri:uris.append(uri)
             if uris:ShareSheet().share_file_list(uris)

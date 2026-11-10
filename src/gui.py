@@ -541,9 +541,16 @@ class SoundwApp(ctk.CTk):
             if os.name == "nt":
                 os.startfile(str(folder))
             elif sys_platform() == "darwin":
-                subprocess.Popen(["open", str(folder)])
+                opener = Path("/usr/bin/open")
+                if not opener.is_file():
+                    raise RuntimeError("No se encuentra el abridor de carpetas del sistema.")
+                subprocess.Popen([str(opener), str(folder)], close_fds=True)
             else:
-                subprocess.Popen(["xdg-open", str(folder)])
+                candidates = (Path("/usr/bin/xdg-open"), Path("/bin/xdg-open"))
+                opener = next((candidate for candidate in candidates if candidate.is_file()), None)
+                if opener is None:
+                    raise RuntimeError("No se encuentra xdg-open en una ruta del sistema.")
+                subprocess.Popen([str(opener), str(folder)], close_fds=True)
         except Exception as error:
             messagebox.showerror("No se puede abrir la carpeta", f"No he podido abrir o preparar esta carpeta:\n{folder}\n\nDetalle: {error}")
 

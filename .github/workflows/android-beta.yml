@@ -59,8 +59,7 @@ jobs:
           set -euo pipefail
           python tools/generate_icons.py
           RES=app/src/main/res
-          mkdir -p "$RES/drawable" "$RES/drawable-nodpi" "$RES/mipmap-anydpi" "$RES/values"
-          cp assets/generated/android/drawable-nodpi/sounwd_master.png "$RES/drawable-nodpi/"
+          mkdir -p "$RES/drawable" "$RES/mipmap-anydpi" "$RES/values"
           cp assets/generated/android/drawable/sounwd_mark.png "$RES/drawable/"
           cp assets/generated/android/drawable/sounwd_launcher_foreground.png "$RES/drawable/"
           # Remove the obsolete resource first, then install the generated adaptive icon.

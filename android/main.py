@@ -256,6 +256,7 @@ class SOUNWDApp(App):
     def download_worker(self,link,selector,playlist,destination,advanced):
         """Descarga y publica solo archivos de audio; cualquier fallo vuelve a la UI."""
         try:
+            validate_youtube_url(link)
             self.private_dir.mkdir(parents=True, exist_ok=True)
             before={p.resolve() for p in self.private_dir.rglob("*") if p.is_file()}
             downloaded_paths=set()

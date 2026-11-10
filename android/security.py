@@ -73,7 +73,10 @@ def validate_output_template(template: str) -> str:
 
 def build_output_path(destination: Path, template: str) -> Path:
     """Resolve the user-selected destination, then confine output to that directory."""
-    root = Path(destination).expanduser().resolve()
+    requested_root = Path(destination).expanduser()
+    if requested_root.is_symlink():
+        raise ValueError("La carpeta de destino no puede ser un enlace simbólico.")
+    root = requested_root.resolve()
     if root.exists() and not root.is_dir():
         raise ValueError("La carpeta de destino no es un directorio.")
     safe_name = validate_output_template(template)
@@ -111,3 +114,16 @@ def validate_advanced_options(options: dict) -> dict:
         raise ValueError("Los idiomas de subtítulos contienen caracteres no permitidos.")
     clean["subtitleslangs"] = languages
     return clean
+
+
+def is_path_within(path: Path, directory: Path) -> bool:
+    """Return True only for a regular, non-symlink file inside directory."""
+    try:
+        candidate = Path(path)
+        if candidate.is_symlink():
+            return False
+        resolved = candidate.resolve(strict=True)
+        root = Path(directory).resolve(strict=True)
+        return resolved.is_file() and resolved.is_relative_to(root)
+    except (OSError, RuntimeError, ValueError):
+        return False

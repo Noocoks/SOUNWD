@@ -27,6 +27,13 @@ class HardenedInputTests(unittest.TestCase):
         self.assertNotIn('ANDROID_ARGUMENT={!r}', sitecustomize)
         self.assertNotIn('stream.write("sys.path=', sitecustomize)
 
+    def test_android_transitive_dependencies_are_pinned_to_fixed_releases(self):
+        spec = (ROOT / "android" / "buildozer.spec").read_text(encoding="utf-8")
+        self.assertIn("requests==2.33.0", spec)
+        self.assertIn("pygments==2.20.0", spec)
+        self.assertIn("certifi==2026.10.23", spec)
+        self.assertIn("idna==3.15", spec)
+
     def test_url_allowlist_and_parser_confusion(self):
         for host in ("youtube.com", "www.youtube.com", "music.youtube.com", "m.youtube.com", "youtu.be"):
             value = f"https://{host}/watch?v=abc"

@@ -16,7 +16,7 @@ python -m unittest discover -s tools -p 'test_*.py' -v
 
 El generador crea recursos en `assets/generated/` para:
 
-- Android: logo dentro de la app, adaptive launcher icon y PNG de respaldo para mdpi, hdpi, xhdpi, xxhdpi y xxxhdpi.
+- Android 10+: logo de la app y capas foreground/monochrome en `drawable-nodpi`, adaptive launcher icon en `mipmap-anydpi` y PNG de respaldo para mdpi, hdpi, xhdpi, xxhdpi y xxxhdpi. El fondo negro de la master se convierte en transparencia para el icono monocromo de Android 13+.
 - Windows: ICO multirresolución.
 - Linux: PNG de 512 × 512.
 - macOS: ICNS.
@@ -26,4 +26,4 @@ Los recursos generados se eliminan y reconstruyen en cada ejecución para evitar
 
 ## Integración actual
 
-El workflow **SOUNWD Android Beta** ejecuta pruebas del generador, instala los recursos Android y compila el APK. Los formatos de escritorio y web se generan, pero su empaquetado debe integrarse en los workflows de publicación de cada plataforma; generar un archivo no significa que ya esté incluido en un instalador.
+El workflow **SOUNWD Android Beta** ejecuta pruebas del generador, instala los recursos mediante `tools/install_android_icons.py`, verifica el manifest y el icono monocromo, ejecuta Android Lint y compila APK debug/release. Los formatos de escritorio y web se generan, pero su empaquetado debe integrarse en los workflows de publicación de cada plataforma; generar un archivo no significa que ya esté incluido en un instalador.

@@ -3,6 +3,7 @@ from pathlib import Path
 import ast
 import sys
 import unittest
+import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -36,6 +37,29 @@ class AndroidPermissionTests(unittest.TestCase):
         android = (ROOT / "android" / "security.py").read_bytes()
         self.assertEqual(desktop, android)
 
+
+    def test_native_kotlin_beta_manifest_is_minimal(self):
+        manifest = ROOT / "beta-android" / "app" / "src" / "main" / "AndroidManifest.xml"
+        root = ET.parse(manifest).getroot()
+        android = "{http://schemas.android.com/apk/res/android}"
+        self.assertEqual(root.findall("uses-permission"), [])
+        app = root.find("application")
+        self.assertIsNotNone(app)
+        self.assertEqual(app.get(android + "allowBackup"), "false")
+        self.assertEqual(app.get(android + "usesCleartextTraffic"), "false")
+        activities = app.findall("activity")
+        self.assertEqual(len(activities), 1)
+        self.assertEqual(activities[0].get(android + "exported"), "true")
+        filters = activities[0].findall("intent-filter")
+        self.assertEqual(len(filters), 1)
+        actions = [node.get(android + "name") for node in filters[0].findall("action")]
+        categories = [node.get(android + "name") for node in filters[0].findall("category")]
+        self.assertEqual(actions, ["android.intent.action.MAIN"])
+        self.assertEqual(categories, ["android.intent.category.LAUNCHER"])
+
+    def test_native_kotlin_beta_minimum_sdk_is_android_10(self):
+        gradle = (ROOT / "beta-android" / "app" / "build.gradle.kts").read_text(encoding="utf-8")
+        self.assertIn("minSdk = 29", gradle)
 
 class UnsafeExecutionTests(unittest.TestCase):
     def test_application_python_has_no_dynamic_eval_or_shell_true(self):

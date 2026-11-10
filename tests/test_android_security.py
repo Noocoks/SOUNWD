@@ -42,6 +42,8 @@ class AndroidPermissionTests(unittest.TestCase):
         self.assertIn("validate_advanced_options(", source)
         self.assertIn("build_output_path(self.private_dir", source)
         self.assertIn('"max_filesize":2*1024*1024*1024,"max_downloads":500', source)
+        self.assertIn("Do not leave failed/partial downloads", source)
+        self.assertIn("candidate.unlink(missing_ok=True)", source)
         self.assertIn("is_path_within(p,self.private_dir)", source)
         self.assertNotIn("androidstorage4kivy", source)
 

@@ -284,7 +284,7 @@ class SOUNWDApp(App):
                     pct=int(max(0,min(100,got/total*100))) if total else 0
                     Clock.schedule_once(lambda _dt,p=pct:self.update_progress(p),0)
                 elif data.get("status")=="finished" and data.get("filename"):
-                    downloaded_paths.add(Path(data["filename"]).expanduser().resolve())
+                    downloaded_paths.add(Path(data["filename"]).expanduser())
 
             template = safe_output_template(advanced["output_template"])
             validate_advanced_options(advanced)

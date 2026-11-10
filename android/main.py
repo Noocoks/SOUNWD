@@ -63,6 +63,9 @@ def _log_thread_exception(args):
 threading.excepthook = _log_thread_exception
 _log_startup('main.py module entered; Python standard-library setup complete')
 from security import build_output_path, is_path_within, validate_advanced_options, validate_youtube_url
+
+MAX_ANDROID_FILE_BYTES = 2 * 1024 * 1024 * 1024
+MAX_ANDROID_BATCH_BYTES = 5 * 1024 * 1024 * 1024
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.window import Window
@@ -261,11 +264,17 @@ class SOUNWDApp(App):
             self.private_dir.mkdir(parents=True, exist_ok=True)
             before={p.resolve() for p in self.private_dir.rglob("*") if p.is_file()}
             downloaded_paths=set()
+            downloaded_sizes={}
 
             def hook(data):
                 if data.get("status")=="downloading":
+                    info = data.get("info_dict") or {}
+                    key = str(info.get("id") or data.get("filename") or "unknown")
+                    got = int(data.get("downloaded_bytes") or 0)
+                    downloaded_sizes[key] = max(downloaded_sizes.get(key, 0), got)
+                    if sum(downloaded_sizes.values()) > MAX_ANDROID_BATCH_BYTES:
+                        raise RuntimeError("La descarga supera el límite seguro de 5 GiB por lote.")
                     total=data.get("total_bytes") or data.get("total_bytes_estimate")
-                    got=data.get("downloaded_bytes",0)
                     pct=int(max(0,min(100,got/total*100))) if total else 0
                     Clock.schedule_once(lambda _dt,p=pct:self.update_progress(p),0)
                 elif data.get("status")=="finished" and data.get("filename"):
@@ -284,7 +293,7 @@ class SOUNWDApp(App):
                      "outtmpl":str(template_path),"windowsfilenames":True,
                      "noplaylist":not playlist,"quiet":True,"no_warnings":True,
                      "progress_hooks":[hook],"overwrites":False,
-                     "continuedl":False,"nopart":False,"max_filesize":2*1024*1024*1024,"max_downloads":500}
+                     "continuedl":False,"nopart":False,"max_filesize":MAX_ANDROID_FILE_BYTES,"max_downloads":500}
             if safe_advanced["playlist_items"]: options["playlist_items"]=safe_advanced["playlist_items"]
             if safe_advanced["ratelimit"]: options["ratelimit"]=safe_advanced["ratelimit"]
             if safe_advanced["retries"] is not None: options["retries"]=safe_advanced["retries"]

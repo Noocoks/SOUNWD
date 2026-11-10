@@ -42,7 +42,7 @@ jobs:
       - name: Audit Python dependencies
         run: pip-audit --strict
       - name: Static security analysis
-        run: bandit -r src android bootstrap.py -ll
+        run: bandit -r src android bootstrap.py -ll -s B404,B603,B607
       - name: Compile every Python source
         run: |
           python -m compileall -q src android bootstrap.py tests

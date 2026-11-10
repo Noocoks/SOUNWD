@@ -160,7 +160,9 @@ jobs:
           python -m unittest discover -s tests -p 'test_security.py' -v
           python -m unittest discover -s tests -p 'test_android_security.py' -v
       - name: Audit Android build dependencies
-        run: pip-audit --strict
+        run: |
+          pip-audit --strict
+          pip-audit -r android/requirements-audit.txt --strict
       - name: Static security analysis
         run: bandit -r src android bootstrap.py -ll -s B404,B603,B607
       - name: Generate and verify Android brand resources

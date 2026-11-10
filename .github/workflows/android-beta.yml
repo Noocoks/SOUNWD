@@ -59,20 +59,21 @@ jobs:
           set -euo pipefail
           python tools/generate_icons.py
           RES=app/src/main/res
-          mkdir -p "$RES/drawable" "$RES/mipmap-anydpi" "$RES/values"
-          cp assets/generated/android/drawable/sounwd_mark.png "$RES/drawable/"
-          cp assets/generated/android/drawable/sounwd_launcher_foreground.png "$RES/drawable/"
+          mkdir -p "$RES/drawable-nodpi" "$RES/mipmap-anydpi" "$RES/values"
+          cp assets/generated/android/drawable-nodpi/sounwd_mark.png "$RES/drawable-nodpi/"
+          cp assets/generated/android/drawable-nodpi/sounwd_launcher_foreground.png "$RES/drawable-nodpi/"
+          cp assets/generated/android/drawable-nodpi/sounwd_launcher_monochrome.png "$RES/drawable-nodpi/"
           # Remove the obsolete resource first, then install the generated adaptive icon.
           rm -f "$RES/mipmap-anydpi-v26/ic_launcher.xml"
           rmdir "$RES/mipmap-anydpi-v26" 2>/dev/null || true
           rm -f "$RES/mipmap-anydpi/ic_launcher.xml"
           cp assets/generated/android/mipmap-anydpi/ic_launcher.xml "$RES/mipmap-anydpi/"
-          rm -f "$RES/drawable/sounwd_mark.xml"
           for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
             mkdir -p "$RES/mipmap-$density"
             cp "assets/generated/android/mipmap-$density/ic_launcher.png" "$RES/mipmap-$density/"
           done
-          test -s "$RES/drawable/sounwd_mark.png"
+          test -s "$RES/drawable-nodpi/sounwd_mark.png"
+          test -s "$RES/drawable-nodpi/sounwd_launcher_monochrome.png"
           test -s "$RES/mipmap-anydpi/ic_launcher.xml"
           test ! -e "$RES/mipmap-anydpi-v26"
           test -s "$RES/mipmap-mdpi/ic_launcher.png"

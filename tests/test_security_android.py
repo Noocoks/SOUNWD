@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "android"))
-from security import is_supported_youtube_url, safe_output_template, validate_advanced_options
+from android_security import is_supported_youtube_url, safe_output_template, validate_advanced_options
 
 
 class AndroidSecurityTests(unittest.TestCase):

@@ -147,3 +147,26 @@ def copy_downloaded_files(source_dir: Path, destination_dir: Path) -> list[Path]
             if source_descriptor >= 0:
                 os.close(source_descriptor)
     return saved
+
+
+MAX_PREFERENCES_BYTES = 1024 * 1024
+PREFERENCE_STRING_KEYS = frozenset({
+    "destination", "audio_format", "quality", "filename_style", "ydl_format",
+    "output_template", "playlist_items", "limit_rate", "retries", "subtitle_langs",
+})
+PREFERENCE_BOOL_KEYS = frozenset({
+    "playlist", "embed_thumbnail", "embed_metadata", "write_subtitles",
+})
+
+
+def sanitize_preferences(data: object) -> dict:
+    """Keep only known, correctly typed, bounded preference values."""
+    if not isinstance(data, dict):
+        return {}
+    clean = {}
+    for key, value in data.items():
+        if key in PREFERENCE_STRING_KEYS and isinstance(value, str) and len(value) <= 4096:
+            clean[key] = value
+        elif key in PREFERENCE_BOOL_KEYS and isinstance(value, bool):
+            clean[key] = value
+    return clean

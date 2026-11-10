@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 from security import validate_youtube_url, validate_output_template
 sys.path.insert(0, str(ROOT / "android"))
-from android_security import is_supported_youtube_url, safe_output_template
+from android_security import is_supported_youtube_url, is_safe_private_file, safe_output_template
 
 
 class HardenedInputTests(unittest.TestCase):
@@ -32,6 +32,22 @@ class HardenedInputTests(unittest.TestCase):
             with self.subTest(value=value):
                 self.assertFalse(validate_youtube_url(value))
                 self.assertFalse(is_supported_youtube_url(value))
+
+    def test_private_path_rejects_symlinks_and_external_files(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "private"
+            root.mkdir()
+            inside = root / "audio.mp3"
+            outside = Path(temp) / "outside.mp3"
+            inside.write_bytes(b"audio")
+            outside.write_bytes(b"outside")
+            self.assertTrue(is_safe_private_file(inside, root))
+            self.assertFalse(is_safe_private_file(outside, root))
+            if sys.platform != "win32":
+                link = root / "linked.mp3"
+                link.symlink_to(outside)
+                self.assertFalse(is_safe_private_file(link, root))
 
     def test_safe_filename_templates(self):
         valid = "%(title)s - %(uploader)s.%(ext)s"

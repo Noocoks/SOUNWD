@@ -56,7 +56,7 @@ def validate_output_template(value: str) -> str:
     remainder = _TEMPLATE_TOKEN.sub("", value)
     if "%" in remainder or re.search(r'[<>:"|?*\x00-\x1f]', remainder):
         raise ValueError("La plantilla contiene caracteres no permitidos.")
-    if remainder.endswith((".", " ")):
+    if value.endswith((".", " ")):
         raise ValueError("El nombre no puede terminar en punto o espacio.")
     return value
 

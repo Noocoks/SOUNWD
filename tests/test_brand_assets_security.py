@@ -52,6 +52,7 @@ class BrandGeneratorSecurityTests(unittest.TestCase):
             self.skipTest("Symlink creation may require Developer Mode.")
         outside = self.root / "outside"
         outside.mkdir()
+        brand.GENERATED.parent.mkdir(parents=True, exist_ok=True)
         brand.GENERATED.symlink_to(outside, target_is_directory=True)
         with self.assertRaises(ValueError):
             brand._safe_directory(brand.GENERATED)

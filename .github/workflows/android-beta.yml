@@ -22,7 +22,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
@@ -64,13 +64,21 @@ jobs:
         run: gradle assembleDebug
       - name: Verify APK was generated
         run: test -s app/build/outputs/apk/debug/app-debug.apk
+      - name: Set up Android SDK command-line tools
+        uses: android-actions/setup-android@v3
       - name: Install Android emulator image
+        shell: bash
         run: |
+          set -euo pipefail
+          command -v sdkmanager
           sdkmanager --install "system-images;android-35;google_apis;x86_64" "platform-tools" "emulator"
       - name: Launch APK in Android emulator
         shell: bash
         run: |
           set -euo pipefail
+          command -v avdmanager
+          command -v emulator
+          command -v adb
           echo "no" | avdmanager create avd --name sounwd-api35 --package "system-images;android-35;google_apis;x86_64" --device pixel_2 --force
           emulator -avd sounwd-api35 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect > /tmp/sounwd-emulator.log 2>&1 &
           adb wait-for-device
@@ -80,8 +88,13 @@ jobs:
             fi
             sleep 2
           done
-          test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1"
+          if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" != "1" ]; then
+            cat /tmp/sounwd-emulator.log
+            adb logcat -d
+            exit 1
+          fi
           adb install -r app/build/outputs/apk/debug/app-debug.apk
+          adb logcat -c
           adb shell am force-stop com.sounwd.beta
           adb shell am start -W -n com.sounwd.beta/.MainActivity
           sleep 5

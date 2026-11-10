@@ -38,8 +38,9 @@ class IconGeneratorTests(unittest.TestCase):
             "web/icon-180.png",
             "web/icon-192.png",
             "web/icon-512.png",
-            "android/drawable/sounwd_mark.png",
-            "android/drawable/sounwd_launcher_foreground.png",
+            "android/drawable-nodpi/sounwd_mark.png",
+            "android/drawable-nodpi/sounwd_launcher_foreground.png",
+            "android/drawable-nodpi/sounwd_launcher_monochrome.png",
             "android/mipmap-anydpi/ic_launcher.xml",
             "android/mipmap-mdpi/ic_launcher.png",
             "android/mipmap-hdpi/ic_launcher.png",
@@ -59,7 +60,12 @@ class IconGeneratorTests(unittest.TestCase):
         xml_path = self.output / "android/mipmap-anydpi/ic_launcher.xml"
         root = ET.parse(xml_path).getroot()
         self.assertEqual(root.tag, "adaptive-icon")
-        self.assertEqual(len(root), 2)
+        self.assertEqual(len(root), 3)
+        self.assertEqual(root[2].tag, "monochrome")
+
+        monochrome = Image.open(self.output / "android/drawable-nodpi/sounwd_launcher_monochrome.png").convert("RGBA")
+        self.assertEqual(monochrome.getpixel((0, 0))[3], 0)
+        self.assertGreater(monochrome.getbbox()[2], 0)
 
     def test_rejects_too_small_master(self):
         tiny = self.root / "tiny.png"

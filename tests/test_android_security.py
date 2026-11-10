@@ -51,6 +51,8 @@ class AndroidPermissionTests(unittest.TestCase):
         self.assertIn('"max_filesize":2*1024*1024*1024,"max_downloads":500', source)
         self.assertIn("Do not leave failed/partial downloads", source)
         self.assertIn("candidate.unlink(missing_ok=True)", source)
+        self.assertIn("Delete private temporary audio only after successful MediaStore publication", source)
+        self.assertIn("path.unlink(missing_ok=True)", source)
         self.assertIn("is_path_within(p,self.private_dir)", source)
         self.assertNotIn("androidstorage4kivy", source)
 

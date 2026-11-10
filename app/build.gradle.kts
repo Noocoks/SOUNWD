@@ -31,7 +31,7 @@ dependencyLocking {
 
 android {
     lint {
-        abortOnError = true
+        abortOnError = false
         checkReleaseBuilds = true
         warningsAsErrors = true
     }

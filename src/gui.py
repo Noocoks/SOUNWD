@@ -639,6 +639,7 @@ class SoundwApp(ctk.CTk):
                 "outtmpl": str(safe_output_path),
                 "noplaylist": not playlist,
                 "windowsfilenames": True,
+                "overwrites": False,
                 "quiet": True,
                 "no_warnings": True,
                 "progress_hooks": [hook],

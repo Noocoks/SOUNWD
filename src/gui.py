@@ -27,7 +27,7 @@ if _boot_splash is not None:
 
 import customtkinter as ctk
 from yt_dlp_support import youtube_runtime_options
-from security import copy_downloaded_files, validate_advanced_options, validate_youtube_url
+from security import (\n    MAX_PREFERENCES_BYTES,\n    copy_downloaded_files,\n    sanitize_preferences,\n    validate_advanced_options,\n    validate_youtube_url,\n)
 
 
 APP_NAME = "SOUNWD"
@@ -50,7 +50,7 @@ def _set_windows_app_user_model_id() -> None:
     try:
         import ctypes
 
-        set_app_id = ctypes.WinDLL("shell32", use_last_error=True).SetCurrentProcessExplicitAppUserModelID
+        shell32 = ctypes.WinDLL("shell32", use_last_error=True, winmode=0x00000800)\n        set_app_id = shell32.SetCurrentProcessExplicitAppUserModelID
         set_app_id.argtypes = [ctypes.c_wchar_p]
         set_app_id.restype = ctypes.c_long
         result = set_app_id("Noocoks.SOUNWD.Desktop")
@@ -466,12 +466,14 @@ class SoundwApp(ctk.CTk):
 
     def _load_preferences(self) -> dict:
         try:
-            if not PREFERENCES_FILE.is_file() or PREFERENCES_FILE.stat().st_size > 1_048_576:
+            if CONFIG_DIR.is_symlink() or PREFERENCES_FILE.is_symlink():
+                return {}
+            if not PREFERENCES_FILE.is_file() or PREFERENCES_FILE.stat().st_size > MAX_PREFERENCES_BYTES:
                 return {}
             with PREFERENCES_FILE.open("r", encoding="utf-8") as handle:
                 data = json.load(handle)
-            return data if isinstance(data, dict) else {}
-        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+            return sanitize_preferences(data)
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError, RecursionError):
             return {}
 
     def _save_preferences(self) -> None:
@@ -493,6 +495,8 @@ class SoundwApp(ctk.CTk):
         }
         temporary_path = None
         try:
+            if CONFIG_DIR.is_symlink() or PREFERENCES_FILE.is_symlink():
+                raise OSError("Preferences path must not be a symbolic link.")
             CONFIG_DIR.mkdir(parents=True, exist_ok=True)
             fd, temporary_name = tempfile.mkstemp(prefix=".preferences-", suffix=".tmp", dir=CONFIG_DIR)
             temporary_path = Path(temporary_name)
@@ -551,9 +555,16 @@ class SoundwApp(ctk.CTk):
             if os.name == "nt":
                 os.startfile(str(folder))
             elif sys_platform() == "darwin":
-                subprocess.Popen(["open", str(folder)])
+                opener = Path("/usr/bin/open")
+                if not opener.is_file():
+                    raise RuntimeError("No se encuentra el abridor de carpetas del sistema.")
+                subprocess.Popen([str(opener), str(folder)], close_fds=True)
             else:
-                subprocess.Popen(["xdg-open", str(folder)])
+                candidates = (Path("/usr/bin/xdg-open"), Path("/bin/xdg-open"))
+                opener = next((candidate for candidate in candidates if candidate.is_file()), None)
+                if opener is None:
+                    raise RuntimeError("No se encuentra xdg-open en una ruta del sistema.")
+                subprocess.Popen([str(opener), str(folder)], close_fds=True)
         except Exception as error:
             messagebox.showerror("No se puede abrir la carpeta", f"No he podido abrir o preparar esta carpeta:\n{folder}\n\nDetalle: {error}")
 

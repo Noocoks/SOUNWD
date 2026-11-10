@@ -328,6 +328,14 @@ class SOUNWDApp(App):
                        and p.resolve() not in before and not p.name.endswith((".part",".ytdl"))]
             if not files:
                 raise RuntimeError("No se ha encontrado ningún archivo de audio nuevo.")
+            total_bytes = 0
+            for path in files:
+                size = path.stat().st_size
+                if size <= 0 or size > MAX_ANDROID_FILE_BYTES:
+                    raise RuntimeError("Uno de los archivos supera el límite seguro de 2 GiB.")
+                total_bytes += size
+            if total_bytes > batch_limit_bytes:
+                raise RuntimeError("El lote supera el límite de espacio disponible para SOUNWD.")
             saved=[]
             if platform=="android":
                 from androidstorage4kivy import SharedStorage

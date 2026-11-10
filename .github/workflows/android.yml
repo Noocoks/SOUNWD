@@ -12,6 +12,7 @@ on:
     paths:
       - "android/**"
       - "assets/**"
+      - "icon/**"
       - ".github/workflows/android.yml"
   workflow_dispatch:
 

@@ -46,6 +46,10 @@ Por defecto, los archivos se guardan en **Descargas** y en formato **MP3**. Pued
 - Aplicaciones de escritorio para Windows y Linux.
 - Beta Android nativa en Kotlin, actualmente centrada en validar la instalación y la identidad visual.
 
+## Seguridad
+
+La beta Android nativa parte sin permisos de red o almacenamiento, bloquea HTTP sin cifrar y comprueba su manifest de lanzamiento. El descargador de escritorio/Kivy tiene una revisión de seguridad independiente. Consulta [SECURITY.md](SECURITY.md) y la [arquitectura de seguridad Android](docs/ANDROID_SECURITY_ARCHITECTURE.md). Ninguna de estas medidas constituye una garantía de invulnerabilidad.
+
 ## Desarrollo
 
 - `src/gui.py`: interfaz gráfica de escritorio.

@@ -2,4 +2,6 @@ kivy==2.3.1
 yt-dlp==2026.10.26
 androidstorage4kivy==0.1.1
 requests>=2.33.0
+certifi>=2026.10.23
+idna>=3.15
 Pygments>=2.20.0

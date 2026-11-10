@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 import re
-from urllib.parse import urlparse
+import unicodedata
+from urllib.parse import urlsplit
 
 _HOSTS = {
     "youtube.com",
@@ -18,19 +19,23 @@ _TEMPLATE_TOKEN = re.compile(r"%\(([^)]+)\)s")
 
 
 def is_supported_youtube_url(value: str) -> bool:
+    """Accept only canonical HTTPS YouTube URLs and reject ambiguous URL syntax."""
     if not isinstance(value, str) or not value or len(value) > 2048:
         return False
-    if any(ord(char) < 32 or ord(char) == 127 for char in value):
+    if value != value.strip() or "\\" in value:
+        return False
+    if any(char.isspace() or ord(char) < 32 or ord(char) == 127
+           or unicodedata.category(char) in {"Cc", "Cf"} for char in value):
         return False
     try:
-        parsed = urlparse(value.strip())
+        parsed = urlsplit(value)
         return (
-            parsed.scheme == "https"
+            parsed.scheme.lower() == "https"
             and (parsed.hostname or "").lower() in _HOSTS
             and parsed.username is None
             and parsed.password is None
             and parsed.port in (None, 443)
-            and not parsed.fragment
+            and bool(parsed.netloc)
         )
     except (ValueError, AttributeError):
         return False

@@ -10,6 +10,15 @@ from android_security import is_supported_youtube_url, is_safe_private_file, saf
 
 
 class HardenedInputTests(unittest.TestCase):
+    def test_android_manifest_build_config_disables_backup(self):
+        spec = (ROOT / "android" / "buildozer.spec").read_text(encoding="utf-8")
+        self.assertRegex(spec, r"(?m)^android\\.allow_backup\\s*=\\s*False\\s*$")
+        sitecustomize = (ROOT / "android" / "sitecustomize.py").read_text(encoding="utf-8")
+        self.assertNotIn("sys.argv", sitecustomize)
+        self.assertNotIn("ANDROID_PRIVATE", sitecustomize)
+        self.assertNotIn("ANDROID_ARGUMENT", sitecustomize)
+        self.assertNotIn("sys.path", sitecustomize)
+
     def test_url_allowlist_and_parser_confusion(self):
         for host in ("youtube.com", "www.youtube.com", "music.youtube.com", "m.youtube.com", "youtu.be"):
             value = f"https://{host}/watch?v=abc"

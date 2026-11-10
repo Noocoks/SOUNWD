@@ -23,7 +23,7 @@ def _open_startup_log():
         try:
             folder = Path(base)
             folder.mkdir(parents=True, exist_ok=True)
-            return (folder / "sounwd-startup.log").open("a", buffering=1)
+            return (folder / "sounwd-startup.log").open("w", buffering=1)
         except Exception:
             pass
     return None

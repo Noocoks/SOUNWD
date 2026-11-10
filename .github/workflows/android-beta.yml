@@ -2,7 +2,7 @@ name: SOUNWD Android Beta
 
 on:
   push:
-    branches: [beta/android-minimal-screen, 'security/**']
+    branches: [beta/android-minimal-screen]
     paths:
       - 'beta-android/**'
       - '.github/workflows/android-beta.yml'

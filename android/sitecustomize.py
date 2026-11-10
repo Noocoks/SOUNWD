@@ -32,7 +32,7 @@ def _open_log():
                 continue
             folder.mkdir(parents=True, exist_ok=True)
             stream = (folder / "sounwd-startup.log").open(
-                "a", encoding="utf-8", buffering=1
+                "w", encoding="utf-8", buffering=1
             )
             stream.write("\n=== SOUNWD Python runtime bootstrap ===\n")
             stream.write("cwd={!r}\n".format(os.getcwd()))

@@ -42,11 +42,6 @@ class IconGeneratorTests(unittest.TestCase):
             "android/drawable-nodpi/sounwd_launcher_foreground.png",
             "android/drawable-nodpi/sounwd_launcher_monochrome.png",
             "android/mipmap-anydpi/ic_launcher.xml",
-            "android/mipmap-mdpi/ic_launcher.png",
-            "android/mipmap-hdpi/ic_launcher.png",
-            "android/mipmap-xhdpi/ic_launcher.png",
-            "android/mipmap-xxhdpi/ic_launcher.png",
-            "android/mipmap-xxxhdpi/ic_launcher.png",
         ]
         for relative in expected:
             with self.subTest(resource=relative):

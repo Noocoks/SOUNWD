@@ -19,6 +19,17 @@ application = root.find("application")
 assert application is not None, "Missing application declaration"
 assert application.get(ANDROID + "allowBackup") == "false", "App backup must remain disabled"
 assert application.get(ANDROID + "usesCleartextTraffic") == "false", "Cleartext HTTP must remain disabled"
+assert application.get(ANDROID + "networkSecurityConfig") == "@xml/network_security_config", "Explicit network security config is required"
+network_config = ROOT / "app" / "src" / "main" / "res" / "xml" / "network_security_config.xml"
+network_root = ET.parse(network_config).getroot()
+assert network_root.tag == "network-security-config", "Invalid network security config"
+base = network_root.find("base-config")
+assert base is not None and base.get("cleartextTrafficPermitted") == "false", "Base config must reject cleartext"
+anchors = base.find("trust-anchors")
+assert anchors is not None, "System trust anchors must be explicit"
+certificates = anchors.findall("certificates")
+assert len(certificates) == 1 and certificates[0].get("src") == "system", "Only system CAs may be trusted"
+
 assert application.get(ANDROID + "debuggable", "false").lower() != "true", "Manifest must not force debuggable=true"
 
 activities = application.findall("activity")

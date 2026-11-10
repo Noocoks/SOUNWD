@@ -65,7 +65,7 @@ class QuickJSRecipe(Recipe):
         runtime_dir = site_packages[0] / "sounwd_runtime"
         runtime_dir.mkdir(parents=True, exist_ok=True)
         init_file = runtime_dir / "__init__.py"
-        init_file.write_text('"""Bundled SOUNWD JavaScript runtime."""\\n', encoding="utf-8")
+        init_file.write_text('"""Bundled SOUNWD JavaScript runtime."""\n', encoding="utf-8")
         target = runtime_dir / "qjs"
         shutil.copy2(executable, target)
         target.chmod(0o755)

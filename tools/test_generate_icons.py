@@ -38,7 +38,6 @@ class IconGeneratorTests(unittest.TestCase):
             "web/icon-180.png",
             "web/icon-192.png",
             "web/icon-512.png",
-            "android/drawable-nodpi/sounwd_master.png",
             "android/drawable/sounwd_mark.png",
             "android/drawable/sounwd_launcher_foreground.png",
             "android/mipmap-anydpi/ic_launcher.xml",

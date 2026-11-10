@@ -2,7 +2,7 @@ name: Build SOUNWD desktop apps
 
 on:
   push:
-    branches: [main, 'security/**']
+    branches: [main]
   pull_request:
     paths:
       - "src/**"

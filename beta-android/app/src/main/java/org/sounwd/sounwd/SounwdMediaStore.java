@@ -172,6 +172,23 @@ public final class SounwdMediaStore {
         EXPORTED_URIS.clear();
     }
 
+    public static void abortExportBatch() throws Exception {
+        Activity activity = getActivity();
+        ArrayList<String> pending;
+        synchronized (EXPORTED_URIS) {
+            pending = new ArrayList<>(EXPORTED_URIS);
+            EXPORTED_URIS.clear();
+        }
+        ContentResolver resolver = activity.getContentResolver();
+        for (String value : pending) {
+            try {
+                resolver.delete(Uri.parse(value), null, null);
+            } catch (RuntimeException ignored) {
+                // Continue cleanup of the remaining rows.
+            }
+        }
+    }
+
     private static Activity getActivity() throws Exception {
         Class<?> activityClass = Class.forName("org.kivy.android.PythonActivity");
         Field activityField = activityClass.getField("mActivity");

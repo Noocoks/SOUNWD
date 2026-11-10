@@ -4,7 +4,7 @@ This document defines the security baseline for the Android app as it grows beyo
 
 ## Current state
 
-The current Kotlin beta is intentionally a static screen. It targets API 36, compiles against API 36, and retains minSdk 23 so older supported Android devices can still install it. Its manifest has no network or storage permission, no WebView, no dynamic code loading, no services, no receivers, no content providers, and no third-party runtime SDKs. Cleartext traffic is disabled and the network security config trusts only the Android system CA store. Do not add any of these just to prepare for future functionality.
+The current Kotlin beta is intentionally a static screen. It targets and compiles against API 36, with minSdk 29 (Android 10) to match the supported device baseline. Its manifest has no network or storage permission, no WebView, no dynamic code loading, no services, no receivers, no content providers, and no third-party runtime SDKs. Cleartext traffic is disabled and the network security config trusts only the Android system CA store. Do not add any of these just to prepare for future functionality.
 
 ## Non-negotiable defaults
 

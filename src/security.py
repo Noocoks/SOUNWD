@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 import re
 import shutil
+import stat
 from pathlib import Path
 from urllib.parse import urlsplit
 import unicodedata
@@ -93,7 +94,11 @@ def copy_downloaded_files(source_dir: Path, destination_dir: Path) -> list[Path]
     """Publish only regular audio files using exclusive, no-follow file creation."""
     source_dir = Path(source_dir)
     destination_dir = Path(destination_dir).expanduser()
+    if destination_dir.is_symlink():
+        raise ValueError("La carpeta de destino no puede ser un enlace simbólico.")
     destination_dir.mkdir(parents=True, exist_ok=True)
+    if not destination_dir.is_dir():
+        raise ValueError("La carpeta de destino no es un directorio.")
     saved: list[Path] = []
 
     for source in sorted(source_dir.iterdir()):
@@ -114,7 +119,13 @@ def copy_downloaded_files(source_dir: Path, destination_dir: Path) -> list[Path]
             except OSError:
                 raise
             try:
-                with os.fdopen(descriptor, "wb") as output, source.open("rb") as incoming:
+                source_flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+                source_descriptor = os.open(source, source_flags)
+                source_info = os.fstat(source_descriptor)
+                if not stat.S_ISREG(source_info.st_mode):
+                    os.close(source_descriptor)
+                    raise ValueError("El origen de descarga no es un archivo regular.")
+                with os.fdopen(descriptor, "wb") as output, os.fdopen(source_descriptor, "rb") as incoming:
                     shutil.copyfileobj(incoming, output, length=1024 * 1024)
                     output.flush()
                     os.fsync(output.fileno())

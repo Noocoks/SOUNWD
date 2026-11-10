@@ -387,7 +387,9 @@ class SOUNWDApp(App):
             for name in self.last_files:
                 file_path=Path(name).expanduser()
                 if not file_path.is_absolute(): file_path=self.private_dir/file_path
-                uri=shared.copy_to_shared(str(file_path.resolve()),collection=collection)
+                if not is_safe_private_file(file_path,self.private_dir):
+                    raise RuntimeError("El archivo ya no está dentro del almacenamiento privado de SOUNWD.")
+                uri=shared.copy_to_shared(str(file_path),collection=collection)
                 if uri:uris.append(uri)
             if uris:ShareSheet().share_file_list(uris)
             else:self.status.text="No se ha podido preparar el archivo para compartir."

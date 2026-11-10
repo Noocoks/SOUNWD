@@ -301,7 +301,15 @@ class SOUNWDApp(App):
             if advanced["subtitle_langs"]: options["subtitleslangs"]=advanced["subtitle_langs"]
             if advanced["write_subtitles"]: options["writesubtitles"]=True
 
+            import importlib.util
             import yt_dlp
+            runtime_spec = importlib.util.find_spec("sounwd_runtime")
+            if runtime_spec is None or runtime_spec.origin is None:
+                raise RuntimeError("No se ha incluido el motor JavaScript de SOUNWD en esta APK.")
+            quickjs_path = Path(runtime_spec.origin).resolve().parent / "qjs"
+            if not quickjs_path.is_file():
+                raise RuntimeError("El motor JavaScript de Android no está disponible en esta instalación.")
+            options["js_runtimes"] = {"quickjs": {"path": str(quickjs_path)}}
             try:
                 with yt_dlp.YoutubeDL(options) as ydl:
                     code=ydl.download([link])

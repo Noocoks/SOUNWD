@@ -71,6 +71,36 @@ class IconGeneratorTests(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             generate(self.root / "missing.png", self.output)
 
+    def test_rejects_non_png_master(self):
+        source = self.root / "master.jpg"
+        Image.new("RGB", (512, 512)).save(source, format="JPEG")
+        with self.assertRaisesRegex(ValueError, "must be a PNG"):
+            generate(source, self.output)
+
+    def test_rejects_oversized_master_before_decode(self):
+        source = self.root / "large.png"
+        image = Image.new("RGB", (8192, 8192))
+        image.save(source)
+        with self.assertRaisesRegex(ValueError, "exceeds the safe limit"):
+            generate(source, self.output)
+
+    def test_rejects_symlink_master(self):
+        link = self.root / "linked-master.png"
+        try:
+            link.symlink_to(self.source)
+        except (OSError, NotImplementedError):
+            self.skipTest("Symbolic links are not available on this runner")
+        with self.assertRaisesRegex(ValueError, "symbolic link"):
+            generate(link, self.output)
+
+    def test_custom_output_directory_is_not_recursively_deleted(self):
+        custom = self.root / "custom-output"
+        custom.mkdir()
+        sentinel = custom / "keep.txt"
+        sentinel.write_text("keep", encoding="utf-8")
+        generate(self.source, custom)
+        self.assertEqual(sentinel.read_text(encoding="utf-8"), "keep")
+
 
 if __name__ == "__main__":
     unittest.main()

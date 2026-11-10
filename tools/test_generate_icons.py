@@ -41,7 +41,7 @@ class IconGeneratorTests(unittest.TestCase):
             "android/drawable-nodpi/sounwd_master.png",
             "android/drawable/sounwd_mark.png",
             "android/drawable/sounwd_launcher_foreground.png",
-            "android/mipmap-anydpi-v26/ic_launcher.xml",
+            "android/mipmap-anydpi/ic_launcher.xml",
             "android/mipmap-mdpi/ic_launcher.png",
             "android/mipmap-hdpi/ic_launcher.png",
             "android/mipmap-xhdpi/ic_launcher.png",
@@ -56,7 +56,7 @@ class IconGeneratorTests(unittest.TestCase):
 
     def test_android_adaptive_icon_is_well_formed_xml(self):
         generate(self.source, self.output)
-        xml_path = self.output / "android/mipmap-anydpi-v26/ic_launcher.xml"
+        xml_path = self.output / "android/mipmap-anydpi/ic_launcher.xml"
         root = ET.parse(xml_path).getroot()
         self.assertEqual(root.tag, "adaptive-icon")
         self.assertEqual(len(root), 2)

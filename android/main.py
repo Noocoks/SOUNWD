@@ -279,7 +279,7 @@ class SOUNWDApp(App):
             })
             template_path=build_output_path(self.private_dir,safe_advanced["outtmpl"])
             options={"format":safe_advanced["format"] or selector,
-                     "outtmpl":str(template_path),
+                     "outtmpl":str(template_path),"windowsfilenames":True,
                      "noplaylist":not playlist,"quiet":True,"no_warnings":True,
                      "progress_hooks":[hook],"overwrites":False,
                      "continuedl":False,"nopart":False}

@@ -49,6 +49,14 @@ La pantalla principal está pensada para todo el mundo: pega el enlace, elige el
 
 Si ya conoces yt-dlp, abre **Opciones avanzadas (yt-dlp)** para configurar directamente parámetros como el selector de formato (`-f`), la plantilla del nombre (`-o`), los elementos de una lista (`--playlist-items`), el límite de velocidad (`--limit-rate`), los reintentos (`--retries`) y los subtítulos (`--write-subs`, `--sub-langs`). En escritorio también puedes incrustar portada y metadatos; estas funciones requieren FFmpeg. Los campos avanzados son opcionales: si los dejas vacíos, SOUNWD usa sus valores habituales.
 
+## Seguridad
+
+> La seguridad se valida en cada Pull Request mediante CI; no se deben distribuir builds de prueba como releases.
+
+SOUNWD valida los enlaces HTTPS de YouTube con una lista exacta de dominios, limita las plantillas avanzadas a nombres de archivo seguros, confina las descargas a la carpeta elegida y evita sobrescribir archivos existentes. Android mantiene las descargas en almacenamiento privado y solo las exporta cuando el usuario lo solicita. Las comprobaciones de seguridad automáticas incluyen pruebas de regresión, Bandit, pip-audit, CodeQL y revisión de cambios de dependencias. Consulta [SECURITY.md](SECURITY.md) y [la arquitectura de seguridad Android](docs/ANDROID_SECURITY.md).
+
+La versión Android actual sigue siendo un prototipo de descarga; la beta Kotlin es solo una pantalla de prueba. La ampliación móvil se diseñará con permisos mínimos y componentes separados antes de incorporar nuevas funciones.
+
 ## Qué incluye
 
 - Interfaz de escritorio oscura, con acentos rojos y grises.

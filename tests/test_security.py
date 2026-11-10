@@ -1,0 +1,113 @@
+from pathlib import Path
+import os
+import sys
+import tempfile
+import unittest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from security import (build_output_path, is_path_within, validate_advanced_options,
+                      validate_output_template, validate_youtube_url)
+
+
+class URLValidationTests(unittest.TestCase):
+    def test_official_https_hosts(self):
+        for url in (
+            "https://youtube.com/watch?v=abc",
+            "https://www.youtube.com/watch?v=abc",
+            "https://music.youtube.com/watch?v=abc",
+            "https://youtu.be/abc",
+        ):
+            self.assertEqual(validate_youtube_url(url), url)
+
+    def test_rejects_http_userinfo_ports_and_lookalikes(self):
+        bad = (
+            "http://youtube.com/watch?v=x",
+            "https://youtube.com.evil.example/watch?v=x",
+            "https://youtube.com@evil.example/watch?v=x",
+            "https://user:pass@youtube.com/watch?v=x",
+            "https://youtube.com:444/watch?v=x",
+            "https://youtube.com./watch?v=x",
+            "https://youtube.com\\@evil.example/x",
+            " https://youtube.com/watch?v=x",
+            "https://youtube.com/\nmalicious", "https://youtube.com/\x7fmalicious",
+            "file:///etc/passwd",
+        )
+        for url in bad:
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                validate_youtube_url(url)
+
+
+class OutputTemplateTests(unittest.TestCase):
+    def test_allows_basic_filename_templates(self):
+        for value in ("%(title)s.%(ext)s", "%(title)s - %(uploader)s.%(ext)s",
+                      "%(playlist_index)s - %(title)s.%(ext)s"):
+            self.assertEqual(validate_output_template(value), value)
+        self.assertEqual(validate_output_template("Música - %(title)s.%(ext)s"), "Música - %(title)s.%(ext)s")
+
+    def test_rejects_path_traversal_and_expression_injection(self):
+        for value in ("../%(title)s.%(ext)s", "..\\evil.mp3", "/tmp/evil.mp3",
+                      "C:evil.mp3", "%(unknown)s.mp3", "%(title)s/%(ext)s",
+                      "%(title)s;touch bad", "%(title)s\x00.mp3", "CON.mp3"):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                validate_output_template(value)
+
+    def test_output_confined_to_selected_directory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "downloads"
+            root.mkdir()
+            result = build_output_path(root, "%(title)s.%(ext)s")
+            self.assertEqual(result.parent, root.resolve())
+
+    def test_file_containment_rejects_external_and_symlink_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            root = base / "private"
+            root.mkdir()
+            inside = root / "inside.mp3"
+            outside = base / "outside.mp3"
+            inside.write_bytes(b"audio")
+            outside.write_bytes(b"outside")
+            self.assertTrue(is_path_within(inside, root))
+            self.assertFalse(is_path_within(outside, root))
+            if os.name != "nt":
+                link = root / "linked.mp3"
+                link.symlink_to(outside)
+                self.assertFalse(is_path_within(link, root))
+
+    def test_symlink_destination_is_rejected(self):
+        if os.name == "nt":
+            self.skipTest("Creating directory symlinks may require Windows Developer Mode.")
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            outside = base / "outside"
+            outside.mkdir()
+            link = base / "downloads"
+            link.symlink_to(outside, target_is_directory=True)
+            with self.assertRaises(ValueError):
+                build_output_path(link, "%(title)s.%(ext)s")
+
+
+class AdvancedOptionTests(unittest.TestCase):
+    def test_bounds_and_rejects_injection_like_values(self):
+        safe = validate_advanced_options({
+            "format": "bestaudio/best", "outtmpl": "%(title)s.%(ext)s",
+            "playlist_items": "1,3,5-8", "ratelimit": "2M",
+            "retries": "10", "subtitleslangs": "es,en",
+        })
+        self.assertEqual(safe["retries"], 10)
+        filtered = dict(safe, format="bestaudio[height<=720]/best")
+        self.assertEqual(validate_advanced_options(filtered)["format"], "bestaudio[height<=720]/best")
+        for key, value in (("playlist_items", "1;rm -rf /"),
+                           ("ratelimit", "$(curl evil)"), ("retries", "999"),
+                           ("subtitleslangs", "../../etc/passwd"),
+                           ("format", "https://evil.example/file"), ("format", 123), ("retries", 21)):
+            data = {"format": "bestaudio", "outtmpl": "%(title)s.%(ext)s",
+                    "playlist_items": "", "ratelimit": "", "retries": "",
+                    "subtitleslangs": ""}
+            data[key] = value
+            with self.subTest(key=key, value=value), self.assertRaises(ValueError):
+                validate_advanced_options(data)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -56,8 +56,8 @@ class SetupWindow:
 
 def worker(window: SetupWindow) -> None:
     try:
-        if sys.version_info < (3, 10):
-            raise RuntimeError("SOUNWD necesita Python 3.10 o superior. Instala una versión reciente de Python y vuelve a abrir SOUNWD.")
+        if sys.version_info < (3, 11):
+            raise RuntimeError("SOUNWD necesita Python 3.11 o superior. Instala una versión reciente de Python y vuelve a abrir SOUNWD.")
 
         if os.name == "nt":
             python = VENV / "Scripts" / "python.exe"
@@ -77,7 +77,7 @@ def worker(window: SetupWindow) -> None:
         installed_hash = stamp.read_text(encoding="ascii").strip() if stamp.exists() else ""
         if installed_hash != requirements_hash:
             window.set_status("Instalando o actualizando los componentes necesarios…")
-            subprocess.run([str(python), "-m", "pip", "install", "--disable-pip-version-check",
+            subprocess.run([str(python), "-m", "pip", "install", "--only-binary=:all:", "--disable-pip-version-check",
                             "-r", str(REQUIREMENTS)],
                            check=True, cwd=ROOT)
             stamp.write_text(requirements_hash, encoding="ascii")

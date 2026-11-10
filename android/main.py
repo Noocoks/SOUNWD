@@ -23,7 +23,7 @@ def _open_startup_log():
         try:
             folder = Path(base)
             folder.mkdir(parents=True, exist_ok=True)
-            return (folder / "sounwd-startup.log").open("a", buffering=1)
+            return (folder / "sounwd-startup.log").open("w", buffering=1)
         except Exception:
             pass
     return None
@@ -62,7 +62,7 @@ def _log_thread_exception(args):
 
 threading.excepthook = _log_thread_exception
 _log_startup('main.py module entered; Python standard-library setup complete')
-from urllib.parse import urlparse
+from security import build_output_path, is_path_within, validate_advanced_options, validate_youtube_url
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.window import Window
@@ -96,9 +96,10 @@ HOSTS={"youtube.com","www.youtube.com","music.youtube.com","m.youtube.com","yout
 
 def valid_url(value):
     try:
-        p=urlparse(value.strip()); host=(p.hostname or "").lower()
-        return p.scheme in {"http","https"} and (host in HOSTS or any(host.endswith("."+h) for h in HOSTS))
-    except ValueError: return False
+        validate_youtube_url(value)
+        return True
+    except ValueError:
+        return False
 
 class Panel(BoxLayout):
     def __init__(self, **kwargs):
@@ -238,6 +239,7 @@ class SOUNWDApp(App):
         link=self.url.text.strip()
         if not valid_url(link):
             self.status.text="Pega un enlace válido de YouTube o YouTube Music."; return
+        self.last_files=[]
         self.downloading=True; self.download.disabled=True; self.download.text="Un momento…"
         self.status.text="Conectando… no cierres SOUNWD."; self.progress.text=""; self.progress_bar.value=0
         try:
@@ -255,6 +257,7 @@ class SOUNWDApp(App):
     def download_worker(self,link,selector,playlist,destination,advanced):
         """Descarga y publica solo archivos de audio; cualquier fallo vuelve a la UI."""
         try:
+            validate_youtube_url(link)
             self.private_dir.mkdir(parents=True, exist_ok=True)
             before={p.resolve() for p in self.private_dir.rglob("*") if p.is_file()}
             downloaded_paths=set()
@@ -268,18 +271,24 @@ class SOUNWDApp(App):
                 elif data.get("status")=="finished" and data.get("filename"):
                     downloaded_paths.add(Path(data["filename"]).expanduser().resolve())
 
-            template=advanced["output_template"] or "%(title)s.%(ext)s"
-            template_path=Path(template).expanduser()
-            if not template_path.is_absolute():
-                template_path=self.private_dir/template_path
-            options={"format":advanced["ydl_format"] or selector,
-                     "outtmpl":str(template_path),
+            safe_advanced=validate_advanced_options({
+                "format":advanced["ydl_format"],
+                "outtmpl":advanced["output_template"],
+                "playlist_items":advanced["playlist_items"],
+                "ratelimit":advanced["limit_rate"],
+                "retries":advanced["retries"],
+                "subtitleslangs":advanced["subtitle_langs"],
+            })
+            template_path=build_output_path(self.private_dir,safe_advanced["outtmpl"])
+            options={"format":safe_advanced["format"] or selector,
+                     "outtmpl":str(template_path),"windowsfilenames":True,
                      "noplaylist":not playlist,"quiet":True,"no_warnings":True,
-                     "progress_hooks":[hook],"overwrites":False}
-            if advanced["playlist_items"]: options["playlist_items"]=advanced["playlist_items"]
-            if advanced["limit_rate"]: options["ratelimit"]=advanced["limit_rate"]
-            if advanced["retries"]: options["retries"]=max(0,int(advanced["retries"]))
-            if advanced["subtitle_langs"]: options["subtitleslangs"]=advanced["subtitle_langs"]
+                     "progress_hooks":[hook],"overwrites":False,
+                     "continuedl":False,"nopart":False}
+            if safe_advanced["playlist_items"]: options["playlist_items"]=safe_advanced["playlist_items"]
+            if safe_advanced["ratelimit"]: options["ratelimit"]=safe_advanced["ratelimit"]
+            if safe_advanced["retries"] is not None: options["retries"]=safe_advanced["retries"]
+            if safe_advanced["subtitleslangs"]: options["subtitleslangs"]=safe_advanced["subtitleslangs"]
             if advanced["write_subtitles"]: options["writesubtitles"]=True
 
             import yt_dlp
@@ -290,28 +299,31 @@ class SOUNWDApp(App):
 
             audio_extensions={".aac",".flac",".m4a",".mka",".mp3",".ogg",".opus",".wav",".weba",".webm"}
             files=[p for p in downloaded_paths
-                   if p.is_file() and p.suffix.lower() in audio_extensions
+                   if is_path_within(p,self.private_dir)
+                   and p.suffix.lower() in audio_extensions
                    and not p.name.endswith((".part",".ytdl"))]
             # Fallback for downloader versions that omit the final filename in hooks.
             if not files:
                 files=[p.resolve() for p in self.private_dir.rglob("*")
-                       if p.is_file() and p.suffix.lower() in audio_extensions
+                       if is_path_within(p,self.private_dir)
+                       and p.suffix.lower() in audio_extensions
                        and p.resolve() not in before and not p.name.endswith((".part",".ytdl"))]
             if not files:
                 raise RuntimeError("No se ha encontrado ningún archivo de audio nuevo.")
             saved=[]
             if platform=="android":
-                from androidstorage4kivy import SharedStorage
                 from jnius import autoclass
-                Environment=autoclass("android.os.Environment")
-                shared=SharedStorage()
-                collection=Environment.DIRECTORY_DOWNLOADS if destination.startswith("Descargas") else Environment.DIRECTORY_MUSIC
+                MediaStoreBridge=autoclass("org.sounwd.sounwd.SounwdMediaStore")
+                collection="Download" if destination.startswith("Descargas") else "Music"
+                if len(files) > 500:
+                    raise RuntimeError("Puedes exportar un máximo de 500 archivos por descarga.")
+                MediaStoreBridge.beginExportBatch()
                 for path in files:
-                    uri=shared.copy_to_shared(str(path),collection=collection)
+                    uri=MediaStoreBridge.exportAudio(str(self.private_dir),str(path),collection)
                     if uri:
-                        saved.append(str(path.resolve()))
+                        saved.append(str(uri))
                 if not saved:
-                    raise RuntimeError("Android no ha podido guardar el audio en la carpeta compartida.")
+                    raise RuntimeError("Android no ha podido exportar el audio a MediaStore.")
             else:
                 saved=[str(path.resolve()) for path in files]
             self.events.put(("done",saved))
@@ -342,18 +354,13 @@ class SOUNWDApp(App):
         if not self.last_files:
             self.status.text="Todavía no hay descargas para compartir.";return
         try:
-            from androidstorage4kivy import ShareSheet,SharedStorage
             from jnius import autoclass
-            Environment=autoclass("android.os.Environment"); shared=SharedStorage()
-            collection=Environment.DIRECTORY_DOWNLOADS if self.destination.text.startswith("Descargas") else Environment.DIRECTORY_MUSIC
-            uris=[]
-            for name in self.last_files:
-                file_path=Path(name).expanduser()
-                if not file_path.is_absolute(): file_path=self.private_dir/file_path
-                uri=shared.copy_to_shared(str(file_path.resolve()),collection=collection)
-                if uri:uris.append(uri)
-            if uris:ShareSheet().share_file_list(uris)
-            else:self.status.text="No se ha podido preparar el archivo para compartir."
+            MediaStoreBridge=autoclass("org.sounwd.sounwd.SounwdMediaStore")
+            ArrayList=autoclass("java.util.ArrayList")
+            uris=ArrayList()
+            for value in self.last_files:
+                uris.add(value)
+            MediaStoreBridge.shareAudioList(uris)
         except Exception as e:self.popup("No se ha podido compartir: "+str(e))
 
 if __name__=="__main__":

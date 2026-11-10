@@ -2,7 +2,7 @@ name: Build SOUNWD Android APK
 
 on:
   push:
-    branches: [main, "android/**"]
+    branches: [main, "android/**", "security/**"]
     paths:
       - "android/**"
       - "assets/**"
@@ -27,13 +27,15 @@ jobs:
     timeout-minutes: 120
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.11"
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
         with:
           distribution: temurin
           java-version: "17"
@@ -41,8 +43,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y git zip unzip build-essential autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev automake
-          python -m pip install --upgrade pip
-          python -m pip install buildozer==1.6.0 cython==0.29.34 pillow
+          python -m pip install --upgrade pip 'setuptools>=84.1.0'
+          python -m pip install --only-binary=:all: buildozer==1.6.0 cython==0.29.34 Pillow==13.0.0 pip-audit bandit yt-dlp==2026.10.26
+      - name: Run security regression tests
+        run: |
+          python -m unittest discover -s tests -p 'test_security.py' -v
+          python -m unittest discover -s tests -p 'test_android_security.py' -v
+      - name: Audit Android build dependencies
+        run: pip-audit --strict
+      - name: Static security analysis
+        run: bandit -r src android bootstrap.py -ll -s B404,B603,B607
       - name: Generate and verify shared brand assets
         run: |
           python assets/build_brand_assets.py
@@ -67,16 +77,20 @@ jobs:
         run: |
           test -n "$(find android/bin -maxdepth 1 -type f -name '*.apk' -print -quit)"
           ls -lh android/bin/*.apk
+      - name: Inspect compiled APK manifest security
+        run: |
+          APK="$(find android/bin -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          python tests/check_apk_manifest.py "$APK"
       - name: Upload build log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: SOUNWD-Android-Build-Log
           path: android-build.log
           if-no-files-found: ignore
           retention-days: 14
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: SOUNWD-Android-APK
           path: android/bin/*.apk

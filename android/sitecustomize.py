@@ -32,20 +32,12 @@ def _open_log():
                 continue
             folder.mkdir(parents=True, exist_ok=True)
             stream = (folder / "sounwd-startup.log").open(
-                "a", encoding="utf-8", buffering=1
+                "w", encoding="utf-8", buffering=1
             )
             stream.write("\n=== SOUNWD Python runtime bootstrap ===\n")
             stream.write("cwd={!r}\n".format(os.getcwd()))
             stream.write("executable={!r}\n".format(sys.executable))
             stream.write("version={!r}\n".format(sys.version))
-            stream.write("argv={!r}\n".format(sys.argv))
-            stream.write("ANDROID_PRIVATE={!r}\n".format(
-                os.environ.get("ANDROID_PRIVATE")
-            ))
-            stream.write("ANDROID_ARGUMENT={!r}\n".format(
-                os.environ.get("ANDROID_ARGUMENT")
-            ))
-            stream.write("sys.path={!r}\n".format(sys.path))
             stream.flush()
             return stream
         except Exception:

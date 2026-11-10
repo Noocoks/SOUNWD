@@ -8,6 +8,9 @@ ANDROID = "{http://schemas.android.com/apk/res/android}"
 
 root = ET.parse(MANIFEST).getroot()
 assert root.tag == "manifest", "Unexpected manifest root"
+gradle_text = (ROOT / "app" / "build.gradle.kts").read_text(encoding="utf-8")
+assert "minSdk = 29" in gradle_text, "Android 10 (API 29) must remain the minimum supported version"
+assert "targetSdk = 36" in gradle_text, "Android 16 (API 36) must remain the current target"
 
 permissions = [
     node.get(ANDROID + "name")

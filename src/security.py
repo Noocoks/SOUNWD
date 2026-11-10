@@ -88,7 +88,10 @@ def validate_advanced_options(options: dict) -> dict:
     """Validate every free-form advanced field before passing it to yt-dlp."""
     clean = dict(options)
     selector = (clean.get("format") or "").strip()
-    if selector and not _FORMAT_SELECTOR.fullmatch(selector):
+    if selector and (not _FORMAT_SELECTOR.fullmatch(selector)
+                     or "://" in selector.lower()
+                     or selector.lower().startswith(("http", "ftp"))
+                     or ".." in selector):
         raise ValueError("El selector de formato contiene caracteres no permitidos.")
     clean["format"] = selector
     clean["outtmpl"] = validate_output_template(clean.get("outtmpl", ""))

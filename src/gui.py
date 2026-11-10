@@ -610,7 +610,7 @@ class SoundwApp(ctk.CTk):
             messagebox.showerror("No se ha podido iniciar", str(error))
 
     def _download_worker(self, url: str, audio_format: str, destination: Path, playlist: bool, quality_choice: str, filename_choice: str, advanced: dict) -> None:
-        """Prepara y ejecuta la descarga fuera del hilo de Tk, notificando siempre el resultado."""
+        """Download into private staging, then publish audio without overwriting files."""
         def hook(data: dict) -> None:
             if data.get("status") == "downloading":
                 downloaded = data.get("downloaded_bytes", 0)
@@ -620,18 +620,7 @@ class SoundwApp(ctk.CTk):
             elif data.get("status") == "finished":
                 self.events.put(("progress", (0.98, "Preparando el archivo…")))
 
-        retry_count = None
-        if advanced["retries"]:
-            try:
-                retry_count = int(advanced["retries"])
-                if retry_count < 0:
-                    raise ValueError
-            except ValueError:
-                self.events.put(("error", "El número de reintentos debe ser un entero igual o mayor que cero."))
-                return
         try:
-            # Heavy downloader/post-processing packages are loaded only when needed;
-            # this keeps the first window responsive and reduces perceived startup.
             import imageio_ffmpeg
             import yt_dlp
 
@@ -639,8 +628,7 @@ class SoundwApp(ctk.CTk):
             quality = {"Máxima": "0", "Alta": "192", "Normal": "128"}.get(quality_choice, "0")
             filename = "%(title)s" if filename_choice == "Solo título" else "%(title)s - %(uploader)s"
             template = advanced["outtmpl"] or (filename + ".%(ext)s")
-            # Download into a fresh private temporary directory. Only regular audio
-            # files are copied into the user folder, using exclusive creation.
+
             with tempfile.TemporaryDirectory(prefix="sounwd-download-") as temporary:
                 staging = Path(temporary)
                 options = {
@@ -659,21 +647,21 @@ class SoundwApp(ctk.CTk):
                         {"key": "FFmpegExtractAudio", "preferredcodec": audio_format, "preferredquality": quality},
                     ],
                 }
-            if advanced["playlist_items"]:
-                options["playlist_items"] = advanced["playlist_items"]
-            if advanced["ratelimit"]:
-                options["ratelimit"] = advanced["ratelimit"]
-            if retry_count is not None:
-                options["retries"] = retry_count
-            if advanced["subtitleslangs"]:
-                options["subtitleslangs"] = advanced["subtitleslangs"]
-            if advanced["writesubtitles"]:
-                options["writesubtitles"] = True
-            if advanced["embedthumbnail"]:
-                options["writethumbnail"] = True
-                options["postprocessors"].append({"key": "EmbedThumbnail"})
-            if advanced["addmetadata"]:
-                options["addmetadata"] = True
+                if advanced["playlist_items"]:
+                    options["playlist_items"] = advanced["playlist_items"]
+                if advanced["ratelimit"]:
+                    options["ratelimit"] = advanced["ratelimit"]
+                if advanced["retries"]:
+                    options["retries"] = int(advanced["retries"])
+                if advanced["subtitleslangs"]:
+                    options["subtitleslangs"] = advanced["subtitleslangs"]
+                if advanced["writesubtitles"]:
+                    options["writesubtitles"] = True
+                if advanced["embedthumbnail"]:
+                    options["writethumbnail"] = True
+                    options["postprocessors"].append({"key": "EmbedThumbnail"})
+                if advanced["addmetadata"]:
+                    options["addmetadata"] = True
 
                 with yt_dlp.YoutubeDL(options) as downloader:
                     result = downloader.download([url])
@@ -682,6 +670,7 @@ class SoundwApp(ctk.CTk):
                 saved_files = copy_downloaded_files(staging, destination)
                 if not saved_files:
                     raise RuntimeError("No se ha encontrado ningún archivo de audio nuevo.")
+
             self.events.put(("done", str(destination)))
         except Exception as error:
             message = str(error).lower()
@@ -695,6 +684,8 @@ class SoundwApp(ctk.CTk):
                 friendly = "No se ha podido preparar el formato de audio. Vuelve a intentarlo; si continúa, prueba MP3."
             elif "network" in message or "connection" in message or "timed out" in message:
                 friendly = "Parece que la conexión a Internet ha fallado. Comprueba tu conexión y vuelve a intentarlo."
+            elif isinstance(error, ValueError):
+                friendly = str(error)
             else:
                 friendly = "No se ha podido guardar este audio. Comprueba el enlace y tu conexión, y vuelve a intentarlo."
             self.events.put(("error", friendly))

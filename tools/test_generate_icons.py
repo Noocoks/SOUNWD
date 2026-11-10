@@ -53,6 +53,7 @@ class IconGeneratorTests(unittest.TestCase):
                 target = self.output / relative
                 self.assertTrue(target.is_file(), f"Missing generated resource: {relative}")
                 self.assertGreater(target.stat().st_size, 0)
+        self.assertFalse((self.output / "android/mipmap-anydpi-v26").exists())
 
     def test_android_adaptive_icon_is_well_formed_xml(self):
         generate(self.source, self.output)

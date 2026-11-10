@@ -4,7 +4,7 @@ This document defines the security baseline for the Android app as it grows beyo
 
 ## Current state
 
-The current Kotlin beta is intentionally a static screen. It has no network permission, no storage permission, no WebView, no dynamic code loading, no services, no receivers, no content providers, and no third-party runtime SDKs. Do not add any of these just to prepare for future functionality.
+The current Kotlin beta is intentionally a static screen. It targets API 36, compiles against API 36, and retains minSdk 23 so older supported Android devices can still install it. Its manifest has no network or storage permission, no WebView, no dynamic code loading, no services, no receivers, no content providers, and no third-party runtime SDKs. Cleartext traffic is disabled and the network security config trusts only the Android system CA store. Do not add any of these just to prepare for future functionality.
 
 ## Non-negotiable defaults
 
@@ -27,6 +27,10 @@ The current Kotlin beta is intentionally a static screen. It has no network perm
 - Run CodeQL, dependency auditing, Android Lint, unit tests, and release build in CI.
 - Verify the merged manifest and merged network security config, not only source manifests.
 - Produce a signed release artifact using protected signing credentials; never distribute debug APKs as production builds.
+
+## Compatibility and verification matrix
+
+Before a downloader feature is released, test the minimum supported API (23) plus Android 10 (API 29), Android 11 (API 30), Android 16 (API 36), and Android 17 (API 37). Prioritize permission denial, scoped storage/SAF behavior, activity recreation, background restrictions, and edge-to-edge layouts. API 37 behavior changes must be tested before raising targetSdk beyond 36.
 
 ## Explicitly deferred
 

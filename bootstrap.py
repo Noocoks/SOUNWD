@@ -77,7 +77,7 @@ def worker(window: SetupWindow) -> None:
         installed_hash = stamp.read_text(encoding="ascii").strip() if stamp.exists() else ""
         if installed_hash != requirements_hash:
             window.set_status("Instalando o actualizando los componentes necesarios…")
-            subprocess.run([str(python), "-m", "pip", "install", "--disable-pip-version-check",
+            subprocess.run([str(python), "-m", "pip", "install", "--only-binary=:all:", "--disable-pip-version-check",
                             "-r", str(REQUIREMENTS)],
                            check=True, cwd=ROOT)
             stamp.write_text(requirements_hash, encoding="ascii")

@@ -41,6 +41,7 @@ class OutputTemplateTests(unittest.TestCase):
         for value in ("%(title)s.%(ext)s", "%(title)s - %(uploader)s.%(ext)s",
                       "%(playlist_index)s - %(title)s.%(ext)s"):
             self.assertEqual(validate_output_template(value), value)
+        self.assertEqual(validate_output_template("Música - %(title)s.%(ext)s"), "Música - %(title)s.%(ext)s")
 
     def test_rejects_path_traversal_and_expression_injection(self):
         for value in ("../%(title)s.%(ext)s", "..\\evil.mp3", "/tmp/evil.mp3",

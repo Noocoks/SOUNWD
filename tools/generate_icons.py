@@ -52,7 +52,7 @@ def save_android(master: Image.Image, output: Path) -> None:
     root = output / "android"
     nodpi = root / "drawable-nodpi"
     drawable = root / "drawable"
-    adaptive = root / "mipmap-anydpi-v26"
+    adaptive = root / "mipmap-anydpi"
     for directory in (nodpi, drawable, adaptive):
         directory.mkdir(parents=True, exist_ok=True)
 

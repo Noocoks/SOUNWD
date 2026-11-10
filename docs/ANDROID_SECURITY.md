@@ -16,7 +16,7 @@ La aplicación Android de producción es la versión Kivy en \`android/\`. La be
 
 ## Dependencias Android
 
-Las dependencias de ejecución de Android están fijadas en `android/buildozer.spec` y reflejadas en `android/requirements-audit.txt` para que los cambios de versiones sean explícitos y puedan revisarse con OSV-Scanner. `androidstorage4kivy` se conserva por compatibilidad con el flujo de exportación actual, pero su upstream está archivado; es un riesgo de mantenimiento conocido. No se sustituye por un puente nativo hasta contar con pruebas de compilación e instalación en dispositivo físico.
+Las dependencias de ejecución de Android están fijadas en `android/buildozer.spec` y reflejadas en `android/requirements-audit.txt` para que los cambios de versiones sean explícitos y puedan revisarse con OSV-Scanner. yt-dlp usa `yt-dlp-ejs` y un motor QuickJS-NG compilado desde un commit concreto para ARM64; el ejecutable se compila con alineación ELF de 16 KiB y se instala dentro del paquete privado de Python. La aplicación verifica que el motor esté presente antes de iniciar una descarga. `androidstorage4kivy` se conserva por compatibilidad con el flujo de exportación actual, pero su upstream está archivado; es un riesgo de mantenimiento conocido. No se sustituye por un puente nativo hasta contar con pruebas de compilación e instalación en dispositivo físico.
 
 ## Cambios futuros
 

@@ -2,9 +2,9 @@
 
 **SOUNWD** guarda en tu ordenador el audio de enlaces compatibles de YouTube y YouTube Music. Está pensado para que usarlo sea tan sencillo como copiar, pegar y pulsar un botón.
 
-![Logotipo oficial de SOUNWD](assets/sounwd.png)
+![Logotipo oficial de SOUNWD](icon/sounwd-master.png)
 
-El archivo `assets/sounwd.png` es el único diseño maestro de marca. Los workflows generan automáticamente desde él el ICO de Windows, los tamaños PNG para Linux y los iconos de Android (incluido el adaptativo y el que aparece dentro de la aplicación). La interfaz conserva sus textos y distribución.
+El único diseño maestro de marca es `icon/sounwd-master.png`. Los workflows generan desde él el ICO de Windows, los tamaños PNG para Linux y los iconos de Android Kivy (incluidos el adaptativo y el que aparece dentro de la aplicación). `assets/sounwd.png` se conserva como derivado de compatibilidad para el escritorio. La interfaz conserva sus textos y distribución.
 
 > Usa SOUNWD solo con contenido que tengas derecho a descargar. Respeta los derechos de autor, las licencias y las condiciones de cada plataforma. No descarga música desde Spotify.
 

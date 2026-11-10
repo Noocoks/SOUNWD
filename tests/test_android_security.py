@@ -53,6 +53,13 @@ class AndroidPermissionTests(unittest.TestCase):
         ):
             self.assertIn(invariant, source)
 
+    def test_android_startup_log_does_not_dump_arguments_or_environment(self):
+        source = (ROOT / "android" / "sitecustomize.py").read_text(encoding="utf-8")
+        self.assertNotIn("sys.argv", source)
+        self.assertNotIn('ANDROID_PRIVATE={!r}', source)
+        self.assertNotIn('ANDROID_ARGUMENT={!r}', source)
+        self.assertNotIn("sys.path={!r}", source)
+
     def test_android_and_desktop_validation_helpers_stay_identical(self):
         desktop = (ROOT / "src" / "security.py").read_bytes()
         android = (ROOT / "android" / "security.py").read_bytes()

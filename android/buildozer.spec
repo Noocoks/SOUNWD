@@ -12,6 +12,7 @@ requirements = python3==3.12.10,hostpython3==3.12.10,kivy,yt-dlp,androidstorage4
 orientation = portrait
 fullscreen = 0
 android.permissions = INTERNET
+android.allow_backup = False
 android.api = 35
 android.minapi = 29
 android.ndk = 25b

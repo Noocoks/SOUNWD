@@ -15,7 +15,7 @@ _ALLOWED_TEMPLATE_FIELDS = frozenset({
 })
 _TEMPLATE_FIELD = re.compile(r"%\(([A-Za-z_][A-Za-z0-9_]*)\)s")
 _TEMPLATE_LITERAL = re.compile(r"[A-Za-z0-9 _().-]*\Z")
-_FORMAT_SELECTOR = re.compile(r"[A-Za-z0-9_./+\[\]()=,:-]{1,128}\Z")
+_FORMAT_SELECTOR = re.compile(r"[A-Za-z0-9_./+\[\]()=,-]{1,128}\Z")
 _PLAYLIST_ITEMS = re.compile(r"[0-9, -]{1,100}\Z")
 _RATE_LIMIT = re.compile(r"[1-9][0-9]{0,5}(?:K|M|G)?\Z", re.IGNORECASE)
 _LANGUAGES = re.compile(r"[A-Za-z0-9,._-]{1,64}\Z")

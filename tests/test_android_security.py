@@ -32,6 +32,13 @@ class AndroidPermissionTests(unittest.TestCase):
         self.assertEqual(base.find("trust-anchors/certificates").get("src"), "system")
         self.assertNotIn("androidstorage4kivy", spec)
 
+    def test_android_runtime_dependencies_are_pinned_and_audited(self):
+        audit = (ROOT / "android" / "requirements-audit.txt").read_text(encoding="utf-8").splitlines()
+        self.assertEqual(set(audit), {"kivy==2.3.1", "yt-dlp==2026.10.26"})
+        spec = (ROOT / "android" / "buildozer.spec").read_text(encoding="utf-8")
+        self.assertIn("kivy==2.3.1", spec)
+        self.assertIn("yt-dlp==2026.10.26", spec)
+
     def test_android_targets_supported_api_floor(self):
         spec = (ROOT / "android" / "buildozer.spec").read_text(encoding="utf-8")
         self.assertRegex(spec, r"(?m)^android\.minapi\s*=\s*(2[9]|[3-9][0-9])\s*$")

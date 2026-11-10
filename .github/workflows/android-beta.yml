@@ -93,7 +93,7 @@ jobs:
         run: gradle --no-daemon assembleDebug assembleRelease
 
       - name: Verify release manifest does not enable debugging or cleartext
-        run: python tools/test_android_release_manifest.py
+        run: python tools/check_android_release_manifest.py
 
       - name: Verify APK was generated
         run: test -s app/build/outputs/apk/debug/app-debug.apk

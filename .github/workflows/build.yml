@@ -83,7 +83,7 @@ jobs:
       - name: Audit Python dependencies
         run: pip-audit --strict
       - name: Static security analysis
-        run: bandit -r src android bootstrap.py -ll -s B404,B603,B607
+        run: bandit -r src android assets/build_brand_assets.py bootstrap.py -ll -s B404,B603,B607
 
       - name: Generate desktop icon and startup splash
         run: |

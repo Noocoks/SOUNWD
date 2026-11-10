@@ -94,6 +94,7 @@ def download_audio(url: str, audio_format: str, destination: Path, is_playlist: 
         "outtmpl": str(build_output_path(destination, "%(title)s.%(ext)s")),
         "noplaylist": not is_playlist,
         "windowsfilenames": True,
+        "overwrites": False,
         "ignoreerrors": False,
         "quiet": True,
         "no_warnings": True,

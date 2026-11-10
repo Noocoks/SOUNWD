@@ -1,6 +1,6 @@
 # Android security architecture (future SOUNWD features)
 
-The Android app is still an early downloader implementation. Security must be designed before feature growth, not bolted on afterwards.
+The Android Kivy downloader is an early prototype; the separate Kotlin beta is currently only a static placeholder, not the feature-complete mobile application. Security must be designed before feature growth, not bolted on afterwards.
 
 ## Baseline
 
@@ -36,4 +36,4 @@ Prefer a small native Kotlin shell with isolated components:
 - SettingsStore: stores non-secret preferences only.
 - UI/ViewModels: display state and never construct shell commands or filesystem paths.
 
-Each component should have unit tests for malformed input, cancellation, permission denial, path traversal, symlink attempts, corrupted metadata, partial downloads and cleanup. The Kivy implementation should be treated as a compatibility baseline until the native Kotlin downloader replaces it; do not mix the two runtimes or migrate functionality without device tests.
+Each component should have unit tests for malformed input, cancellation, permission denial, path traversal, symlink attempts, corrupted metadata, partial downloads and cleanup. The current androidstorage4kivy bridge is pinned to 0.1.1 because its upstream repository was archived in 2023. It is an acknowledged maintenance/supply-chain risk, not a long-term foundation. Replace it with a small reviewed Kotlin MediaStore/Share implementation before expanding Android storage features. Treat the Kivy implementation as a compatibility prototype until the native Kotlin downloader replaces it; do not mix the two runtimes or migrate functionality without device tests.

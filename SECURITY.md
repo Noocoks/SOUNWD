@@ -1,23 +1,28 @@
-# Security policy — SOUNWD
+# Política de seguridad de SOUNWD
 
-## Reporting vulnerabilities
+## Informar de vulnerabilidades
 
-Please use GitHub Security Advisories → Report a vulnerability for private disclosure. Do not publish exploit details, credentials, tokens, personal data, or private download URLs in public issues.
+Comunica posibles vulnerabilidades de forma privada mediante **GitHub Security Advisories → Report a vulnerability** en este repositorio. No publiques en incidencias públicas instrucciones de explotación, credenciales, tokens, datos personales ni enlaces privados.
 
-## Security boundaries
+## Componentes cubiertos
 
-- Only HTTPS links from the exact supported YouTube hostnames are accepted by the download interfaces.
-- Advanced output templates are filename-only; path separators, traversal, unknown metadata fields, and unsafe characters are rejected.
-- Downloads are staged in a fresh private temporary directory. Only regular audio files are copied into the selected destination, using exclusive no-follow file creation so existing files are never overwritten.
-- yt-dlp receives no user-controlled shell command. The application does not use shell=True to launch downloader commands.
-- Preferences are size-limited on read and written atomically through a temporary file.
-- Desktop/Kivy CI runs Python dependency auditing, unit tests for validation and safe file publication, CodeQL, and OSV-Scanner.
-- GitHub Actions are pinned to immutable commit SHAs in the hardened build and security workflows.
+Esta política cubre la aplicación de escritorio Python, el descargador Android Kivy heredado, la beta Kotlin independiente, el generador de recursos gráficos y los workflows de CI.
 
-## Android beta and future functionality
+## Controles actuales
 
-The separate Kotlin Android beta is currently only a static screen. It must remain permission-free and offline until a real feature requires access. New features must follow the Android security architecture document in the Android beta PR: least privilege, HTTPS-only, no dynamic code loading, app-private staging, SAF/MediaStore exports, hostile-input treatment, and tests for permission denial, path traversal, symlink escape, and overwrite behavior.
+- Los enlaces de descarga deben usar HTTPS y uno de los dominios oficiales exactos de YouTube. Se rechazan credenciales, puertos no estándar, espacios, caracteres de control y dominios similares.
+- Las plantillas de salida se limitan a un único nombre de archivo y a campos yt-dlp permitidos. Se rechazan rutas, traversal, campos desconocidos y nombres reservados de Windows.
+- El escritorio descarga primero en una ubicación temporal y publica únicamente archivos de audio regulares, sin sobrescribir archivos existentes.
+- Android Kivy mantiene las descargas en el almacenamiento privado de la aplicación, valida que los ficheros exportados estén dentro de ese directorio y aplica límites por fichero, lote y espacio disponible.
+- El generador de marca valida la imagen maestra, limita tamaño y dimensiones, rechaza enlaces simbólicos y escribe los recursos derivados de forma atómica.
+- CI ejecuta pruebas de regresión, auditoría de dependencias con pip-audit, análisis CodeQL de Python y OSV-Scanner.
 
-## Limitations
+## Desarrollo seguro de Android
 
-These controls reduce attack surface; they do not prove the application invulnerable. yt-dlp, FFmpeg, media extractors, and third-party services process untrusted remote content and must be kept updated. Do not distribute unsigned debug artifacts as production releases. Production releases require protected signing credentials and a dedicated release workflow.
+Android debe seguir el principio de mínimo privilegio. No añadas permisos de almacenamiento amplio, accesibilidad, cámara, micrófono, ubicación ni superposición si una función no los necesita. Mantén TLS activo, no uses código dinámico ni comandos de shell construidos con datos del usuario y trata títulos, metadatos, subtítulos y nombres remotos como contenido no confiable.
+
+Cualquier nuevo servicio, receptor, proveedor, WebView, SDK, acceso a ficheros o integración nativa debe incluir una revisión de amenazas y pruebas antes de integrarse.
+
+## Límites
+
+Estas medidas reducen la superficie de ataque, pero no demuestran que el software sea invulnerable. yt-dlp, FFmpeg, extractores y servicios externos procesan contenido remoto no confiable y deben mantenerse actualizados. Los APK de depuración no son releases de producción. Una release necesita firma protegida y un proceso de publicación independiente.

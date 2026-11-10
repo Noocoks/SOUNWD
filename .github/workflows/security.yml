@@ -1,0 +1,41 @@
+name: SOUNWD Security Gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '31 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python-security:
+    name: Python regression tests and dependency audit
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+      - name: Install application and security dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install Pillow pip-audit
+      - name: Run security boundary tests
+        env:
+          PYTHONPATH: src:android
+        run: |
+          python -m unittest discover -s tests -p 'test_security_*.py' -v
+          python -m unittest discover -s tests -p 'test_brand_assets_security.py' -v
+      - name: Audit Python dependencies
+        run: pip-audit --strict -r requirements.txt
+      - name: Compile Python sources
+        run: python -m compileall -q src android bootstrap.py tests

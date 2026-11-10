@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 import re
-from urllib.parse import urlparse
+import unicodedata
+from urllib.parse import urlsplit
 
 _HOSTS = {
     "youtube.com",
@@ -18,36 +19,50 @@ _TEMPLATE_TOKEN = re.compile(r"%\(([^)]+)\)s")
 
 
 def is_supported_youtube_url(value: str) -> bool:
+    """Accept only canonical HTTPS YouTube URLs and reject ambiguous URL syntax."""
     if not isinstance(value, str) or not value or len(value) > 2048:
         return False
-    if any(ord(char) < 32 or ord(char) == 127 for char in value):
+    if value != value.strip() or "\\" in value:
+        return False
+    if any(char.isspace() or ord(char) < 32 or ord(char) == 127
+           or unicodedata.category(char) in {"Cc", "Cf"} for char in value):
         return False
     try:
-        parsed = urlparse(value.strip())
+        parsed = urlsplit(value)
         return (
-            parsed.scheme == "https"
+            parsed.scheme.lower() == "https"
             and (parsed.hostname or "").lower() in _HOSTS
             and parsed.username is None
             and parsed.password is None
             and parsed.port in (None, 443)
-            and not parsed.fragment
+            and bool(parsed.netloc)
         )
     except (ValueError, AttributeError):
         return False
 
 
 def safe_output_template(value: str) -> str:
-    value = (value or "").strip() or "%(title)s.%(ext)s"
-    if len(value) > 200 or "/" in value or "\\" in value or ".." in value:
+    if not isinstance(value, str) or len(value) > 180:
+        raise ValueError("La plantilla de nombre es demasiado larga.")
+    value = value.strip() or "%(title)s.%(ext)s"
+    if value.startswith(("/", "\\")) or "/" in value or "\\" in value or ":" in value or ".." in value:
         raise ValueError("La plantilla solo puede definir un nombre de archivo, no una ruta.")
+    if any(ord(char) < 32 or ord(char) == 127 or unicodedata.category(char) in {"Cc", "Cf"}
+           for char in value):
+        raise ValueError("La plantilla contiene caracteres de control.")
     tokens = _TEMPLATE_TOKEN.findall(value)
     if any(token not in _ALLOWED_TEMPLATE_FIELDS for token in tokens):
         raise ValueError("La plantilla contiene campos de yt-dlp no permitidos.")
     remainder = _TEMPLATE_TOKEN.sub("", value)
-    if "%" in remainder or re.search(r'[<>:"|?*\x00-\x1f]', remainder):
+    if "%" in remainder or any(not (char.isalnum() or char in " _().-") for char in remainder):
         raise ValueError("La plantilla contiene caracteres no permitidos.")
     if value.endswith((".", " ")):
         raise ValueError("El nombre no puede terminar en punto o espacio.")
+    stem = value.split(".", 1)[0].upper()
+    reserved = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)),
+                *(f"LPT{i}" for i in range(1, 10))}
+    if stem in reserved:
+        raise ValueError("La plantilla utiliza un nombre reservado.")
     return value
 
 
@@ -68,3 +83,18 @@ def validate_advanced_options(options: dict) -> None:
     languages = options.get("subtitle_langs", "")
     if languages and not re.fullmatch(r"[A-Za-z0-9,_-]{1,64}", languages):
         raise ValueError("La lista de idiomas de subtítulos no tiene un formato válido.")
+
+
+def is_safe_private_file(path, private_root) -> bool:
+    """Accept only a regular, non-symlink file contained by the app-private directory."""
+    from pathlib import Path
+    try:
+        candidate = Path(path)
+        root = Path(private_root)
+        if candidate.is_symlink() or root.is_symlink():
+            return False
+        resolved = candidate.resolve(strict=True)
+        resolved_root = root.resolve(strict=True)
+        return resolved.is_file() and resolved.is_relative_to(resolved_root)
+    except (OSError, RuntimeError, ValueError):
+        return False

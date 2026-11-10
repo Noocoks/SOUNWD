@@ -2,9 +2,9 @@
 
 **SOUNWD** guarda en tu ordenador el audio de enlaces compatibles de YouTube y YouTube Music. Está pensado para que usarlo sea tan sencillo como copiar, pegar y pulsar un botón.
 
-![Logotipo oficial de SOUNWD](assets/sounwd.png)
+![Logotipo oficial de SOUNWD](icon/sounwd-master.png)
 
-El archivo `assets/sounwd.png` es el único diseño maestro de marca. Los workflows generan automáticamente desde él el ICO de Windows, los tamaños PNG para Linux y los iconos de Android (incluido el adaptativo y el que aparece dentro de la aplicación). La interfaz conserva sus textos y distribución.
+El único diseño maestro de marca es `icon/sounwd-master.png`. Los workflows generan desde él el ICO de Windows, los tamaños PNG para Linux y los iconos de Android Kivy (incluidos el adaptativo y el que aparece dentro de la aplicación). `assets/sounwd.png` se conserva como derivado de compatibilidad para el escritorio. La interfaz conserva sus textos y distribución.
 
 > Usa SOUNWD solo con contenido que tengas derecho a descargar. Respeta los derechos de autor, las licencias y las condiciones de cada plataforma. No descarga música desde Spotify.
 
@@ -49,6 +49,10 @@ La pantalla principal está pensada para todo el mundo: pega el enlace, elige el
 
 Si ya conoces yt-dlp, abre **Opciones avanzadas (yt-dlp)** para configurar directamente parámetros como el selector de formato (`-f`), la plantilla del nombre (`-o`), los elementos de una lista (`--playlist-items`), el límite de velocidad (`--limit-rate`), los reintentos (`--retries`) y los subtítulos (`--write-subs`, `--sub-langs`). En escritorio también puedes incrustar portada y metadatos; estas funciones requieren FFmpeg. Los campos avanzados son opcionales: si los dejas vacíos, SOUNWD usa sus valores habituales.
 
+## Seguridad
+
+SOUNWD valida los enlaces HTTPS de YouTube, restringe las plantillas de salida y evita sobrescribir archivos existentes. En Android, las descargas permanecen en almacenamiento privado y se aplican límites de tamaño y espacio antes de exportarlas. CI ejecuta pruebas de regresión, auditoría de dependencias, CodeQL y OSV-Scanner. Consulta [SECURITY.md](SECURITY.md) y la [arquitectura de seguridad Android](docs/ANDROID_SECURITY.md). Estas medidas reducen riesgos, pero no garantizan invulnerabilidad.
+
 ## Qué incluye
 
 - Interfaz de escritorio oscura, con acentos rojos y grises.
@@ -75,3 +79,5 @@ Si ya conoces yt-dlp, abre **Opciones avanzadas (yt-dlp)** para configurar direc
 - `.github/workflows/android.yml`: generación de marca y compilación automática de la APK.
 
 SOUNWD utiliza yt-dlp para obtener audio. La aplicación de escritorio incluye Deno y los componentes EJS de yt-dlp para resolver los retos JavaScript que YouTube exige actualmente; no necesitas instalar ese motor por separado. En Android, esta primera versión conserva el formato disponible en origen: la conversión a MP3/FLAC/WAV con FFmpeg todavía no está integrada. Por ese motivo, las opciones de incrustar portada y metadatos no se ofrecen en Android. La APK se publica como artefacto de GitHub Actions cuando la compilación termina correctamente.
+
+La identidad visual se genera desde una única imagen maestra: [icon/sounwd-master.png](icon/sounwd-master.png). Para actualizar el logo en escritorio y Android Kivy, sustituye esa imagen y ejecuta `python assets/build_brand_assets.py`; consulta [icon/README.md](icon/README.md).

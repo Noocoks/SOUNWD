@@ -73,6 +73,19 @@ class HardenedInputTests(unittest.TestCase):
                 link.symlink_to(outside)
                 self.assertFalse(is_safe_private_file(link, root))
 
+    def test_android_includes_yt_dlp_ejs_and_native_quickjs_runtime(self):
+        spec = (ROOT / "android" / "buildozer.spec").read_text(encoding="utf-8")
+        self.assertIn("yt-dlp-ejs==0.8.0", spec)
+        self.assertIn(",quickjs,", spec)
+        recipe = (ROOT / "android" / "p4a-recipes" / "quickjs" / "__init__.py").read_text(encoding="utf-8")
+        self.assertIn("d7215b0ad3fc2c562e8317fd9bca058fd4863804", recipe)
+        self.assertIn("CMAKE_TOOLCHAIN_FILE", recipe)
+        self.assertIn("CMAKE_EXE_LINKER_FLAGS", recipe)
+        app = (ROOT / "android" / "main.py").read_text(encoding="utf-8")
+        self.assertIn('options["js_runtimes"] = {"quickjs": {"path": str(quickjs_path)}}', app)
+        self.assertIn('find_spec("sounwd_runtime")', app)
+        self.assertIn("yt-dlp-ejs==0.8.0", (ROOT / "android" / "requirements-audit.txt").read_text(encoding="utf-8"))
+
     def test_safe_filename_templates(self):
         valid = "%(title)s - %(uploader)s.%(ext)s"
         self.assertEqual(validate_output_template(valid), valid)

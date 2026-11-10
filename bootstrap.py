@@ -56,6 +56,10 @@ class SetupWindow:
 
 def worker(window: SetupWindow) -> None:
     try:
+        if VENV.is_symlink() or not VENV.resolve(strict=False).is_relative_to(ROOT):
+            raise RuntimeError("El entorno local de SOUNWD no puede ser un enlace ni salir de la carpeta de la aplicación.")
+        if REQUIREMENTS.is_symlink() or REQUIREMENTS.resolve(strict=True).parent != ROOT:
+            raise RuntimeError("El archivo de dependencias de SOUNWD no es seguro.")
         if sys.version_info < (3, 11):
             raise RuntimeError("SOUNWD necesita Python 3.11 o superior. Instala una versión reciente de Python y vuelve a abrir SOUNWD.")
 
@@ -74,6 +78,8 @@ def worker(window: SetupWindow) -> None:
         # Reinstala/actualiza dependencias solo cuando cambia requirements.txt.
         requirements_hash = hashlib.sha256(REQUIREMENTS.read_bytes()).hexdigest()
         stamp = VENV / ".requirements.sha256"
+        if stamp.is_symlink() or not stamp.resolve(strict=False).is_relative_to(VENV.resolve()):
+            raise RuntimeError("El marcador de dependencias de SOUNWD no es seguro.")
         installed_hash = stamp.read_text(encoding="ascii").strip() if stamp.exists() else ""
         if installed_hash != requirements_hash:
             window.set_status("Instalando o actualizando los componentes necesarios…")

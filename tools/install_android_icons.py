@@ -53,19 +53,11 @@ def install() -> None:
         copy_resource(generated / "drawable-nodpi" / name, RES / "drawable-nodpi")
 
     copy_resource(generated / "mipmap-anydpi" / "ic_launcher.xml", RES / "mipmap-anydpi")
-    for density in ("mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"):
-        copy_resource(
-            generated / f"mipmap-{density}" / "ic_launcher.png",
-            RES / f"mipmap-{density}",
-        )
-
     required = (
         RES / "drawable-nodpi" / "sounwd_mark.png",
         RES / "drawable-nodpi" / "sounwd_launcher_foreground.png",
         RES / "drawable-nodpi" / "sounwd_launcher_monochrome.png",
         RES / "mipmap-anydpi" / "ic_launcher.xml",
-        RES / "mipmap-mdpi" / "ic_launcher.png",
-        RES / "mipmap-xxxhdpi" / "ic_launcher.png",
     )
     if any(not item.is_file() or item.stat().st_size == 0 for item in required):
         raise RuntimeError("Android icon installation is incomplete")

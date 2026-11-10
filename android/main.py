@@ -284,7 +284,7 @@ class SOUNWDApp(App):
                      "outtmpl":str(template_path),"windowsfilenames":True,
                      "noplaylist":not playlist,"quiet":True,"no_warnings":True,
                      "progress_hooks":[hook],"overwrites":False,
-                     "continuedl":False,"nopart":False}
+                     "continuedl":False,"nopart":False,"max_filesize":2*1024*1024*1024,"max_downloads":500}
             if safe_advanced["playlist_items"]: options["playlist_items"]=safe_advanced["playlist_items"]
             if safe_advanced["ratelimit"]: options["ratelimit"]=safe_advanced["ratelimit"]
             if safe_advanced["retries"] is not None: options["retries"]=safe_advanced["retries"]

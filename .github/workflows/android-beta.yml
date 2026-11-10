@@ -84,7 +84,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@48b5f213c81028ace310571dc5ec0fbbca0b2947 # v4.4.3
         with:
-          gradle-version: '8.9'
+          gradle-version: '8.11.1'
 
       - name: Run Android Lint and unit tests
         run: gradle --no-daemon lintDebug testDebugUnitTest

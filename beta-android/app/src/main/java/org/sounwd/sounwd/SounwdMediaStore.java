@@ -56,8 +56,16 @@ public final class SounwdMediaStore {
                 ? fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase()
                 : "";
         String mime = mimeForExtension(extension);
-        if (mime == null || fileName.length() > 240 || fileName.contains("/") || fileName.contains("\\")) {
+        if (mime == null || fileName.length() > 240 || fileName.contains("..")
+                || fileName.startsWith(".") || fileName.endsWith(".") || fileName.endsWith(" ")) {
             throw new SecurityException("Unsupported or unsafe audio filename.");
+        }
+        for (int index = 0; index < fileName.length(); index++) {
+            char character = fileName.charAt(index);
+            if (Character.isISOControl(character) || Character.getType(character) == Character.FORMAT
+                    || "/\\\\:*?\\"<>|".indexOf(character) >= 0) {
+                throw new SecurityException("Audio filename contains unsafe characters.");
+            }
         }
 
         final String relativePath;

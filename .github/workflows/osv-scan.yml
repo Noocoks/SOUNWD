@@ -1,0 +1,43 @@
+name: SOUNWD Dependency Vulnerability Scan
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '41 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+
+jobs:
+  osv-scan-pr:
+    if: github.event_name == 'pull_request'
+    name: Scan introduced vulnerabilities
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+    with:
+      scan-args: |-
+        --recursive
+        ./
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+
+  osv-scan-full:
+    if: github.event_name != 'pull_request'
+    name: Scan all repository dependencies
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+    with:
+      scan-args: |-
+        --recursive
+        ./
+      fail-on-vuln: true
+    permissions:
+      contents: read
+      actions: read
+      security-events: write

@@ -62,12 +62,17 @@ def _log_thread_exception(args):
 
 threading.excepthook = _log_thread_exception
 _log_startup('main.py module entered; Python standard-library setup complete')
-from urllib.parse import urlparse
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.window import Window
 from kivy.metrics import dp
 from kivy.utils import platform
+
+from android_security import (
+    is_supported_youtube_url,
+    safe_output_template,
+    validate_advanced_options,
+)
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.checkbox import CheckBox
@@ -92,13 +97,9 @@ TEXT=(240/255,240/255,242/255,1); MUTED=(181/255,186/255,192/255,1)
 BRAND_MUTED=(133/255,139/255,147/255,1)
 FORMATS={"Mejor disponible":"bestaudio/best","M4A (si existe)":"bestaudio[ext=m4a]/bestaudio/best","OPUS (si existe)":"bestaudio[acodec=opus]/bestaudio/best"}
 DESTINATIONS={"Música / SOUNWD":"Music","Descargas / SOUNWD":"Downloads"}
-HOSTS={"youtube.com","www.youtube.com","music.youtube.com","m.youtube.com","youtu.be"}
-
 def valid_url(value):
-    try:
-        p=urlparse(value.strip()); host=(p.hostname or "").lower()
-        return p.scheme in {"http","https"} and (host in HOSTS or any(host.endswith("."+h) for h in HOSTS))
-    except ValueError: return False
+    return is_supported_youtube_url(value)
+
 
 class Panel(BoxLayout):
     def __init__(self, **kwargs):
@@ -268,14 +269,13 @@ class SOUNWDApp(App):
                 elif data.get("status")=="finished" and data.get("filename"):
                     downloaded_paths.add(Path(data["filename"]).expanduser().resolve())
 
-            template=advanced["output_template"] or "%(title)s.%(ext)s"
-            template_path=Path(template).expanduser()
-            if not template_path.is_absolute():
-                template_path=self.private_dir/template_path
+            template = safe_output_template(advanced["output_template"])
+            validate_advanced_options(advanced)
             options={"format":advanced["ydl_format"] or selector,
-                     "outtmpl":str(template_path),
+                     "outtmpl":str(self.private_dir/template),
                      "noplaylist":not playlist,"quiet":True,"no_warnings":True,
-                     "progress_hooks":[hook],"overwrites":False}
+                     "progress_hooks":[hook],"overwrites":False,
+                     "restrictfilenames":True,"windowsfilenames":True}
             if advanced["playlist_items"]: options["playlist_items"]=advanced["playlist_items"]
             if advanced["limit_rate"]: options["ratelimit"]=advanced["limit_rate"]
             if advanced["retries"]: options["retries"]=max(0,int(advanced["retries"]))

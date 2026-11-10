@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import sys
+import tempfile
 from pathlib import Path
 from urllib.parse import urlparse
 
 import yt_dlp
 import imageio_ffmpeg
 from yt_dlp_support import youtube_runtime_options
+from security import copy_downloaded_files, validate_youtube_url
 from rich import box
 from rich.console import Console
 from rich.panel import Panel
@@ -17,7 +19,6 @@ from rich.table import Table
 console = Console()
 APP_NAME = "MUSIC DOWNLOADER"
 DEFAULT_FOLDER = Path.home() / "Music" / "Music Downloader"
-SUPPORTED_HOSTS = {"youtube.com", "www.youtube.com", "music.youtube.com", "m.youtube.com", "youtu.be"}
 
 
 def show_header() -> None:
@@ -33,12 +34,7 @@ def show_header() -> None:
 
 
 def is_supported_url(value: str) -> bool:
-    try:
-        parsed = urlparse(value.strip())
-        host = (parsed.hostname or "").lower()
-        return parsed.scheme in {"http", "https"} and host in SUPPORTED_HOSTS
-    except ValueError:
-        return False
+    return validate_youtube_url(value)
 
 
 def choose_format() -> tuple[str, str]:
@@ -88,28 +84,37 @@ def download_audio(url: str, audio_format: str, destination: Path, is_playlist: 
         elif status == "finished":
             progress.update(task_id, description="Convirtiendo audio…")
 
-    options = {
-        **youtube_runtime_options(),
-        "format": "bestaudio/best",
-        "ffmpeg_location": imageio_ffmpeg.get_ffmpeg_exe(),
-        "outtmpl": str(destination / "%(title)s.%(ext)s"),
-        "noplaylist": not is_playlist,
-        "windowsfilenames": True,
-        "ignoreerrors": False,
-        "quiet": True,
-        "no_warnings": True,
-        "progress_hooks": [progress_hook],
-        "postprocessors": [
-            {"key": "FFmpegExtractAudio", "preferredcodec": audio_format,
-             "preferredquality": "0"},
-            {"key": "FFmpegMetadata"},
-        ],
-    }
+    with tempfile.TemporaryDirectory(prefix="sounwd-cli-") as temporary:
+        staging = Path(temporary)
+        options = {
+            **youtube_runtime_options(),
+            "format": "bestaudio/best",
+            "ffmpeg_location": imageio_ffmpeg.get_ffmpeg_exe(),
+            "outtmpl": str(staging / "%(title)s.%(ext)s"),
+            "noplaylist": not is_playlist,
+            "windowsfilenames": True,
+            "restrictfilenames": True,
+            "overwrites": False,
+            "ignoreerrors": False,
+            "quiet": True,
+            "no_warnings": True,
+            "progress_hooks": [progress_hook],
+            "postprocessors": [
+                {"key": "FFmpegExtractAudio", "preferredcodec": audio_format,
+                 "preferredquality": "0"},
+                {"key": "FFmpegMetadata"},
+            ],
+        }
 
-    with progress:
-        with yt_dlp.YoutubeDL(options) as downloader:
-            downloader.download([url])
-        progress.update(task_id, completed=1, total=1, description="[green]¡Descarga terminada![/green]")
+        with progress:
+            with yt_dlp.YoutubeDL(options) as downloader:
+                result = downloader.download([url])
+            if result:
+                raise RuntimeError("La descarga no ha podido terminar.")
+            saved = copy_downloaded_files(staging, destination)
+            if not saved:
+                raise RuntimeError("No se ha generado ningún archivo de audio.")
+            progress.update(task_id, completed=1, total=1, description="[green]¡Descarga terminada![/green]")
 
 
 def main() -> int:

@@ -5,6 +5,7 @@ import os
 import queue
 import subprocess
 import sys
+import tempfile
 import threading
 from pathlib import Path
 from urllib.parse import urlparse
@@ -26,6 +27,7 @@ if _boot_splash is not None:
 
 import customtkinter as ctk
 from yt_dlp_support import youtube_runtime_options
+from security import copy_downloaded_files, validate_advanced_options, validate_youtube_url
 
 
 APP_NAME = "SOUNWD"
@@ -36,16 +38,9 @@ else:
     CONFIG_DIR = Path.home() / ".config" / "SOUNWD"
 PREFERENCES_FILE = CONFIG_DIR / "preferences.json"
 FORMATS = {"MP3 (recomendado)": "mp3", "M4A": "m4a", "FLAC": "flac", "OPUS": "opus", "WAV": "wav"}
-SUPPORTED_HOSTS = {"youtube.com", "www.youtube.com", "music.youtube.com", "m.youtube.com", "youtu.be"}
 def valid_url(value: str) -> bool:
-    try:
-        parsed = urlparse(value.strip())
-        host = (parsed.hostname or "").lower()
-        return parsed.scheme in {"http", "https"} and (
-            host in SUPPORTED_HOSTS or any(host.endswith("." + item) for item in SUPPORTED_HOSTS)
-        )
-    except ValueError:
-        return False
+    return validate_youtube_url(value)
+
 
 
 def _set_windows_app_user_model_id() -> None:
@@ -471,13 +466,13 @@ class SoundwApp(ctk.CTk):
 
     def _load_preferences(self) -> dict:
         try:
-            if PREFERENCES_FILE.exists():
-                with PREFERENCES_FILE.open("r", encoding="utf-8") as handle:
-                    data = json.load(handle)
-                return data if isinstance(data, dict) else {}
-        except (OSError, json.JSONDecodeError):
-            pass
-        return {}
+            if not PREFERENCES_FILE.is_file() or PREFERENCES_FILE.stat().st_size > 1_048_576:
+                return {}
+            with PREFERENCES_FILE.open("r", encoding="utf-8") as handle:
+                data = json.load(handle)
+            return data if isinstance(data, dict) else {}
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+            return {}
 
     def _save_preferences(self) -> None:
         data = {
@@ -496,12 +491,24 @@ class SoundwApp(ctk.CTk):
             "embed_metadata": self.embed_metadata.get(),
             "write_subtitles": self.write_subtitles.get(),
         }
+        temporary_path = None
         try:
             CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-            with PREFERENCES_FILE.open("w", encoding="utf-8") as handle:
+            fd, temporary_name = tempfile.mkstemp(prefix=".preferences-", suffix=".tmp", dir=CONFIG_DIR)
+            temporary_path = Path(temporary_name)
+            if os.name != "nt":
+                os.chmod(temporary_path, 0o600)
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
                 json.dump(data, handle, ensure_ascii=False, indent=2)
-        except OSError:
-            pass
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temporary_path, PREFERENCES_FILE)
+        except (OSError, TypeError, ValueError):
+            if temporary_path is not None:
+                try:
+                    temporary_path.unlink(missing_ok=True)
+                except OSError:
+                    pass
 
     def _preference_changed(self, _value: str = "") -> None:
         self._save_preferences()
@@ -603,7 +610,7 @@ class SoundwApp(ctk.CTk):
             messagebox.showerror("No se ha podido iniciar", str(error))
 
     def _download_worker(self, url: str, audio_format: str, destination: Path, playlist: bool, quality_choice: str, filename_choice: str, advanced: dict) -> None:
-        """Prepara y ejecuta la descarga fuera del hilo de Tk, notificando siempre el resultado."""
+        """Download into private staging, then publish audio without overwriting files."""
         def hook(data: dict) -> None:
             if data.get("status") == "downloading":
                 downloaded = data.get("downloaded_bytes", 0)
@@ -613,60 +620,57 @@ class SoundwApp(ctk.CTk):
             elif data.get("status") == "finished":
                 self.events.put(("progress", (0.98, "Preparando el archivo…")))
 
-        retry_count = None
-        if advanced["retries"]:
-            try:
-                retry_count = int(advanced["retries"])
-                if retry_count < 0:
-                    raise ValueError
-            except ValueError:
-                self.events.put(("error", "El número de reintentos debe ser un entero igual o mayor que cero."))
-                return
         try:
-            # Heavy downloader/post-processing packages are loaded only when needed;
-            # this keeps the first window responsive and reduces perceived startup.
             import imageio_ffmpeg
             import yt_dlp
 
+            validate_advanced_options(advanced)
             quality = {"Máxima": "0", "Alta": "192", "Normal": "128"}.get(quality_choice, "0")
             filename = "%(title)s" if filename_choice == "Solo título" else "%(title)s - %(uploader)s"
-            output_template = advanced["outtmpl"]
-            if output_template and not Path(output_template).expanduser().is_absolute():
-                output_template = str(destination / output_template)
-            options = {
-                **youtube_runtime_options(),
-                "format": advanced["format"] or "bestaudio/best",
-                "ffmpeg_location": imageio_ffmpeg.get_ffmpeg_exe(),
-                "outtmpl": output_template or str(destination / (filename + ".%(ext)s")),
-                "noplaylist": not playlist,
-                "windowsfilenames": True,
-                "quiet": True,
-                "no_warnings": True,
-                "progress_hooks": [hook],
-                "postprocessors": [
-                    {"key": "FFmpegExtractAudio", "preferredcodec": audio_format, "preferredquality": quality},
-                ],
-            }
-            if advanced["playlist_items"]:
-                options["playlist_items"] = advanced["playlist_items"]
-            if advanced["ratelimit"]:
-                options["ratelimit"] = advanced["ratelimit"]
-            if retry_count is not None:
-                options["retries"] = retry_count
-            if advanced["subtitleslangs"]:
-                options["subtitleslangs"] = advanced["subtitleslangs"]
-            if advanced["writesubtitles"]:
-                options["writesubtitles"] = True
-            if advanced["embedthumbnail"]:
-                options["writethumbnail"] = True
-                options["postprocessors"].append({"key": "EmbedThumbnail"})
-            if advanced["addmetadata"]:
-                options["addmetadata"] = True
+            template = advanced["outtmpl"] or (filename + ".%(ext)s")
 
-            with yt_dlp.YoutubeDL(options) as downloader:
-                result = downloader.download([url])
-            if result:
-                raise RuntimeError("La descarga no ha podido terminar.")
+            with tempfile.TemporaryDirectory(prefix="sounwd-download-") as temporary:
+                staging = Path(temporary)
+                options = {
+                    **youtube_runtime_options(),
+                    "format": advanced["format"] or "bestaudio/best",
+                    "ffmpeg_location": imageio_ffmpeg.get_ffmpeg_exe(),
+                    "outtmpl": str(staging / template),
+                    "noplaylist": not playlist,
+                    "windowsfilenames": True,
+                    "restrictfilenames": True,
+                    "overwrites": False,
+                    "quiet": True,
+                    "no_warnings": True,
+                    "progress_hooks": [hook],
+                    "postprocessors": [
+                        {"key": "FFmpegExtractAudio", "preferredcodec": audio_format, "preferredquality": quality},
+                    ],
+                }
+                if advanced["playlist_items"]:
+                    options["playlist_items"] = advanced["playlist_items"]
+                if advanced["ratelimit"]:
+                    options["ratelimit"] = advanced["ratelimit"]
+                if advanced["retries"]:
+                    options["retries"] = int(advanced["retries"])
+                if advanced["subtitleslangs"]:
+                    options["subtitleslangs"] = advanced["subtitleslangs"]
+                if advanced["writesubtitles"]:
+                    options["writesubtitles"] = True
+                if advanced["embedthumbnail"]:
+                    options["writethumbnail"] = True
+                    options["postprocessors"].append({"key": "EmbedThumbnail"})
+                if advanced["addmetadata"]:
+                    options["addmetadata"] = True
+
+                with yt_dlp.YoutubeDL(options) as downloader:
+                    result = downloader.download([url])
+                if result:
+                    raise RuntimeError("La descarga no ha podido terminar.")
+                saved_files = copy_downloaded_files(staging, destination)
+                if not saved_files:
+                    raise RuntimeError("No se ha encontrado ningún archivo de audio nuevo.")
+
             self.events.put(("done", str(destination)))
         except Exception as error:
             message = str(error).lower()
@@ -680,6 +684,8 @@ class SoundwApp(ctk.CTk):
                 friendly = "No se ha podido preparar el formato de audio. Vuelve a intentarlo; si continúa, prueba MP3."
             elif "network" in message or "connection" in message or "timed out" in message:
                 friendly = "Parece que la conexión a Internet ha fallado. Comprueba tu conexión y vuelve a intentarlo."
+            elif isinstance(error, ValueError):
+                friendly = str(error)
             else:
                 friendly = "No se ha podido guardar este audio. Comprueba el enlace y tu conexión, y vuelve a intentarlo."
             self.events.put(("error", friendly))

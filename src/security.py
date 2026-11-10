@@ -111,10 +111,8 @@ def copy_downloaded_files(source_dir: Path, destination_dir: Path) -> list[Path]
                     output.flush()
                     os.fsync(output.fileno())
             except Exception:
-                try:
-                    target.unlink(missing_ok=True)
-                except OSError:
-                    pass
+                # Do not unlink by pathname after a failed write: another local
+                # process could have replaced that name between the open and cleanup.
                 raise
             saved.append(target)
             break

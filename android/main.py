@@ -68,7 +68,7 @@ from kivy.core.window import Window
 from kivy.metrics import dp
 from kivy.utils import platform
 
-from security import (
+from android_security import (
     is_supported_youtube_url,
     safe_output_template,
     validate_advanced_options,

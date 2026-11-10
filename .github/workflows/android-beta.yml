@@ -73,6 +73,8 @@ jobs:
             cp "assets/generated/android/mipmap-$density/ic_launcher.png" "$RES/mipmap-$density/"
           done
           test -s "$RES/drawable/sounwd_mark.png"
+          test -s "$RES/mipmap-anydpi/ic_launcher.xml"
+          test ! -e "$RES/mipmap-anydpi-v26"
           test -s "$RES/mipmap-mdpi/ic_launcher.png"
           test -s "$RES/mipmap-xxxhdpi/ic_launcher.png"
 

@@ -73,3 +73,18 @@ def validate_advanced_options(options: dict) -> None:
     languages = options.get("subtitle_langs", "")
     if languages and not re.fullmatch(r"[A-Za-z0-9,_-]{1,64}", languages):
         raise ValueError("La lista de idiomas de subtítulos no tiene un formato válido.")
+
+
+def is_safe_private_file(path, private_root) -> bool:
+    """Accept only a regular, non-symlink file contained by the app-private directory."""
+    from pathlib import Path
+    try:
+        candidate = Path(path)
+        root = Path(private_root)
+        if candidate.is_symlink() or root.is_symlink():
+            return False
+        resolved = candidate.resolve(strict=True)
+        resolved_root = root.resolve(strict=True)
+        return resolved.is_file() and resolved.is_relative_to(resolved_root)
+    except (OSError, RuntimeError, ValueError):
+        return False

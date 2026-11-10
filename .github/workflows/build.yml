@@ -79,7 +79,9 @@ jobs:
       - name: Test downloader security boundaries
         env:
           PYTHONPATH: src
-        run: python -m unittest discover -s tests -p 'test_security_*.py' -v
+        run: |
+          python -m unittest discover -s tests -p 'test_security_*.py' -v
+          python -m unittest discover -s tests -p 'test_brand_assets_security.py' -v
 
       - name: Generate desktop icon and startup splash
         run: |

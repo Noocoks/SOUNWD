@@ -63,10 +63,11 @@ jobs:
           cp assets/generated/android/drawable-nodpi/sounwd_master.png "$RES/drawable-nodpi/"
           cp assets/generated/android/drawable/sounwd_mark.png "$RES/drawable/"
           cp assets/generated/android/drawable/sounwd_launcher_foreground.png "$RES/drawable/"
-          cp assets/generated/android/mipmap-anydpi/ic_launcher.xml "$RES/mipmap-anydpi/"
-          # The app targets Android 10+, so the adaptive icon needs no v26 qualifier.
+          # Remove the obsolete resource first, then install the generated adaptive icon.
           rm -f "$RES/mipmap-anydpi-v26/ic_launcher.xml"
+          rmdir "$RES/mipmap-anydpi-v26" 2>/dev/null || true
           rm -f "$RES/mipmap-anydpi/ic_launcher.xml"
+          cp assets/generated/android/mipmap-anydpi/ic_launcher.xml "$RES/mipmap-anydpi/"
           rm -f "$RES/drawable/sounwd_mark.xml"
           for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
             mkdir -p "$RES/mipmap-$density"

@@ -2,7 +2,7 @@ name: SOUNWD Desktop CodeQL
 
 on:
   push:
-    branches: [main, security/desktop-download-hardening]
+    branches: [main]
   pull_request:
     branches: [main]
   schedule:

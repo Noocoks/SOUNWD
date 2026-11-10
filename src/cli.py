@@ -68,6 +68,7 @@ def choose_destination() -> Path:
 
 
 def download_audio(url: str, audio_format: str, destination: Path, is_playlist: bool) -> None:
+    validate_youtube_url(url)
     progress = Progress(
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),

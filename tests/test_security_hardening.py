@@ -4,12 +4,20 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-from security import validate_youtube_url, validate_output_template
+from security import validate_youtube_url, validate_output_template, sanitize_preferences
 sys.path.insert(0, str(ROOT / "android"))
 from android_security import is_supported_youtube_url, is_safe_private_file, safe_output_template
 
 
 class HardenedInputTests(unittest.TestCase):
+    def test_preferences_keep_only_known_bounded_types(self):
+        clean = sanitize_preferences({
+            "destination": "C:/Music", "playlist": True, "quality": "Máxima",
+            "embed_metadata": 1, "unexpected": "ignored", "output_template": "x" * 5000,
+        })
+        self.assertEqual(clean, {"destination": "C:/Music", "playlist": True, "quality": "Máxima"})
+        self.assertEqual(sanitize_preferences(["not", "a", "mapping"]), {})
+
     def test_android_manifest_build_config_disables_backup(self):
         spec = (ROOT / "android" / "buildozer.spec").read_text(encoding="utf-8")
         self.assertIn("android.allow_backup = False", spec)

@@ -83,16 +83,6 @@ def save_android(master: Image.Image, output: Path) -> None:
         encoding="utf-8",
     )
 
-    for density, pixels in (
-        ("mdpi", 48),
-        ("hdpi", 72),
-        ("xhdpi", 96),
-        ("xxhdpi", 144),
-        ("xxxhdpi", 192),
-    ):
-        folder = root / f"mipmap-{density}"
-        folder.mkdir(parents=True, exist_ok=True)
-        square_cover(master, pixels).save(folder / "ic_launcher.png", optimize=True)
 
 
 def generate(source: Path = SOURCE, output: Path = OUT) -> None:

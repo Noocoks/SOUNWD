@@ -60,7 +60,7 @@ class IconGeneratorTests(unittest.TestCase):
 
         monochrome = Image.open(self.output / "android/drawable-nodpi/sounwd_launcher_monochrome.png").convert("RGBA")
         self.assertEqual(monochrome.getpixel((0, 0))[3], 0)
-        self.assertGreater(monochrome.getbbox()[2], 0)
+        self.assertIsNotNone(monochrome.getchannel("A").getbbox())
 
     def test_rejects_too_small_master(self):
         tiny = self.root / "tiny.png"

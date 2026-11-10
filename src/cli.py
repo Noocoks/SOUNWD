@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from urllib.parse import urlparse
 
 import yt_dlp
 import imageio_ffmpeg
 from yt_dlp_support import youtube_runtime_options
+from security import build_output_path, validate_youtube_url
 from rich import box
 from rich.console import Console
 from rich.panel import Panel
@@ -34,9 +34,8 @@ def show_header() -> None:
 
 def is_supported_url(value: str) -> bool:
     try:
-        parsed = urlparse(value.strip())
-        host = (parsed.hostname or "").lower()
-        return parsed.scheme in {"http", "https"} and host in SUPPORTED_HOSTS
+        validate_youtube_url(value)
+        return True
     except ValueError:
         return False
 
@@ -92,7 +91,7 @@ def download_audio(url: str, audio_format: str, destination: Path, is_playlist: 
         **youtube_runtime_options(),
         "format": "bestaudio/best",
         "ffmpeg_location": imageio_ffmpeg.get_ffmpeg_exe(),
-        "outtmpl": str(destination / "%(title)s.%(ext)s"),
+        "outtmpl": str(build_output_path(destination, "%(title)s.%(ext)s")),
         "noplaylist": not is_playlist,
         "windowsfilenames": True,
         "ignoreerrors": False,

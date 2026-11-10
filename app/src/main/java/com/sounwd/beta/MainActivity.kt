@@ -24,10 +24,10 @@ private object Brand {
 }
 
 class MainActivity : Activity() {
+    @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (Build.VERSION.SDK_INT < 35) {
-            @Suppress("DEPRECATION")
             run {
                 window.statusBarColor = Brand.BG
                 window.navigationBarColor = Brand.BG
@@ -40,7 +40,6 @@ class MainActivity : Activity() {
                     WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
             )
         } else {
-            @Suppress("DEPRECATION")
             run { window.decorView.systemUiVisibility = 0 }
         }
 

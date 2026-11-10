@@ -21,6 +21,17 @@ assert not permissions, f"Unexpected Android permissions in minimal beta: {permi
 application = root.find("application")
 assert application is not None, "Missing application declaration"
 assert application.get(ANDROID + "allowBackup") == "false", "App backup must remain disabled"
+assert application.get(ANDROID + "fullBackupContent") == "@xml/backup_rules", "Legacy backup rules must be explicit"
+assert application.get(ANDROID + "dataExtractionRules") == "@xml/data_extraction_rules", "Android 12+ extraction rules must be explicit"
+for rules_path, expected_root in (
+    (ROOT / "app" / "src" / "main" / "res" / "xml" / "backup_rules.xml", "full-backup-content"),
+    (ROOT / "app" / "src" / "main" / "res" / "xml" / "data_extraction_rules.xml", "data-extraction-rules"),
+):
+    rules_root = ET.parse(rules_path).getroot()
+    assert rules_root.tag == expected_root, f"Invalid backup rules: {rules_path}"
+    excludes = rules_root.findall(".//exclude")
+    assert len(excludes) >= 5, f"Backup rules must exclude all app data: {rules_path}"
+    assert {item.get("domain") for item in excludes} >= {"root", "file", "database", "sharedpref", "external"}, f"Incomplete backup exclusions: {rules_path}"
 assert application.get(ANDROID + "usesCleartextTraffic") == "false", "Cleartext HTTP must remain disabled"
 assert application.get(ANDROID + "networkSecurityConfig") == "@xml/network_security_config", "Explicit network security config is required"
 network_config = ROOT / "app" / "src" / "main" / "res" / "xml" / "network_security_config.xml"

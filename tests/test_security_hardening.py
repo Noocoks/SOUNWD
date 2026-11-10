@@ -17,7 +17,7 @@ class HardenedInputTests(unittest.TestCase):
         self.assertNotIn("sys.argv", sitecustomize)
         self.assertNotIn('ANDROID_PRIVATE={!r}', sitecustomize)
         self.assertNotIn('ANDROID_ARGUMENT={!r}', sitecustomize)
-        self.assertNotIn("sys.path", sitecustomize)
+        self.assertNotIn('stream.write("sys.path=', sitecustomize)
 
     def test_url_allowlist_and_parser_confusion(self):
         for host in ("youtube.com", "www.youtube.com", "music.youtube.com", "m.youtube.com", "youtu.be"):

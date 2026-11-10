@@ -8,7 +8,7 @@ This policy covers the desktop Python downloader, legacy Kivy Android app, nativ
 
 - User-supplied download URLs must be HTTPS and use an exact allow-listed YouTube hostname. Userinfo, non-standard ports, whitespace, control characters, host lookalikes and malformed URLs are rejected.
 - User-supplied output templates are restricted to a single filename and a small allow-list of yt-dlp fields. Absolute paths, directory separators, traversal, unknown template fields, reserved Windows names and control characters are rejected.
-- Download output is resolved under the selected destination; Android downloads remain in app-private storage until explicitly copied to a public media collection. Android limits each file to 2 GiB and each playlist batch to 500 items, then removes the private temporary copy only after successful publication.
+- Download output is resolved under the selected destination; Android downloads remain in app-private storage until explicitly copied to a public media collection. Android limits each file to 2 GiB, each playlist batch to 500 items and the total batch to 5 GiB, then removes the private temporary copy only after successful publication.
 - The canonical icon generator accepts only a bounded PNG (20 MiB, square, at least 128 px, at most 8192 px per side and 25 million pixels), rejects symlinked input/output paths, confines writes to the repository and uses atomic output replacement.
 - The desktop bootstrap rejects symlinked or escaping virtual-environment, requirements and dependency-stamp paths; runtime packages are pinned and installed from wheels only.
 - Android file sharing revalidates that the file is a regular file inside SOUNWD's private download directory.

@@ -97,39 +97,9 @@ TEXT=(240/255,240/255,242/255,1); MUTED=(181/255,186/255,192/255,1)
 BRAND_MUTED=(133/255,139/255,147/255,1)
 FORMATS={"Mejor disponible":"bestaudio/best","M4A (si existe)":"bestaudio[ext=m4a]/bestaudio/best","OPUS (si existe)":"bestaudio[acodec=opus]/bestaudio/best"}
 DESTINATIONS={"Música / SOUNWD":"Music","Descargas / SOUNWD":"Downloads"}
-HOSTS={"youtube.com","www.youtube.com","music.youtube.com","m.youtube.com","youtu.be"}
-
 def valid_url(value):
-    try:
-        if not isinstance(value, str) or len(value) > 2048 or any(ord(c) < 32 for c in value):
-            return False
-        p = urlparse(value.strip())
-        host = (p.hostname or "").lower()
-        return (
-            p.scheme == "https"
-            and host in HOSTS
-            and p.username is None
-            and p.password is None
-            and p.port in (None, 443)
-        )
-    except (ValueError, AttributeError):
-        return False
+    return is_supported_youtube_url(value)
 
-
-def safe_output_template(value):
-    value = (value or "").strip() or "%(title)s.%(ext)s"
-    if len(value) > 200 or "/" in value or "\\" in value or ".." in value:
-        raise ValueError("La plantilla solo puede definir un nombre de archivo, no una ruta.")
-    allowed_fields = {"title", "id", "uploader", "channel", "playlist", "playlist_index", "ext"}
-    tokens = re.findall(r"%\(([^)]+)\)s", value)
-    if any(token not in allowed_fields for token in tokens):
-        raise ValueError("La plantilla contiene campos no permitidos.")
-    remainder = re.sub(r"%\([^)]+\)s", "", value)
-    if "%" in remainder or re.search(r'[<>:"|?*\x00-\x1f]', remainder):
-        raise ValueError("La plantilla contiene caracteres no permitidos.")
-    if value.endswith((".", " ")):
-        raise ValueError("El nombre no puede terminar en punto o espacio.")
-    return value
 
 class Panel(BoxLayout):
     def __init__(self, **kwargs):

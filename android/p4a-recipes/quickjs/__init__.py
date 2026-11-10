@@ -55,14 +55,13 @@ class QuickJSRecipe(Recipe):
         if not executable.is_file():
             raise RuntimeError(f"QuickJS build completed without the qjs executable: {executable}")
 
+        # python-for-android's get_python_install_dir() is already the
+        # target import root (get_site_packages_dir() returns this path).
         target_root = Path(self.ctx.get_python_install_dir(arch.arch))
-        site_packages = sorted(target_root.glob("lib/python*/site-packages"))
-        if len(site_packages) != 1 or not site_packages[0].is_dir():
-            raise RuntimeError(
-                "Could not identify the target Python site-packages directory for QuickJS installation"
-            )
+        if not target_root.is_dir():
+            raise RuntimeError(f"Target Python install directory does not exist: {target_root}")
 
-        runtime_dir = site_packages[0] / "sounwd_runtime"
+        runtime_dir = target_root / "sounwd_runtime"
         runtime_dir.mkdir(parents=True, exist_ok=True)
         init_file = runtime_dir / "__init__.py"
         init_file.write_text('"""Bundled SOUNWD JavaScript runtime."""\n', encoding="utf-8")

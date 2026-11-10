@@ -59,7 +59,7 @@ def validate_output_template(template: str) -> str:
     if any(field not in _ALLOWED_TEMPLATE_FIELDS for field in fields):
         raise ValueError("La plantilla contiene un campo de yt-dlp no permitido.")
     literal = _TEMPLATE_FIELD.sub("X", template)
-    if "%" in literal or not _TEMPLATE_LITERAL.fullmatch(literal):
+    if "%" in literal or any(not (char.isalnum() or char in " _().-") for char in literal):
         raise ValueError("La plantilla contiene caracteres o expresiones no permitidos.")
     if template.endswith((" ", ".")):
         raise ValueError("El nombre no puede terminar en espacio o punto.")

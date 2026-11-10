@@ -5,7 +5,8 @@ import os
 import re
 import shutil
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlsplit
+import unicodedata
 
 SUPPORTED_HOSTS = {
     "youtube.com",
@@ -25,21 +26,24 @@ _TEMPLATE_TOKEN = re.compile(r"%\(([^)]+)\)s")
 
 
 def validate_youtube_url(value: str) -> bool:
-    """Accept only canonical HTTPS YouTube hosts, with no credentials or custom ports."""
+    """Accept only canonical HTTPS YouTube URLs without URL parser ambiguities."""
     if not isinstance(value, str) or not value or len(value) > 2048:
         return False
-    if any(ord(char) < 32 or ord(char) == 127 for char in value):
+    if value != value.strip() or "\\" in value:
+        return False
+    if any(char.isspace() or ord(char) < 32 or ord(char) == 127
+           or unicodedata.category(char) in {"Cc", "Cf"} for char in value):
         return False
     try:
-        parsed = urlparse(value.strip())
+        parsed = urlsplit(value)
         host = (parsed.hostname or "").lower()
         return (
-            parsed.scheme == "https"
+            parsed.scheme.lower() == "https"
             and host in SUPPORTED_HOSTS
             and parsed.username is None
             and parsed.password is None
             and parsed.port in (None, 443)
-            and not parsed.fragment
+            and bool(parsed.netloc)
         )
     except (ValueError, AttributeError):
         return False
@@ -58,6 +62,10 @@ def validate_output_template(value: str) -> str:
         raise ValueError("La plantilla contiene caracteres no permitidos.")
     if value.endswith((".", " ")):
         raise ValueError("El nombre no puede terminar en punto o espacio.")
+    stem = value.split(".", 1)[0].upper()
+    reserved = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}
+    if stem in reserved:
+        raise ValueError("La plantilla utiliza un nombre de archivo reservado.")
     return value
 
 

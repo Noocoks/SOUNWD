@@ -41,8 +41,6 @@ def validate_youtube_url(value: str) -> str:
         raise ValueError("No se permiten credenciales dentro del enlace.")
     if port not in (None, 443):
         raise ValueError("El enlace usa un puerto no permitido.")
-    if not parsed.path.startswith(("/", "")):
-        raise ValueError("La ruta del enlace no es válida.")
     return value
 
 

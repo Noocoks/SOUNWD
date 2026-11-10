@@ -292,10 +292,20 @@ class SOUNWDApp(App):
             if advanced["write_subtitles"]: options["writesubtitles"]=True
 
             import yt_dlp
-            with yt_dlp.YoutubeDL(options) as ydl:
-                code=ydl.download([link])
-            if code:
-                raise RuntimeError("La descarga no ha podido terminar.")
+            try:
+                with yt_dlp.YoutubeDL(options) as ydl:
+                    code=ydl.download([link])
+                if code:
+                    raise RuntimeError("La descarga no ha podido terminar.")
+            except Exception:
+                # Do not leave failed/partial downloads consuming private storage.
+                for candidate in self.private_dir.rglob("*"):
+                    if is_path_within(candidate,self.private_dir) and candidate.resolve() not in before:
+                        try:
+                            candidate.unlink(missing_ok=True)
+                        except OSError:
+                            pass
+                raise
 
             audio_extensions={".aac",".flac",".m4a",".mka",".mp3",".ogg",".opus",".wav",".weba",".webm"}
             files=[p for p in downloaded_paths

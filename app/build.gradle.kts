@@ -23,3 +23,19 @@ android {
         jvmTarget = "17"
     }
 }
+
+configurations.configureEach {
+    resolutionStrategy.activateDependencyLocking()
+}
+
+dependencyLocking {
+    lockAllConfigurations()
+}
+
+android {
+    lint {
+        abortOnError = true
+        checkReleaseBuilds = true
+        warningsAsErrors = true
+    }
+}
